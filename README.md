@@ -57,6 +57,20 @@ This calls, in order:
 - `POST /api/cron/publish`
 - `GET /api/internal/status`
 
+## Quick git push
+
+After GitHub write access is fixed for `origin`, you can commit and push with one command:
+
+```bash
+npm run push:main -- "update project"
+```
+
+This script:
+
+- stages all changes
+- creates a commit with your message
+- pushes `main` to `origin`
+
 ## Vercel deployment
 
 1. Import `https://github.com/asdkaasdka1/newukrainedaily.com` into Vercel under team `asdkaasdka1s-projects`.
