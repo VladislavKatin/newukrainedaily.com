@@ -3,7 +3,7 @@ import { buildMetadata } from "@/lib/seo";
 
 export const metadata = buildMetadata({
   title: "Editorial Policy",
-  description: "Editorial policy placeholder for sourcing, corrections, and disclosures.",
+  description: "Editorial policy for sourcing, attribution, corrections, disclosures, and review standards.",
   path: "/editorial-policy"
 });
 
@@ -12,8 +12,7 @@ export default function EditorialPolicyPage() {
     <PageShell
       eyebrow="Policy"
       title="Editorial policy"
-      description="Document sourcing standards, corrections handling, disclosures, and content review workflows here."
+      description="This page defines sourcing standards, correction handling, disclosures, attribution, and content review expectations."
     />
   );
 }
-

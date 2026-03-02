@@ -167,7 +167,7 @@ export async function runRewriteNewsJob() {
       await upsertTopic({
         tag,
         title: tag.charAt(0).toUpperCase() + tag.slice(1),
-        description: `Auto-generated topic placeholder for ${tag}.`
+        description: `Coverage, context, and related reporting for ${tag}.`
       });
       topicsUpdated += 1;
     }

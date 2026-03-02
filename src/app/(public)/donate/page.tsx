@@ -3,7 +3,7 @@ import { buildMetadata } from "@/lib/seo";
 
 export const metadata = buildMetadata({
   title: "Donate",
-  description: "Support page placeholder for verified campaigns and aid partners.",
+  description: "Ways to support Ukraine through verified campaigns, aid organizations, and trusted response partners.",
   path: "/donate"
 });
 
@@ -12,8 +12,7 @@ export default function DonatePage() {
     <PageShell
       eyebrow="Donate"
       title="Support Ukraine"
-      description="This placeholder page is reserved for verified campaigns, partner organizations, and transparent funding notes."
+      description="Find verified campaigns, trusted aid organizations, and transparent support pathways gathered for Ukraine-focused readers."
     />
   );
 }
-

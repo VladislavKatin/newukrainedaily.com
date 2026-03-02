@@ -3,7 +3,7 @@ import { buildMetadata } from "@/lib/seo";
 
 export const metadata = buildMetadata({
   title: "About",
-  description: "About page placeholder for mission, process, and publication scope.",
+  description: "About New Ukraine Daily, its editorial mission, publication scope, and reporting approach.",
   path: "/about"
 });
 
@@ -11,9 +11,8 @@ export default function AboutPage() {
   return (
     <PageShell
       eyebrow="About"
-      title="About this project"
-      description="This project is a lightweight foundation for Ukraine-focused publishing, automation, and search-friendly archives."
+      title="About New Ukraine Daily"
+      description="New Ukraine Daily is a lightweight publication focused on Ukraine news, support coverage, topic archives, and editorial reporting."
     />
   );
 }
-

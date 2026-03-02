@@ -3,7 +3,7 @@ import { buildMetadata } from "@/lib/seo";
 
 export const metadata = buildMetadata({
   title: "Contact",
-  description: "Contact page placeholder for editorial inquiries and partnerships.",
+  description: "Contact New Ukraine Daily for editorial inquiries, corrections, partnerships, and support-related communication.",
   path: "/contact"
 });
 
@@ -12,8 +12,7 @@ export default function ContactPage() {
     <PageShell
       eyebrow="Contact"
       title="Contact"
-      description="Use this page for editorial contact details, correction requests, and partnership inquiries."
+      description="Use this page for editorial inquiries, correction requests, partnerships, and support-related contact."
     />
   );
 }
-
