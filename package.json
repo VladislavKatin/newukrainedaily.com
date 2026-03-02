@@ -11,7 +11,9 @@
     "verify:stack": "node scripts/verify-stack.mjs",
     "smoke:cron": "node scripts/smoke-cron.mjs",
     "push:main": "powershell -ExecutionPolicy Bypass -File .\\scripts\\push-main.ps1",
-    "autopush": "node scripts/autopush.mjs"
+    "autopush": "node scripts/autopush.mjs",
+    "local:start": "powershell -ExecutionPolicy Bypass -File .\\scripts\\start-local-site.ps1",
+    "local:stop": "powershell -ExecutionPolicy Bypass -File .\\scripts\\stop-local-site.ps1"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.50.0",

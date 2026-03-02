@@ -70,13 +70,26 @@ async function buildUniqueTitle(baseTitle: string) {
   return `${baseTitle.slice(0, 70).trim()} ${Date.now()}`.slice(0, 90);
 }
 
-function buildImagePrompt(input: { title: string; dek: string | null; tags: string[] }) {
+function buildImagePrompt(input: {
+  title: string;
+  dek: string | null;
+  summary: string | null;
+  whyItMatters: string | null;
+  tags: string[];
+  sourceName: string | null;
+}) {
   const tagText = input.tags.slice(0, 6).join(", ");
+  const summaryText = input.summary?.replace(/\s+/g, " ").trim();
+  const whyText = input.whyItMatters?.replace(/\s+/g, " ").trim();
   return [
     "Create a photorealistic editorial cover image for a Ukraine news article.",
     `Headline context: ${input.title}.`,
     input.dek ? `Short brief: ${input.dek}.` : null,
+    summaryText ? `Article summary: ${summaryText.slice(0, 320)}.` : null,
+    whyText ? `Editorial importance: ${whyText.slice(0, 220)}.` : null,
     tagText ? `Themes: ${tagText}.` : null,
+    input.sourceName ? `Source context: ${input.sourceName}.` : null,
+    "Show concrete human, infrastructure, or institutional context implied by the article.",
     "No text overlays, no watermarks, no logos, no flags as the main subject, cinematic natural light, realistic reportage style."
   ]
     .filter(Boolean)
@@ -197,7 +210,10 @@ export async function runGenerateImagesJob() {
     const prompt = buildImagePrompt({
       title: item.title,
       dek: item.dek,
-      tags: item.tags
+      summary: item.summary,
+      whyItMatters: item.whyItMatters,
+      tags: item.tags,
+      sourceName: item.sourceName
     });
 
     try {

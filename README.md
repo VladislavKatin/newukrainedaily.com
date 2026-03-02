@@ -20,6 +20,27 @@ npm run dev
 
 Open `http://localhost:3000`.
 
+If your local Postgres database is unavailable, the development server can fall back to local preview content when `LOCAL_PREVIEW_CONTENT=true`. This keeps the site visually populated for local UI review without changing production behavior.
+
+## Local launcher
+
+To start the site locally in a separate PowerShell window and open the browser:
+
+```bash
+npm run local:start
+```
+
+To stop the local site:
+
+```bash
+npm run local:stop
+```
+
+Desktop launchers are also created locally:
+
+- `Start New Ukraine Daily.cmd`
+- `Stop New Ukraine Daily.cmd`
+
 ## Build
 
 ```bash

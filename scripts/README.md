@@ -6,3 +6,5 @@ Reserved for local automation scripts such as feed imports, content migration, o
 - `smoke-cron.mjs`: sequentially calls the protected cron endpoints against a running local or remote app and prints before/after operational status snapshots.
 - `push-main.ps1`: stages all changes, creates a commit from the provided message, and pushes `main` to `origin`.
 - `autopush.mjs`: watches the repo, debounces file changes, runs `npm run lint`, then automatically stages, commits, and pushes `main` to `origin` if lint passes.
+- `start-local-site.ps1`: starts the local Next.js dev server in a separate PowerShell window, waits for `localhost:3000`, then opens the browser.
+- `stop-local-site.ps1`: stops the tracked local dev server and any listener on port `3000`.

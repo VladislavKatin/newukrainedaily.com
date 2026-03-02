@@ -1,6 +1,6 @@
 import "server-only";
 import type { ContentEntry } from "@/lib/content-types";
-import { getDatabaseUrl } from "@/lib/env";
+import { getDatabaseUrl, getEnv } from "@/lib/env";
 import { query } from "@/lib/db";
 import {
   countBlog,
@@ -18,6 +18,7 @@ import {
   listNewsByTag,
   listTopics
 } from "@/lib/postgres-repository";
+import { getPreviewEntries, getPreviewTopics } from "@/lib/local-preview-content";
 
 export type ContentRepository = {
   getAllEntries(): Promise<ContentEntry[]>;
@@ -142,6 +143,46 @@ function createEmptyContentRepository(): ContentRepository {
   };
 }
 
+function createPreviewContentRepository(): ContentRepository {
+  const entries = getPreviewEntries();
+  const topics = getPreviewTopics();
+
+  return {
+    async getAllEntries() {
+      return entries;
+    },
+    async getEntriesByType(type) {
+      return entries.filter((entry) => entry.type === type);
+    },
+    async getEntriesByTypePage(type, options) {
+      const filtered = entries.filter((entry) => entry.type === type);
+      return {
+        entries: filtered.slice(options.offset, options.offset + options.limit),
+        total: filtered.length
+      };
+    },
+    async getEntry(type, slug) {
+      return entries.find((entry) => entry.type === type && entry.slug === slug);
+    },
+    async getAllTags() {
+      return topics.map((topic) => topic.tag);
+    },
+    async getEntriesByTag(tag) {
+      return entries.filter((entry) => entry.tags.includes(tag));
+    },
+    async getEntriesByTagPage(tag, options) {
+      const filtered = entries.filter((entry) => entry.tags.includes(tag));
+      return {
+        entries: filtered.slice(options.offset, options.offset + options.limit),
+        total: filtered.length
+      };
+    },
+    async getTopic(tag) {
+      return topics.find((topic) => topic.tag === tag) ?? null;
+    }
+  };
+}
+
 function createDatabaseContentRepository(): ContentRepository {
   return {
     async getAllEntries() {
@@ -250,6 +291,12 @@ function createDatabaseContentRepository(): ContentRepository {
 export async function getContentRepository(): Promise<ContentRepository> {
   if (await isDatabaseAvailable()) {
     return createDatabaseContentRepository();
+  }
+
+  const env = getEnv();
+  if (env.NODE_ENV !== "production" && env.LOCAL_PREVIEW_CONTENT) {
+    console.warn("[content] Database unavailable, using local preview content.");
+    return createPreviewContentRepository();
   }
 
   return createEmptyContentRepository();

@@ -15,6 +15,16 @@ const envSchema = z.object({
   AI_API_KEY: z.string().min(1).optional(),
   LEONARDO_API_KEY: z.string().min(1).optional(),
   LEONARDO_WEBHOOK_SECRET: z.string().min(1).optional(),
+  LOCAL_PREVIEW_CONTENT: z
+    .union([z.literal("true"), z.literal("false"), z.boolean()])
+    .optional()
+    .transform((value) => {
+      if (value === undefined) {
+        return undefined;
+      }
+
+      return value === true || value === "true";
+    }),
   DAILY_PUBLISH_LIMIT: z.coerce.number().int().positive().optional(),
   AUTOPOST_DRY_RUN: z
     .union([z.literal("true"), z.literal("false"), z.boolean()])
