@@ -8,6 +8,7 @@ dist
 coverage
 public/generated/*
 !public/generated/.gitkeep
+supabase/.temp/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
