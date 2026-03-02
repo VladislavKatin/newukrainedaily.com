@@ -93,21 +93,28 @@ function mapBlogPostToContentEntry(blogPost: Awaited<ReturnType<typeof getBlogBy
   };
 }
 
-let databaseAvailabilityPromise: Promise<boolean> | null = null;
+let databaseAvailabilityPromise: Promise<{ ok: boolean; error: unknown | null }> | null = null;
 
-async function isDatabaseAvailable() {
+function hasConfiguredDatabaseUrl() {
   try {
     getDatabaseUrl();
+    return true;
   } catch {
     return false;
+  }
+}
+
+async function getDatabaseAvailability() {
+  if (!hasConfiguredDatabaseUrl()) {
+    return { ok: false, error: null };
   }
 
   if (!databaseAvailabilityPromise) {
     databaseAvailabilityPromise = query("select 1")
-      .then(() => true)
+      .then(() => ({ ok: true, error: null }))
       .catch((error) => {
         console.warn("[content] Database unavailable, returning empty content set:", error);
-        return false;
+        return { ok: false, error };
       });
   }
 
@@ -291,12 +298,26 @@ function createDatabaseContentRepository(): ContentRepository {
 export async function getContentRepository(): Promise<ContentRepository> {
   const env = getEnv();
 
-  if (env.NODE_ENV !== "production" && env.LOCAL_PREVIEW_CONTENT) {
-    return createPreviewContentRepository();
+  if (!hasConfiguredDatabaseUrl()) {
+    if (env.NODE_ENV !== "production" && env.LOCAL_PREVIEW_CONTENT) {
+      return createPreviewContentRepository();
+    }
+
+    return createEmptyContentRepository();
   }
 
-  if (await isDatabaseAvailable()) {
+  const databaseAvailability = await getDatabaseAvailability();
+
+  if (databaseAvailability.ok) {
     return createDatabaseContentRepository();
+  }
+
+  if (env.NODE_ENV === "production") {
+    throw new Error("Configured database is unreachable.");
+  }
+
+  if (env.LOCAL_PREVIEW_CONTENT) {
+    console.warn("[content] Database is configured but unreachable. Returning empty content set in development.");
   }
 
   return createEmptyContentRepository();

@@ -1,41 +1,54 @@
 import "server-only";
 import { z } from "zod";
 
+function normalizeOptionalString(value: unknown) {
+  if (typeof value === "string" && value.trim() === "") {
+    return undefined;
+  }
+
+  return value;
+}
+
+function optionalString(schema: z.ZodString) {
+  return z.preprocess(normalizeOptionalString, schema.optional());
+}
+
+function optionalBooleanString() {
+  return z
+    .preprocess(
+      normalizeOptionalString,
+      z.union([z.literal("true"), z.literal("false"), z.boolean()]).optional()
+    )
+    .transform((value) => {
+      if (value === undefined) {
+        return undefined;
+      }
+
+      return value === true || value === "true";
+    });
+}
+
+function optionalPositiveInt() {
+  return z.preprocess(normalizeOptionalString, z.coerce.number().int().positive().optional());
+}
+
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-  PUBLIC_BASE_URL: z.string().url().optional(),
-  CRON_SECRET: z.string().min(1).optional(),
-  DATABASE_URL: z.string().min(1).optional(),
-  SUPABASE_DATABASE_URL: z.string().min(1).optional(),
-  SUPABASE_URL: z.string().url().optional(),
-  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
-  SUPABASE_STORAGE_BUCKET: z.string().min(1).optional(),
-  SUPABASE_STORAGE_PUBLIC_URL: z.string().url().optional(),
-  AI_PROVIDER: z.string().min(1).optional(),
-  AI_API_KEY: z.string().min(1).optional(),
-  LEONARDO_API_KEY: z.string().min(1).optional(),
-  LEONARDO_WEBHOOK_SECRET: z.string().min(1).optional(),
-  LOCAL_PREVIEW_CONTENT: z
-    .union([z.literal("true"), z.literal("false"), z.boolean()])
-    .optional()
-    .transform((value) => {
-      if (value === undefined) {
-        return undefined;
-      }
-
-      return value === true || value === "true";
-    }),
-  DAILY_PUBLISH_LIMIT: z.coerce.number().int().positive().optional(),
-  AUTOPOST_DRY_RUN: z
-    .union([z.literal("true"), z.literal("false"), z.boolean()])
-    .optional()
-    .transform((value) => {
-      if (value === undefined) {
-        return undefined;
-      }
-
-      return value === true || value === "true";
-    })
+  PUBLIC_BASE_URL: optionalString(z.string().url()),
+  CRON_SECRET: optionalString(z.string().min(1)),
+  DATABASE_URL: optionalString(z.string().min(1)),
+  SUPABASE_DATABASE_URL: optionalString(z.string().min(1)),
+  SUPABASE_URL: optionalString(z.string().url()),
+  SUPABASE_SERVICE_ROLE_KEY: optionalString(z.string().min(1)),
+  SUPABASE_STORAGE_BUCKET: optionalString(z.string().min(1)),
+  SUPABASE_STORAGE_PUBLIC_URL: optionalString(z.string().url()),
+  AI_PROVIDER: optionalString(z.string().min(1)),
+  AI_API_KEY: optionalString(z.string().min(1)),
+  LEONARDO_API_KEY: optionalString(z.string().min(1)),
+  LEONARDO_WEBHOOK_SECRET: optionalString(z.string().min(1)),
+  LOCAL_PREVIEW_CONTENT: optionalBooleanString(),
+  DAILY_PUBLISH_LIMIT: optionalPositiveInt(),
+  AUTOPOST_DRY_RUN: optionalBooleanString()
 });
 
 const parsedEnv = envSchema.parse(process.env);
