@@ -202,6 +202,9 @@ class OpenAiRewriteProvider implements RewriteProvider {
 
     if (!response.ok) {
       const message = await response.text();
+      if (response.status === 429) {
+        throw new Error(`OpenAI rate limit reached: ${message}`);
+      }
       throw new Error(`OpenAI rewrite failed: ${response.status} ${message}`);
     }
 

@@ -32,6 +32,10 @@ function optionalPositiveInt() {
   return z.preprocess(normalizeOptionalString, z.coerce.number().int().positive().optional());
 }
 
+function optionalNonNegativeInt() {
+  return z.preprocess(normalizeOptionalString, z.coerce.number().int().min(0).optional());
+}
+
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PUBLIC_BASE_URL: optionalString(z.string().url()),
@@ -48,7 +52,16 @@ const envSchema = z.object({
   LEONARDO_WEBHOOK_SECRET: optionalString(z.string().min(1)),
   LOCAL_PREVIEW_CONTENT: optionalBooleanString(),
   DAILY_PUBLISH_LIMIT: optionalPositiveInt(),
-  AUTOPOST_DRY_RUN: optionalBooleanString()
+  AUTOPOST_DRY_RUN: optionalBooleanString(),
+  FETCH_SOURCES_LIMIT: optionalPositiveInt(),
+  FETCH_ITEMS_PER_SOURCE_LIMIT: optionalPositiveInt(),
+  REWRITE_BATCH_LIMIT: optionalPositiveInt(),
+  REWRITE_REQUEST_SPACING_MS: optionalNonNegativeInt(),
+  IMAGE_BATCH_LIMIT: optionalPositiveInt(),
+  IMAGE_MAX_ATTEMPTS: optionalPositiveInt(),
+  IMAGE_STALE_MINUTES: optionalPositiveInt(),
+  IMAGE_REQUEST_SPACING_MS: optionalNonNegativeInt(),
+  PUBLISH_BATCH_LIMIT: optionalPositiveInt()
 });
 
 const parsedEnv = envSchema.parse(process.env);
@@ -57,7 +70,6 @@ const publicRequiredKeys = ["PUBLIC_BASE_URL"] as const;
 const pipelineRequiredKeys = [
   "CRON_SECRET",
   "AI_PROVIDER",
-  "AI_API_KEY",
   "LEONARDO_API_KEY",
   "LEONARDO_WEBHOOK_SECRET",
   "DAILY_PUBLISH_LIMIT",
@@ -84,6 +96,10 @@ export function validateEnv(scope: "public" | "pipeline" = "public") {
 
     if (!hasDatabaseUrl) {
       missing.push("DATABASE_URL");
+    }
+
+    if (parsedEnv.AI_PROVIDER && parsedEnv.AI_PROVIDER !== "stub" && !parsedEnv.AI_API_KEY) {
+      missing.push("AI_API_KEY");
     }
   }
 

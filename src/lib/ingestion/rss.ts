@@ -95,8 +95,13 @@ function buildHash(input: ParsedFeedItem) {
     .digest("hex");
 }
 
-export async function ingestRssSources() {
-  const sources = (await listActiveSources()).filter((source) => source.type === "rss");
+export async function ingestRssSources(options?: {
+  sourceLimit?: number;
+  itemsPerSourceLimit?: number;
+}) {
+  const sourceLimit = options?.sourceLimit ?? 50;
+  const itemsPerSourceLimit = options?.itemsPerSourceLimit ?? 25;
+  const sources = (await listActiveSources(sourceLimit)).filter((source) => source.type === "rss");
 
   console.log(`[ingestion] fetch-news: rss sources=${sources.length}`);
 
@@ -122,7 +127,7 @@ export async function ingestRssSources() {
       }
 
       const xml = await response.text();
-      const items = extractItems(xml);
+      const items = extractItems(xml).slice(0, itemsPerSourceLimit);
       scannedItems += items.length;
 
       let sourceNewRecords = 0;

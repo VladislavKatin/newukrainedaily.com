@@ -28,6 +28,30 @@ import {
 import { slugify } from "@/lib/slug";
 import { saveRemoteImage } from "@/lib/storage";
 
+function sleep(milliseconds: number) {
+  if (milliseconds <= 0) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+function getPipelineLimits() {
+  const env = getEnv();
+
+  return {
+    fetchSourcesLimit: env.FETCH_SOURCES_LIMIT ?? 20,
+    fetchItemsPerSourceLimit: env.FETCH_ITEMS_PER_SOURCE_LIMIT ?? 15,
+    rewriteBatchLimit: env.REWRITE_BATCH_LIMIT ?? 8,
+    rewriteRequestSpacingMs: env.REWRITE_REQUEST_SPACING_MS ?? 1500,
+    imageBatchLimit: env.IMAGE_BATCH_LIMIT ?? 4,
+    imageMaxAttempts: env.IMAGE_MAX_ATTEMPTS ?? 3,
+    imageStaleMinutes: env.IMAGE_STALE_MINUTES ?? 60,
+    imageRequestSpacingMs: env.IMAGE_REQUEST_SPACING_MS ?? 2500,
+    publishBatchLimit: env.PUBLISH_BATCH_LIMIT ?? 5
+  };
+}
+
 function stripHtml(value: string | null) {
   if (!value) {
     return null;
@@ -120,11 +144,16 @@ async function buildUniqueSlug(baseSlug: string) {
 }
 
 export async function runFetchNewsJob() {
-  return ingestRssSources();
+  const limits = getPipelineLimits();
+  return ingestRssSources({
+    sourceLimit: limits.fetchSourcesLimit,
+    itemsPerSourceLimit: limits.fetchItemsPerSourceLimit
+  });
 }
 
 export async function runRewriteNewsJob() {
-  const pendingRaws = await listUnprocessedRawNews(10);
+  const limits = getPipelineLimits();
+  const pendingRaws = await listUnprocessedRawNews(limits.rewriteBatchLimit);
 
   let createdDrafts = 0;
   let topicsUpdated = 0;
@@ -177,6 +206,8 @@ export async function runRewriteNewsJob() {
       payload: { rawId: raw.id, slug }
     });
     jobsQueued += 1;
+
+    await sleep(limits.rewriteRequestSpacingMs);
   }
 
   return {
@@ -190,7 +221,12 @@ export async function runRewriteNewsJob() {
 }
 
 export async function runGenerateImagesJob() {
-  const draftItems = await listNewsItemsNeedingImageGeneration(10, 3, 60);
+  const limits = getPipelineLimits();
+  const draftItems = await listNewsItemsNeedingImageGeneration(
+    limits.imageBatchLimit,
+    limits.imageMaxAttempts,
+    limits.imageStaleMinutes
+  );
   let requested = 0;
   let skipped = 0;
   let failed = 0;
@@ -228,6 +264,7 @@ export async function runGenerateImagesJob() {
       });
 
       requested += 1;
+      await sleep(limits.imageRequestSpacingMs);
     } catch (error) {
       failed += 1;
       await upsertNewsImageRequest({
@@ -244,7 +281,8 @@ export async function runGenerateImagesJob() {
 }
 
 export async function runPublishJob(limit?: number) {
-  const publishLimit = limit ?? getEnv().DAILY_PUBLISH_LIMIT ?? 10;
+  const limits = getPipelineLimits();
+  const publishLimit = Math.min(limit ?? getEnv().DAILY_PUBLISH_LIMIT ?? 10, limits.publishBatchLimit);
   const publishedToday = await countPublishedNewsSince(getUtcDayStartIso());
   const availableSlots = Math.max(publishLimit - publishedToday, 0);
 
@@ -301,7 +339,11 @@ export async function runAutopostJob() {
 }
 
 export async function runFullPipeline() {
-  const fetchResult = await ingestRssSources();
+  const limits = getPipelineLimits();
+  const fetchResult = await ingestRssSources({
+    sourceLimit: limits.fetchSourcesLimit,
+    itemsPerSourceLimit: limits.fetchItemsPerSourceLimit
+  });
   const rewriteResult = await runRewriteNewsJob();
   const imageResult = await runGenerateImagesJob();
   const publishResult = await runPublishJob();

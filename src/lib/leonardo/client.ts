@@ -59,6 +59,9 @@ export async function createLeonardoGeneration(input: LeonardoCreateRequest) {
 
   if (!response.ok) {
     const message = await response.text();
+    if (response.status === 429) {
+      throw new Error(`Leonardo rate limit reached: ${message}`);
+    }
     throw new Error(`Leonardo create generation failed: ${response.status} ${message}`);
   }
 
