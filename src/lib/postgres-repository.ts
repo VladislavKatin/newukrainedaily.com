@@ -996,6 +996,25 @@ export async function getTopicByTag(tag: string) {
   return result.rows[0] ? mapTopic(result.rows[0]) : null;
 }
 
+export async function getNextFreeTopic() {
+  const result = await query(
+    `
+      select t.*
+      from topics t
+      where not exists (
+        select 1
+        from jobs j
+        where j.status in ('pending', 'running')
+          and coalesce(j.payload ->> 'topicTag', '') = t.tag
+      )
+      order by t.updated_at asc, t.tag asc
+      limit 1
+    `
+  );
+
+  return result.rows[0] ? mapTopic(result.rows[0]) : null;
+}
+
 export async function enqueueJob(input: EnqueueJobInput, client: PoolClient | null = null) {
   const result = await runClientQuery<Record<string, unknown>>(
     client,

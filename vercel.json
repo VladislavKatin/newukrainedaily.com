@@ -2,20 +2,8 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "crons": [
     {
-      "path": "/api/cron/fetch-news",
-      "schedule": "0 3 * * *"
-    },
-    {
-      "path": "/api/cron/rewrite-news",
-      "schedule": "10 3 * * *"
-    },
-    {
-      "path": "/api/cron/generate-images",
-      "schedule": "20 3 * * *"
-    },
-    {
-      "path": "/api/cron/publish",
-      "schedule": "30 3 * * *"
+      "path": "/api/cron/tick",
+      "schedule": "*/5 * * * *"
     }
   ]
 }
