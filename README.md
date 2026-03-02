@@ -71,6 +71,25 @@ This script:
 - creates a commit with your message
 - pushes `main` to `origin`
 
+## Full autopush
+
+If you want the repo to autosync after file changes:
+
+```bash
+npm run autopush
+```
+
+Behavior:
+
+- watches the working tree
+- ignores `.git`, `.next`, `node_modules`, `dist`, `coverage`, `.idea`, and `supabase/.temp`
+- waits 4 seconds after the last change
+- runs `git add -A`
+- creates an automatic commit like `autosync: 2026-03-02T12:34:56.000Z`
+- pushes `main` to `origin`
+
+Stop it with `Ctrl+C`.
+
 ## Vercel deployment
 
 1. Import `https://github.com/asdkaasdka1/newukrainedaily.com` into Vercel under team `asdkaasdka1s-projects`.
