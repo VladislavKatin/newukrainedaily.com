@@ -1,8 +1,10 @@
 import process from "node:process";
 import { createClient } from "@supabase/supabase-js";
 import pg from "pg";
+import { loadLocalEnv } from "./load-local-env.mjs";
 
 const { Pool } = pg;
+loadLocalEnv();
 
 function readEnv(name) {
   const value = process.env[name];
