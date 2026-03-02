@@ -40,8 +40,8 @@ const envSchema = z.object({
 
 const parsedEnv = envSchema.parse(process.env);
 
-const requiredKeys = [
-  "PUBLIC_BASE_URL",
+const publicRequiredKeys = ["PUBLIC_BASE_URL"] as const;
+const pipelineRequiredKeys = [
   "CRON_SECRET",
   "AI_PROVIDER",
   "AI_API_KEY",
@@ -51,7 +51,7 @@ const requiredKeys = [
   "AUTOPOST_DRY_RUN"
 ] as const;
 
-type RequiredKey = (typeof requiredKeys)[number];
+type RequiredKey = (typeof publicRequiredKeys)[number] | (typeof pipelineRequiredKeys)[number];
 
 function getMissingKeys(keys: readonly RequiredKey[]) {
   return keys.filter((key) => {
@@ -60,12 +60,18 @@ function getMissingKeys(keys: readonly RequiredKey[]) {
   });
 }
 
-export function validateEnv() {
-  const missing = [...getMissingKeys(requiredKeys)] as string[];
-  const hasDatabaseUrl = Boolean(parsedEnv.DATABASE_URL || parsedEnv.SUPABASE_DATABASE_URL);
+export function validateEnv(scope: "public" | "pipeline" = "public") {
+  const missing =
+    scope === "pipeline"
+      ? ([...getMissingKeys(pipelineRequiredKeys)] as string[])
+      : ([...getMissingKeys(publicRequiredKeys)] as string[]);
 
-  if (!hasDatabaseUrl) {
-    missing.push("DATABASE_URL");
+  if (scope === "pipeline") {
+    const hasDatabaseUrl = Boolean(parsedEnv.DATABASE_URL || parsedEnv.SUPABASE_DATABASE_URL);
+
+    if (!hasDatabaseUrl) {
+      missing.push("DATABASE_URL");
+    }
   }
 
   if (missing.length === 0) {
