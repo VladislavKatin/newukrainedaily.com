@@ -8,11 +8,18 @@ declare global {
 }
 
 function createPool() {
+  const connectionString = getDatabaseUrl();
+  const isLocalDatabase =
+    connectionString.includes("@localhost") ||
+    connectionString.includes("@127.0.0.1") ||
+    connectionString.includes("@[::1]");
+
   return new Pool({
-    connectionString: getDatabaseUrl(),
+    connectionString,
     max: 5,
     connectionTimeoutMillis: 1500,
-    idleTimeoutMillis: 5000
+    idleTimeoutMillis: 5000,
+    ssl: isLocalDatabase ? undefined : { rejectUnauthorized: false }
   });
 }
 

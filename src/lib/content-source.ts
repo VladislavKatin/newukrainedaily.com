@@ -96,6 +96,10 @@ function mapBlogPostToContentEntry(blogPost: Awaited<ReturnType<typeof getBlogBy
 let databaseAvailabilityPromise: Promise<{ ok: boolean; error: unknown | null }> | null = null;
 let publishedContentAvailabilityPromise: Promise<boolean> | null = null;
 
+function isBuildPhase() {
+  return process.env.NEXT_PHASE === "phase-production-build";
+}
+
 function hasConfiguredDatabaseUrl() {
   try {
     getDatabaseUrl();
@@ -329,6 +333,11 @@ export async function getContentRepository(): Promise<ContentRepository> {
   }
 
   if (env.NODE_ENV === "production") {
+    if (isBuildPhase()) {
+      console.warn("[content] Database is unreachable during build. Returning empty content repository for prerender.");
+      return createEmptyContentRepository();
+    }
+
     throw new Error("Configured database is unreachable.");
   }
 
