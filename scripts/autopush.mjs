@@ -41,6 +41,16 @@ function runGit(args, options = {}) {
   return result;
 }
 
+function runNpm(args, options = {}) {
+  const result = spawnSync("npm.cmd", args, {
+    cwd: repoRoot,
+    encoding: "utf8",
+    ...options
+  });
+
+  return result;
+}
+
 function printResult(prefix, result) {
   if (result.stdout?.trim()) {
     console.log(`${prefix}${result.stdout.trim()}`);
@@ -94,6 +104,14 @@ function flushChanges() {
     if (statusAfterAdd.length === 0) {
       return;
     }
+
+    const lintResult = runNpm(["run", "lint"]);
+    if (lintResult.status !== 0) {
+      printResult("[autopush] ", lintResult);
+      throw new Error("lint failed, autosync aborted");
+    }
+
+    printResult("[autopush] ", lintResult);
 
     const commitMessage = buildCommitMessage();
     const commitResult = runGit(["commit", "-m", commitMessage]);

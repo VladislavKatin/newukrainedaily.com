@@ -84,6 +84,7 @@ Behavior:
 - watches the working tree
 - ignores `.git`, `.next`, `node_modules`, `dist`, `coverage`, `.idea`, and `supabase/.temp`
 - waits 4 seconds after the last change
+- runs `npm run lint` and aborts if lint fails
 - runs `git add -A`
 - creates an automatic commit like `autosync: 2026-03-02T12:34:56.000Z`
 - pushes `main` to `origin`
