@@ -94,6 +94,7 @@ function mapBlogPostToContentEntry(blogPost: Awaited<ReturnType<typeof getBlogBy
 }
 
 let databaseAvailabilityPromise: Promise<{ ok: boolean; error: unknown | null }> | null = null;
+let publishedContentAvailabilityPromise: Promise<boolean> | null = null;
 
 function hasConfiguredDatabaseUrl() {
   try {
@@ -119,6 +120,16 @@ async function getDatabaseAvailability() {
   }
 
   return databaseAvailabilityPromise;
+}
+
+async function hasPublishedContent() {
+  if (!publishedContentAvailabilityPromise) {
+    publishedContentAvailabilityPromise = Promise.all([countNews(), countBlog()]).then(
+      ([newsCount, blogCount]) => newsCount + blogCount > 0
+    );
+  }
+
+  return publishedContentAvailabilityPromise;
 }
 
 function createEmptyContentRepository(): ContentRepository {
@@ -309,6 +320,11 @@ export async function getContentRepository(): Promise<ContentRepository> {
   const databaseAvailability = await getDatabaseAvailability();
 
   if (databaseAvailability.ok) {
+    if (!(await hasPublishedContent())) {
+      console.warn("[content] Database is available but has no published entries. Using built-in fallback content.");
+      return createPreviewContentRepository();
+    }
+
     return createDatabaseContentRepository();
   }
 
