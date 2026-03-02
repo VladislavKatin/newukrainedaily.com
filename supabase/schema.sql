@@ -136,3 +136,11 @@ create trigger trg_news_images_updated_at
 before update on news_images
 for each row
 execute function set_updated_at();
+
+alter table sources enable row level security;
+alter table news_raw enable row level security;
+alter table news_items enable row level security;
+alter table blog_posts enable row level security;
+alter table topics enable row level security;
+alter table jobs enable row level security;
+alter table news_images enable row level security;

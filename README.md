@@ -178,7 +178,16 @@ AUTOPOST_DRY_RUN=true
 3. Open the Supabase dashboard SQL Editor.
 4. Run the contents of `supabase/schema.sql`.
 5. Optionally run `supabase/seed.sql` to insert starter source/topic rows.
-6. Verify the tables in Table Editor: `sources`, `news_raw`, `news_items`, `blog_posts`, `topics`, `jobs`, `news_images`.
+6. Run `supabase/harden_rls.sql` if the database already exists and you want to lock down browser-facing Supabase access without recreating the schema.
+7. Verify the tables in Table Editor: `sources`, `news_raw`, `news_items`, `blog_posts`, `topics`, `jobs`, `news_images`.
+
+## Supabase security
+
+- The app reads and writes through the server using `DATABASE_URL`, not through a browser Supabase client.
+- For that reason, public browser roles do not need direct table access.
+- `supabase/schema.sql` now enables Row Level Security on all core tables.
+- If your database was created before this change, run `supabase/harden_rls.sql` in Supabase SQL Editor.
+- With RLS enabled and no public policies added, `anon` and `authenticated` browser roles should no longer see unrestricted table access.
 
 Target Supabase project:
 
