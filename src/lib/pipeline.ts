@@ -1,0 +1,434 @@
+import "server-only";
+import { rewriteRawNews } from "@/lib/ai/rewrite-service";
+import { getEnv } from "@/lib/env";
+import { ingestRssSources } from "@/lib/ingestion/rss";
+import { createLeonardoGeneration } from "@/lib/leonardo/client";
+import { extractLeonardoWebhookData } from "@/lib/leonardo/webhook";
+import {
+  countPublishedNewsSince,
+  completeNewsImage,
+  enqueueJob,
+  failNewsImage,
+  getRawNewsById,
+  getNewsImageByGenerationId,
+  getNewsImageByNewsItemId,
+  getNewsBySlug,
+  getNewsByTitle,
+  listNewsItemsNeedingImageGeneration,
+  listPendingJobs,
+  listPublishReadyNews,
+  listUnprocessedRawNews,
+  publishNewsItem,
+  upsertNewsImageRequest,
+  updateJob,
+  updateNewsItemAssets,
+  upsertNewsItem,
+  upsertTopic
+} from "@/lib/postgres-repository";
+import { slugify } from "@/lib/slug";
+import { saveRemoteImage } from "@/lib/storage";
+
+function stripHtml(value: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  return value
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function deriveTags(title: string, snippet: string | null) {
+  const seed = `${title} ${snippet || ""}`.toLowerCase();
+  const tags = new Set<string>();
+
+  if (seed.includes("humanitarian") || seed.includes("aid")) tags.add("humanitarian");
+  if (seed.includes("logistics") || seed.includes("supply")) tags.add("logistics");
+  if (seed.includes("energy") || seed.includes("power")) tags.add("energy");
+  if (seed.includes("recovery") || seed.includes("rebuild")) tags.add("recovery");
+  if (tags.size === 0) tags.add("support");
+
+  return Array.from(tags);
+}
+
+async function buildUniqueTitle(baseTitle: string) {
+  let attempt = 0;
+  let title = baseTitle.slice(0, 90).trim();
+
+  while (attempt < 50) {
+    const existing = await getNewsByTitle(title);
+    if (!existing) {
+      return title;
+    }
+
+    attempt += 1;
+    const suffix = ` (${attempt + 1})`;
+    title = `${baseTitle.slice(0, Math.max(1, 90 - suffix.length)).trim()}${suffix}`;
+  }
+
+  return `${baseTitle.slice(0, 70).trim()} ${Date.now()}`.slice(0, 90);
+}
+
+function buildImagePrompt(input: { title: string; dek: string | null; tags: string[] }) {
+  const tagText = input.tags.slice(0, 6).join(", ");
+  return [
+    "Create a photorealistic editorial cover image for a Ukraine news article.",
+    `Headline context: ${input.title}.`,
+    input.dek ? `Short brief: ${input.dek}.` : null,
+    tagText ? `Themes: ${tagText}.` : null,
+    "No text overlays, no watermarks, no logos, no flags as the main subject, cinematic natural light, realistic reportage style."
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function getUtcDayStartIso(date = new Date()) {
+  return new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 0, 0, 0, 0)
+  ).toISOString();
+}
+
+async function buildUniqueSlug(baseSlug: string) {
+  let attempt = 0;
+  let slug = baseSlug;
+
+  while (attempt < 50) {
+    const existing = await getNewsBySlug(slug);
+    if (!existing) {
+      return slug;
+    }
+
+    attempt += 1;
+    slug = `${baseSlug}-${attempt + 1}`;
+  }
+
+  return `${baseSlug}-${Date.now()}`;
+}
+
+export async function runFetchNewsJob() {
+  return ingestRssSources();
+}
+
+export async function runRewriteNewsJob() {
+  const pendingRaws = await listUnprocessedRawNews(10);
+
+  let createdDrafts = 0;
+  let topicsUpdated = 0;
+  let jobsQueued = 0;
+  let skipped = 0;
+
+  for (const raw of pendingRaws) {
+    const rewritten = await rewriteRawNews(raw);
+
+    if (!rewritten) {
+      skipped += 1;
+      continue;
+    }
+
+    const cleanedSnippet = stripHtml(raw.contentSnippet);
+    const slugBase = slugify(rewritten.title) || slugify(raw.title) || `news-${raw.id.slice(0, 8)}`;
+    const slug = await buildUniqueSlug(slugBase);
+    const title = await buildUniqueTitle(rewritten.title);
+    const tags = Array.from(new Set([...rewritten.tags, ...deriveTags(raw.title, cleanedSnippet)])).slice(0, 10);
+
+    await upsertNewsItem({
+      rawId: raw.id,
+      slug,
+      title,
+      dek: rewritten.dek,
+      summary: rewritten.summary.join("\n\n"),
+      keyPoints: rewritten.keyPoints,
+      whyItMatters: rewritten.whyItMatters.join("\n\n"),
+      tags,
+      sourceName: rewritten.sourceName,
+      sourceUrl: rewritten.sourceUrl,
+      status: "draft",
+      language: rewritten.language,
+      publishedAt: raw.publishedAt
+    });
+
+    createdDrafts += 1;
+
+    for (const tag of tags) {
+      await upsertTopic({
+        tag,
+        title: tag.charAt(0).toUpperCase() + tag.slice(1),
+        description: `Auto-generated topic placeholder for ${tag}.`
+      });
+      topicsUpdated += 1;
+    }
+
+    await enqueueJob({
+      type: "image",
+      payload: { rawId: raw.id, slug }
+    });
+    jobsQueued += 1;
+  }
+
+  return {
+    ok: true,
+    processed: pendingRaws.length,
+    createdDrafts,
+    topicsUpdated,
+    jobsQueued,
+    skipped
+  };
+}
+
+export async function runGenerateImagesJob() {
+  const draftItems = await listNewsItemsNeedingImageGeneration(10, 3, 60);
+  let requested = 0;
+  let skipped = 0;
+  let failed = 0;
+  let retried = 0;
+
+  for (const item of draftItems) {
+    if (!item.summary || !item.dek || !item.whyItMatters || item.tags.length === 0) {
+      skipped += 1;
+      continue;
+    }
+
+    const previousRequest = await getNewsImageByNewsItemId(item.id);
+    const attempts = (previousRequest?.attempts ?? 0) + 1;
+    if (previousRequest?.status === "requested") {
+      retried += 1;
+    }
+    const prompt = buildImagePrompt({
+      title: item.title,
+      dek: item.dek,
+      tags: item.tags
+    });
+
+    try {
+      const generation = await createLeonardoGeneration({ prompt });
+
+      await upsertNewsImageRequest({
+        newsItemId: item.id,
+        prompt,
+        generationId: generation.generationId,
+        status: "requested",
+        attempts
+      });
+
+      requested += 1;
+    } catch (error) {
+      failed += 1;
+      await upsertNewsImageRequest({
+        newsItemId: item.id,
+        prompt,
+        status: "failed",
+        attempts,
+        lastError: error instanceof Error ? error.message : "Unknown Leonardo error"
+      });
+    }
+  }
+
+  return { ok: true, processed: draftItems.length, requested, retried, skipped, failed };
+}
+
+export async function runPublishJob(limit?: number) {
+  const publishLimit = limit ?? getEnv().DAILY_PUBLISH_LIMIT ?? 10;
+  const publishedToday = await countPublishedNewsSince(getUtcDayStartIso());
+  const availableSlots = Math.max(publishLimit - publishedToday, 0);
+
+  if (availableSlots === 0) {
+    return {
+      ok: true,
+      processed: 0,
+      published: 0,
+      publishedToday,
+      availableSlots,
+      message: "Daily publish limit reached."
+    };
+  }
+
+  const readyItems = await listPublishReadyNews(availableSlots);
+  let published = 0;
+  let skipped = 0;
+
+  for (const item of readyItems) {
+    const publishedItem = await publishNewsItem(item.id);
+
+    if (!publishedItem) {
+      skipped += 1;
+      continue;
+    }
+
+    published += 1;
+  }
+
+  return {
+    ok: true,
+    processed: readyItems.length,
+    published,
+    skipped,
+    publishedToday,
+    availableSlots
+  };
+}
+
+export async function runAutopostJob() {
+  const env = getEnv();
+  const pending = await listPendingJobs(25);
+
+  if (env.AUTOPOST_DRY_RUN) {
+    return {
+      ok: true,
+      dryRun: true,
+      pendingJobs: pending.length,
+      message: "AUTOPOST_DRY_RUN is enabled; no publish action executed."
+    };
+  }
+
+  return runPublishJob(env.DAILY_PUBLISH_LIMIT);
+}
+
+export async function runFullPipeline() {
+  const fetchResult = await ingestRssSources();
+  const rewriteResult = await runRewriteNewsJob();
+  const imageResult = await runGenerateImagesJob();
+  const publishResult = await runPublishJob();
+
+  return {
+    ok: true,
+    steps: {
+      fetch: fetchResult,
+      rewrite: rewriteResult,
+      image: imageResult,
+      publish: publishResult
+    }
+  };
+}
+
+export async function markJobLifecycle<T>(
+  jobType: "fetch" | "rewrite" | "image" | "publish" | "autopost",
+  runner: () => Promise<T>
+) {
+  const job = await enqueueJob({
+    type: jobType,
+    status: "running",
+    attempts: 1,
+    payload: { startedAt: new Date().toISOString(), mode: "direct-execution" }
+  });
+
+  try {
+    const result = await runner();
+    await updateJob(job.id, {
+      status: "completed",
+      payload: { completedAt: new Date().toISOString(), result }
+    });
+    return { jobId: job.id, result };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown pipeline error";
+    await updateJob(job.id, {
+      status: "failed",
+      lastError: message
+    });
+    throw error;
+  }
+}
+
+export async function replayRewriteJob(rawId: string) {
+  const raw = await getRawNewsById(rawId);
+
+  if (!raw) {
+    return { ok: false, message: `Raw item ${rawId} not found.` };
+  }
+
+  const rewritten = await rewriteRawNews(raw);
+
+  if (!rewritten) {
+    return { ok: false, message: `Raw item ${rawId} does not contain enough source material.` };
+  }
+
+  const cleanedSnippet = stripHtml(raw.contentSnippet);
+  const slugBase = slugify(rewritten.title) || slugify(raw.title) || `news-${raw.id.slice(0, 8)}`;
+  const slug = await buildUniqueSlug(slugBase);
+  const title = await buildUniqueTitle(rewritten.title);
+  const tags = Array.from(new Set([...rewritten.tags, ...deriveTags(raw.title, cleanedSnippet)])).slice(0, 10);
+
+  const draft = await upsertNewsItem({
+    rawId: raw.id,
+    slug,
+    title,
+    dek: rewritten.dek,
+    summary: rewritten.summary.join("\n\n"),
+    keyPoints: rewritten.keyPoints,
+    whyItMatters: rewritten.whyItMatters.join("\n\n"),
+    tags,
+    sourceName: rewritten.sourceName,
+    sourceUrl: rewritten.sourceUrl,
+    status: "draft",
+    language: rewritten.language,
+    publishedAt: raw.publishedAt
+  });
+
+  return { ok: true, draftId: draft.id, rawId: raw.id, slug: draft.slug };
+}
+
+export async function handleLeonardoWebhook(payload: Record<string, unknown>) {
+  const parsed = extractLeonardoWebhookData(payload);
+
+  if (!parsed.generationId) {
+    return { ok: false, status: "ignored", reason: "Missing generation id." };
+  }
+
+  const imageRecord = await getNewsImageByGenerationId(parsed.generationId);
+
+  if (!imageRecord) {
+    return { ok: false, status: "ignored", reason: "Unknown generation id." };
+  }
+
+  if (parsed.status && ["failed", "error"].includes(parsed.status.toLowerCase())) {
+    await failNewsImage({
+      generationId: parsed.generationId,
+      error: parsed.errorMessage || "Leonardo generation failed",
+      webhookPayload: payload
+    });
+
+    return { ok: false, status: "failed", generationId: parsed.generationId };
+  }
+
+  if (!parsed.imageUrl) {
+    await failNewsImage({
+      generationId: parsed.generationId,
+      error: "Leonardo webhook did not include an image URL",
+      webhookPayload: payload
+    });
+
+    return { ok: false, status: "failed", generationId: parsed.generationId };
+  }
+
+  const stored = await saveRemoteImage(parsed.imageUrl, imageRecord.newsItemId);
+
+  await completeNewsImage({
+    generationId: parsed.generationId,
+    remoteImageUrl: parsed.imageUrl,
+    localPath: stored.filePath,
+    localImageUrl: stored.publicUrl,
+    webhookPayload: payload
+  });
+
+  await updateNewsItemAssets(imageRecord.newsItemId, {
+    coverImageUrl: stored.publicUrl,
+    ogImageUrl: stored.publicUrl
+  });
+
+  await enqueueJob({
+    type: "publish",
+    payload: {
+      newsItemId: imageRecord.newsItemId,
+      generationId: parsed.generationId,
+      status: "image-complete"
+    }
+  });
+
+  return {
+    ok: true,
+    status: "completed",
+    generationId: parsed.generationId,
+    newsItemId: imageRecord.newsItemId,
+    publicUrl: stored.publicUrl
+  };
+}

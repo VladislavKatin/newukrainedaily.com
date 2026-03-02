@@ -1,0 +1,59 @@
+import type { Metadata } from "next";
+import "@/app/globals.css";
+import { SiteFooter } from "@/components/site-footer";
+import { SiteHeader } from "@/components/site-header";
+import { validateEnv } from "@/lib/env";
+import { absoluteUrl, getBaseUrl, siteConfig } from "@/lib/site";
+
+validateEnv();
+
+export const metadata: Metadata = {
+  metadataBase: new URL(getBaseUrl()),
+  title: {
+    default: siteConfig.name,
+    template: `%s | ${siteConfig.name}`
+  },
+  description: siteConfig.description,
+  alternates: {
+    canonical: "/"
+  },
+  openGraph: {
+    title: siteConfig.name,
+    description: siteConfig.description,
+    url: absoluteUrl("/"),
+    siteName: siteConfig.name,
+    locale: siteConfig.locale,
+    type: "website",
+    images: [
+      {
+        url: siteConfig.defaultOgImage,
+        width: 1200,
+        height: 630,
+        alt: siteConfig.name
+      }
+    ]
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: siteConfig.name,
+    description: siteConfig.description,
+    images: [siteConfig.defaultOgImage]
+  }
+};
+
+export default function RootLayout({
+  children
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en">
+      <body className="flex min-h-screen flex-col">
+        <SiteHeader />
+        <main className="flex-1">{children}</main>
+        <SiteFooter />
+      </body>
+    </html>
+  );
+}
+

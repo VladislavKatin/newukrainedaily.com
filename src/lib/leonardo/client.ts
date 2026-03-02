@@ -1,0 +1,76 @@
+import "server-only";
+import { getEnv, requireEnv } from "@/lib/env";
+
+const LEONARDO_API_URL = "https://cloud.leonardo.ai/api/rest/v1/generations";
+const DEFAULT_MODEL_ID = "6bef9f1b-29cb-40c7-b9df-32b51c1f67d3";
+
+type LeonardoCreateRequest = {
+  prompt: string;
+};
+
+function extractGenerationId(payload: unknown): string | null {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+
+  const record = payload as Record<string, unknown>;
+  const candidates = [
+    record.generationId,
+    (record.sdGenerationJob as Record<string, unknown> | undefined)?.generationId,
+    (record.sdGenerationJob as Record<string, unknown> | undefined)?.id
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === "string" && candidate.length > 0) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
+export async function createLeonardoGeneration(input: LeonardoCreateRequest) {
+  const env = getEnv();
+
+  if (!env.PUBLIC_BASE_URL || !env.LEONARDO_WEBHOOK_SECRET) {
+    console.warn(
+      "[leonardo] PUBLIC_BASE_URL or LEONARDO_WEBHOOK_SECRET is missing. Leonardo webhook callbacks are configured on the production API key, not per request."
+    );
+  }
+
+  const response = await fetch(LEONARDO_API_URL, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      accept: "application/json",
+      authorization: `Bearer ${requireEnv("LEONARDO_API_KEY")}`
+    },
+    body: JSON.stringify({
+      prompt: input.prompt,
+      modelId: DEFAULT_MODEL_ID,
+      width: 1536,
+      height: 1024,
+      num_images: 1,
+      presetStyle: "CINEMATIC",
+      photoReal: true
+    }),
+    cache: "no-store"
+  });
+
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(`Leonardo create generation failed: ${response.status} ${message}`);
+  }
+
+  const payload = (await response.json()) as unknown;
+  const generationId = extractGenerationId(payload);
+
+  if (!generationId) {
+    throw new Error("Leonardo response did not include a generation id.");
+  }
+
+  return {
+    generationId,
+    payload
+  };
+}
