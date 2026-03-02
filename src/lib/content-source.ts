@@ -289,14 +289,14 @@ function createDatabaseContentRepository(): ContentRepository {
 }
 
 export async function getContentRepository(): Promise<ContentRepository> {
-  if (await isDatabaseAvailable()) {
-    return createDatabaseContentRepository();
+  const env = getEnv();
+
+  if (env.NODE_ENV !== "production" && env.LOCAL_PREVIEW_CONTENT) {
+    return createPreviewContentRepository();
   }
 
-  const env = getEnv();
-  if (env.NODE_ENV !== "production" && env.LOCAL_PREVIEW_CONTENT) {
-    console.warn("[content] Database unavailable, using local preview content.");
-    return createPreviewContentRepository();
+  if (await isDatabaseAvailable()) {
+    return createDatabaseContentRepository();
   }
 
   return createEmptyContentRepository();

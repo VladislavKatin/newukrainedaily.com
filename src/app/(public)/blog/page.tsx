@@ -36,8 +36,8 @@ export default async function BlogPage({ searchParams }: Props) {
     <>
       <PageShell
         eyebrow="Blog"
-        title="Blog list placeholder"
-        description="Use this section for evergreen explainers, editorial reports, and structured topic support."
+        title="Reports and analysis"
+        description="Editorial reports, explainers, and topic-based analysis."
       />
       <div className="container-shell pb-12 sm:pb-16">
         <div className="grid gap-6">

@@ -51,7 +51,7 @@ export default async function BlogArticlePage({ params }: Props) {
       <ArticleJsonLd entry={entry} />
       <article className="panel mx-auto max-w-3xl p-8 sm:p-12">
         <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">
-          Blog post placeholder
+          Blog
         </p>
         <h1 className="mt-4 text-4xl font-semibold tracking-tight text-ink">{entry.title}</h1>
         <p className="mt-5 text-lg leading-8 text-slate-600">{entry.description}</p>

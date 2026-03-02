@@ -15,9 +15,9 @@ export function SiteHeader() {
       <div className="container-shell flex flex-col gap-4 py-5 sm:flex-row sm:items-center sm:justify-between">
         <Link href="/" className="max-w-sm">
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">
-            Ukraine Support
+            newukrainedaily.com
           </p>
-          <p className="mt-1 text-lg font-semibold text-ink">SEO Machine</p>
+          <p className="mt-1 text-lg font-semibold text-ink">New Ukraine Daily</p>
         </Link>
         <nav className="flex flex-wrap gap-3 text-sm font-medium text-slate-600">
           {navItems.map((item) => (
@@ -34,4 +34,3 @@ export function SiteHeader() {
     </header>
   );
 }
-

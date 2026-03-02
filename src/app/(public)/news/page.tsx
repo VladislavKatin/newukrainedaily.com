@@ -36,8 +36,8 @@ export default async function NewsPage({ searchParams }: Props) {
     <>
       <PageShell
         eyebrow="News"
-        title="News list placeholder"
-        description="This route is ready for automated article ingestion, review, and publication."
+        title="Latest news"
+        description="Recent Ukraine coverage from official, institutional, and editorial sources."
       />
       <div className="container-shell pb-12 sm:pb-16">
         <div className="grid gap-6">

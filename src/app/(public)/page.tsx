@@ -6,7 +6,7 @@ import { buildMetadata } from "@/lib/seo";
 export const metadata = buildMetadata({
   title: "Home",
   description:
-    "SEO-first homepage with placeholders for latest news, support pathways, topics, and reports.",
+    "Latest Ukraine news, topic archives, support resources, and reports from New Ukraine Daily.",
   path: "/"
 });
 
@@ -21,14 +21,14 @@ export default async function HomePage() {
     <div className="container-shell py-12 sm:py-16">
       <section className="panel p-8 sm:p-12">
         <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">
-          SEO Publishing Starter
+          newukrainedaily.com
         </p>
         <h1 className="mt-4 max-w-3xl text-4xl font-semibold tracking-tight text-ink sm:text-6xl">
-          Built for fast content, clean metadata, and future automation.
+          Daily Ukraine coverage, support resources, and topic-based reporting.
         </h1>
         <p className="mt-6 max-w-3xl text-base leading-8 text-slate-600">
-          This starter separates breaking news from blog content, keeps pages lightweight, and
-          ships with cron-ready API routes for future ingestion and publishing workflows.
+          New Ukraine Daily brings together verified updates, topical archives, support pathways,
+          and editorial reporting in one lightweight publication.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
@@ -53,7 +53,7 @@ export default async function HomePage() {
               Latest News
             </p>
             <h2 className="mt-3 text-3xl font-semibold tracking-tight text-ink">
-              News pipeline placeholder
+              Latest updates
             </h2>
           </div>
           <Link href="/news" className="text-sm font-semibold text-brand">
@@ -65,8 +65,7 @@ export default async function HomePage() {
             latestNews.map((entry) => <EntryCard key={entry.slug} entry={entry} />)
           ) : (
             <div className="panel p-6 text-sm leading-6 text-slate-600">
-              No published news is available yet. Connect the database and run the ingestion
-              pipeline to populate this section.
+              No published news is available right now.
             </div>
           )}
         </div>
@@ -78,7 +77,7 @@ export default async function HomePage() {
             Support Ukraine
           </p>
           <h2 className="mt-3 text-3xl font-semibold tracking-tight text-ink">
-            Donation and action hub placeholder
+            Ways to help
           </h2>
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
             {[
@@ -94,8 +93,8 @@ export default async function HomePage() {
           </div>
         </div>
         <div className="panel p-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">Topics</p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-ink">Topic archives</h2>
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">Topics</p>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-ink">Topics</h2>
           <div className="mt-6 flex flex-wrap gap-3">
             {topics.length > 0 ? (
               topics.map((tag) => (
@@ -121,7 +120,7 @@ export default async function HomePage() {
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">Reports</p>
             <h2 className="mt-3 text-3xl font-semibold tracking-tight text-ink">
-              Blog and report placeholder
+              Reports and analysis
             </h2>
           </div>
           <Link href="/blog" className="text-sm font-semibold text-brand">
@@ -133,8 +132,7 @@ export default async function HomePage() {
             reports.map((entry) => <EntryCard key={entry.slug} entry={entry} />)
           ) : (
             <div className="panel p-6 text-sm leading-6 text-slate-600">
-              No published blog posts are available yet. Add content in the database to activate
-              this archive.
+              No published reports are available right now.
             </div>
           )}
         </div>

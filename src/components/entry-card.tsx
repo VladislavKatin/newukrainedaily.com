@@ -33,7 +33,7 @@ export function EntryCard({ entry }: { entry: ContentEntry }) {
         href={`/${entry.type}/${entry.slug}`}
         className="mt-6 inline-flex rounded-full bg-ink px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand"
       >
-        Open placeholder
+        Read more
       </Link>
     </article>
   );
