@@ -1,17 +1,21 @@
 import { getEntriesByType } from "@/lib/content";
 import { absoluteUrl, siteConfig } from "@/lib/site";
 
+function wrapCdata(value: string) {
+  return `<![CDATA[${value.replaceAll("]]>", "]]]]><![CDATA[>")}]]>`;
+}
+
 export async function GET() {
   const entries = await getEntriesByType("news");
   const itemsXml = entries
     .slice(0, 25)
     .map(
       (entry) => `<item>
-      <title><![CDATA[${entry.title}]]></title>
+      <title>${wrapCdata(entry.title)}</title>
       <link>${absoluteUrl(`/news/${entry.slug}`)}</link>
       <guid>${absoluteUrl(`/news/${entry.slug}`)}</guid>
       <pubDate>${new Date(entry.publishedAt).toUTCString()}</pubDate>
-      <description><![CDATA[${entry.description}]]></description>
+      <description>${wrapCdata(entry.description)}</description>
     </item>`
     )
     .join("\n");

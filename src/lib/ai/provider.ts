@@ -14,6 +14,9 @@ export type RewriteProvider = {
   rewriteNews(input: RewriteInput): Promise<RewriteOutput | null>;
 };
 
+const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
+const DEFAULT_OPENAI_MODEL = "gpt-4o-mini";
+
 function words(text: string) {
   return text
     .toLowerCase()
@@ -137,6 +140,86 @@ class StubRewriteProvider implements RewriteProvider {
   }
 }
 
+function getOpenAiModel(provider: string) {
+  const [, configuredModel] = provider.split(":", 2);
+  return configuredModel || DEFAULT_OPENAI_MODEL;
+}
+
+function buildOpenAiPrompt(input: RewriteInput) {
+  return [
+    "Rewrite the source into a strict JSON object for an English-language news site.",
+    "Rules:",
+    "- Do not add facts not present in the source.",
+    "- Do not copy more than 12 consecutive words from the source.",
+    "- Keep attribution explicit.",
+    "- If the source is too thin, return null.",
+    "- title must be unique-ready and at most 90 characters.",
+    "- dek must be one line.",
+    "- summary must contain 2 to 4 paragraphs.",
+    "- keyPoints must contain 3 to 5 bullets.",
+    "- whyItMatters must contain 1 to 2 paragraphs.",
+    "- tags must contain 5 to 10 concise lowercase tags.",
+    "- sourceName and sourceUrl must be preserved.",
+    "- language must be en.",
+    "",
+    "Return JSON with exactly these keys:",
+    "title, dek, summary, keyPoints, whyItMatters, tags, sourceName, sourceUrl, language",
+    "",
+    `Source name: ${input.sourceName}`,
+    `Source url: ${input.sourceUrl}`,
+    "Source text:",
+    input.sourceText
+  ].join("\n");
+}
+
+class OpenAiRewriteProvider implements RewriteProvider {
+  constructor(private readonly apiKey: string, private readonly model: string) {}
+
+  async rewriteNews(input: RewriteInput) {
+    const response = await fetch(OPENAI_API_URL, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${this.apiKey}`
+      },
+      body: JSON.stringify({
+        model: this.model,
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a strict newsroom rewrite assistant. Output valid JSON only. If source material is too thin, output null."
+          },
+          {
+            role: "user",
+            content: buildOpenAiPrompt(input)
+          }
+        ]
+      }),
+      cache: "no-store"
+    });
+
+    if (!response.ok) {
+      const message = await response.text();
+      throw new Error(`OpenAI rewrite failed: ${response.status} ${message}`);
+    }
+
+    const payload = (await response.json()) as {
+      choices?: Array<{ message?: { content?: string | null } }>;
+    };
+
+    const content = payload.choices?.[0]?.message?.content?.trim();
+
+    if (!content || content === "null") {
+      return null;
+    }
+
+    const parsed = JSON.parse(content) as RewriteOutput;
+    return rewriteOutputSchema.parse(parsed);
+  }
+}
+
 export function getRewriteProvider(): RewriteProvider {
   const env = getEnv();
 
@@ -144,6 +227,13 @@ export function getRewriteProvider(): RewriteProvider {
     return new StubRewriteProvider();
   }
 
-  return new StubRewriteProvider();
-}
+  if (env.AI_PROVIDER.startsWith("openai")) {
+    if (!env.AI_API_KEY) {
+      throw new Error("AI_API_KEY is required when AI_PROVIDER is set to openai.");
+    }
 
+    return new OpenAiRewriteProvider(env.AI_API_KEY, getOpenAiModel(env.AI_PROVIDER));
+  }
+
+  throw new Error(`Unsupported AI_PROVIDER: ${env.AI_PROVIDER}`);
+}

@@ -102,56 +102,69 @@ export async function ingestRssSources() {
 
   let scannedItems = 0;
   let newRecords = 0;
+  let failedSources = 0;
 
   for (const source of sources) {
-    const response = await fetch(source.url, {
-      method: "GET",
-      headers: {
-        "User-Agent": "newukrainedaily.com/0.1"
-      },
-      cache: "no-store"
-    });
-
-    if (!response.ok) {
-      console.error(`[ingestion] source=${source.name} status=${response.status} url=${source.url}`);
-      continue;
-    }
-
-    const xml = await response.text();
-    const items = extractItems(xml);
-    scannedItems += items.length;
-
-    let sourceNewRecords = 0;
-
-    for (const item of items) {
-      const created = await createRawNews({
-        sourceId: source.id,
-        url: item.url,
-        title: item.title,
-        contentSnippet: item.contentSnippet,
-        publishedAt: item.publishedAt,
-        hash: buildHash(item)
+    try {
+      const response = await fetch(source.url, {
+        method: "GET",
+        headers: {
+          "User-Agent": "newukrainedaily.com/0.1"
+        },
+        cache: "no-store",
+        signal: AbortSignal.timeout(15000)
       });
 
-      if (created) {
-        newRecords += 1;
-        sourceNewRecords += 1;
+      if (!response.ok) {
+        failedSources += 1;
+        console.error(`[ingestion] source=${source.name} status=${response.status} url=${source.url}`);
+        continue;
       }
-    }
 
-    console.log(
-      `[ingestion] source=${source.name} items=${items.length} new=${sourceNewRecords}`
-    );
+      const xml = await response.text();
+      const items = extractItems(xml);
+      scannedItems += items.length;
+
+      let sourceNewRecords = 0;
+
+      for (const item of items) {
+        const created = await createRawNews({
+          sourceId: source.id,
+          url: item.url,
+          title: item.title,
+          contentSnippet: item.contentSnippet,
+          publishedAt: item.publishedAt,
+          hash: buildHash(item)
+        });
+
+        if (created) {
+          newRecords += 1;
+          sourceNewRecords += 1;
+        }
+      }
+
+      console.log(
+        `[ingestion] source=${source.name} items=${items.length} new=${sourceNewRecords}`
+      );
+    } catch (error) {
+      failedSources += 1;
+      console.error(
+        `[ingestion] source=${source.name} failed=${
+          error instanceof Error ? error.message : "Unknown error"
+        } url=${source.url}`
+      );
+    }
   }
 
   console.log(
-    `[ingestion] fetch-news completed: sources=${sources.length} scanned=${scannedItems} new=${newRecords}`
+    `[ingestion] fetch-news completed: sources=${sources.length} scanned=${scannedItems} new=${newRecords} failed=${failedSources}`
   );
 
   return {
     ok: true,
     sources: sources.length,
     scannedItems,
-    newRecords
+    newRecords,
+    failedSources
   };
 }

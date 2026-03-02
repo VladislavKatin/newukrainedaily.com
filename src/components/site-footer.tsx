@@ -7,8 +7,8 @@ export function SiteFooter() {
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">About</p>
           <p className="mt-3 text-sm leading-6 text-slate-600">
-            SEO-first publishing shell for Ukraine-focused news, blog posts, support pages, and
-            future automation.
+            Independent Ukraine-focused news, editorial analysis, topic archives, and support
+            resources in one clear publication.
           </p>
         </div>
         <div>
@@ -31,4 +31,3 @@ export function SiteFooter() {
     </footer>
   );
 }
-

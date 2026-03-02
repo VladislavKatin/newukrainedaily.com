@@ -20,7 +20,7 @@ npm run dev
 
 Open `http://localhost:3000`.
 
-If your local Postgres database is unavailable, the development server can fall back to local preview content when `LOCAL_PREVIEW_CONTENT=true`. This keeps the site visually populated for local UI review without changing production behavior.
+If your local Postgres database is unavailable, the development server can fall back to local preview content when `LOCAL_PREVIEW_CONTENT=true`. Production does not use preview content when the database is empty.
 
 ## Local launcher
 
@@ -118,7 +118,7 @@ Stop it with `Ctrl+C`.
 2. Add the environment variables from `.env.example` in `Project Settings -> Environment Variables`.
 3. Set `PUBLIC_BASE_URL=https://newukrainedaily.com`.
 4. Deploy the project.
-5. Review scheduled jobs in `Project Settings -> Cron Jobs` and execution logs in the `Functions` / runtime logs view.
+5. Review scheduled jobs in `Project Settings -> Cron Jobs` and execution logs in the `Functions` / runtime logs view. The default Vercel config schedules `fetch-news`, `rewrite-news`, `generate-images`, and `publish` in sequence.
 
 ## Production environment
 
@@ -220,7 +220,7 @@ curl http://localhost:3000/api/internal/status \
 - `POST /api/webhooks/leonardo` is the async callback endpoint that finalizes image storage and updates `news_items`.
 - Leonardo is best used with webhook callbacks rather than polling because image generation is asynchronous.
 - Leonardo callback delivery is configured on the Leonardo production API key, not per generation request.
-- The storage abstraction prefers Supabase Storage when `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_STORAGE_BUCKET`, and `SUPABASE_STORAGE_PUBLIC_URL` are configured; otherwise it falls back to `public/generated`.
+- The storage abstraction prefers Supabase Storage when `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_STORAGE_BUCKET`, and `SUPABASE_STORAGE_PUBLIC_URL` are configured. For production durability, configure this path instead of relying on local filesystem writes.
 - Configure the Leonardo webhook/callback URL as:
 
 ```text

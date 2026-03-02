@@ -321,8 +321,8 @@ export async function getContentRepository(): Promise<ContentRepository> {
 
   if (databaseAvailability.ok) {
     if (!(await hasPublishedContent())) {
-      console.warn("[content] Database is available but has no published entries. Using built-in fallback content.");
-      return createPreviewContentRepository();
+      console.warn("[content] Database is available but has no published entries.");
+      return createEmptyContentRepository();
     }
 
     return createDatabaseContentRepository();
