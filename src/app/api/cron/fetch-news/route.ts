@@ -1,12 +1,8 @@
-import { authorizeCron, cronStatus, runCronStep } from "@/lib/cron";
+import { authorizeCron, runCronStep } from "@/lib/cron";
 import { ingestRssSources } from "@/lib/ingestion/rss";
 import { markJobLifecycle } from "@/lib/pipeline";
 
-export function GET() {
-  return cronStatus("fetch-news");
-}
-
-export async function POST(request: Request) {
+async function handler(request: Request) {
   const unauthorized = authorizeCron(request);
 
   if (unauthorized) {
@@ -16,4 +12,12 @@ export async function POST(request: Request) {
   return runCronStep("fetch-news", "fetch", () =>
     markJobLifecycle("fetch", ingestRssSources)
   );
+}
+
+export async function GET(request: Request) {
+  return handler(request);
+}
+
+export async function POST(request: Request) {
+  return handler(request);
 }
