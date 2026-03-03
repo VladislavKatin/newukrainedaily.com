@@ -338,7 +338,8 @@ export async function getContentRepository(): Promise<ContentRepository> {
       return createEmptyContentRepository();
     }
 
-    throw new Error("Configured database is unreachable.");
+    console.error("[content] Database is unreachable during runtime. Returning empty content repository.");
+    return createEmptyContentRepository();
   }
 
   if (env.LOCAL_PREVIEW_CONTENT) {
