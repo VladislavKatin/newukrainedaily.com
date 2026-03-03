@@ -12,6 +12,23 @@ export function authorizeCron(request: Request) {
   return null;
 }
 
+export function methodNotAllowed(route: string) {
+  return NextResponse.json(
+    {
+      ok: false,
+      route,
+      error: "Method Not Allowed",
+      message: "Use POST with Authorization: Bearer <CRON_SECRET>."
+    },
+    {
+      status: 405,
+      headers: {
+        Allow: "POST"
+      }
+    }
+  );
+}
+
 export async function runCronStep<T>(
   route: string,
   type: "fetch" | "rewrite" | "image" | "publish" | "autopost",

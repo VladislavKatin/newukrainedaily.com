@@ -1,5 +1,9 @@
-import { authorizeCron } from "@/lib/cron";
+import { authorizeCron, methodNotAllowed } from "@/lib/cron";
 import { enqueueJob, getNextFreeTopic } from "@/lib/postgres-repository";
+
+export function GET() {
+  return methodNotAllowed("tick");
+}
 
 export async function POST(request: Request) {
   const unauthorized = authorizeCron(request);
