@@ -3,7 +3,6 @@ import { Pool, type PoolClient, type QueryResult, type QueryResultRow } from "pg
 import { getDatabaseUrl } from "@/lib/env";
 
 declare global {
-  // eslint-disable-next-line no-var
   var __postgresPool__: Pool | undefined;
 }
 
