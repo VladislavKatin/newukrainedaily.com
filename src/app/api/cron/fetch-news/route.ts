@@ -1,8 +1,9 @@
+import { NextResponse } from "next/server";
 import { authorizeCron, runCronStep } from "@/lib/cron";
 import { ingestRssSources } from "@/lib/ingestion/rss";
 import { markJobLifecycle } from "@/lib/pipeline";
 
-async function handler(request: Request) {
+async function runFetch(request: Request) {
   const unauthorized = authorizeCron(request);
 
   if (unauthorized) {
@@ -15,9 +16,18 @@ async function handler(request: Request) {
 }
 
 export async function GET(request: Request) {
-  return handler(request);
+  try {
+    return await runFetch(request);
+  } catch (error) {
+    console.error("fetch-news error:", error);
+
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Unknown fetch-news error" },
+      { status: 500 }
+    );
+  }
 }
 
 export async function POST(request: Request) {
-  return handler(request);
+  return GET(request);
 }
