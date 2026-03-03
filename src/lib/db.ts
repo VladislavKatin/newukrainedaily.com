@@ -9,6 +9,7 @@ declare global {
 
 function createPool() {
   const connectionString = getDatabaseUrl();
+  console.log("DB host check:", connectionString.split("@")[1]?.split("/")[0] ?? "unknown");
   const isLocalDatabase =
     connectionString.includes("@localhost") ||
     connectionString.includes("@127.0.0.1") ||
