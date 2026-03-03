@@ -10,17 +10,13 @@ declare global {
 function createPool() {
   const connectionString = getDatabaseUrl();
   console.log("DB host check:", connectionString.split("@")[1]?.split("/")[0] ?? "unknown");
-  const isLocalDatabase =
-    connectionString.includes("@localhost") ||
-    connectionString.includes("@127.0.0.1") ||
-    connectionString.includes("@[::1]");
 
   return new Pool({
     connectionString,
     max: 5,
-    connectionTimeoutMillis: 1500,
-    idleTimeoutMillis: 5000,
-    ssl: isLocalDatabase ? undefined : { rejectUnauthorized: false }
+    connectionTimeoutMillis: 10000,
+    idleTimeoutMillis: 30000,
+    ssl: { rejectUnauthorized: false }
   });
 }
 
