@@ -1,8 +1,8 @@
-import { authorizeCron, methodNotAllowed } from "@/lib/cron";
+import { authorizeCron, cronStatus } from "@/lib/cron";
 import { enqueueJob, getNextFreeTopic } from "@/lib/postgres-repository";
 
 export function GET() {
-  return methodNotAllowed("tick");
+  return cronStatus("tick");
 }
 
 export async function POST(request: Request) {

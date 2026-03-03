@@ -1,8 +1,8 @@
-import { authorizeCron, methodNotAllowed, runCronStep } from "@/lib/cron";
+import { authorizeCron, cronStatus, runCronStep } from "@/lib/cron";
 import { markJobLifecycle, runGenerateImagesJob } from "@/lib/pipeline";
 
 export function GET() {
-  return methodNotAllowed("generate-images");
+  return cronStatus("generate-images");
 }
 
 export async function POST(request: Request) {

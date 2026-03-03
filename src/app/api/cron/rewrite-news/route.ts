@@ -1,8 +1,8 @@
-import { authorizeCron, methodNotAllowed, runCronStep } from "@/lib/cron";
+import { authorizeCron, cronStatus, runCronStep } from "@/lib/cron";
 import { markJobLifecycle, runRewriteNewsJob } from "@/lib/pipeline";
 
 export function GET() {
-  return methodNotAllowed("rewrite-news");
+  return cronStatus("rewrite-news");
 }
 
 export async function POST(request: Request) {

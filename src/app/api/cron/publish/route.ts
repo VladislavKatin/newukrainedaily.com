@@ -1,8 +1,8 @@
-import { authorizeCron, methodNotAllowed, runCronStep } from "@/lib/cron";
+import { authorizeCron, cronStatus, runCronStep } from "@/lib/cron";
 import { markJobLifecycle, runPublishJob } from "@/lib/pipeline";
 
 export function GET() {
-  return methodNotAllowed("publish");
+  return cronStatus("publish");
 }
 
 export async function POST(request: Request) {
