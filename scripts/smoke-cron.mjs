@@ -29,15 +29,17 @@ async function requestJson(url, init) {
   }
 }
 
-async function runStep(baseUrl, secret, route) {
+async function runStep(baseUrl, secret, route, body) {
   const url = `${baseUrl}${route}`;
   console.log(`\n[smoke] POST ${url}`);
 
   const result = await requestJson(url, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${secret}`
-    }
+      Authorization: `Bearer ${secret}`,
+      ...(body ? { "Content-Type": "application/json" } : {})
+    },
+    ...(body ? { body: JSON.stringify(body) } : {})
   });
 
   console.log(`[smoke] status=${result.status}`);
@@ -79,12 +81,9 @@ async function main() {
 
   await fetchStatus(baseUrl, cronSecret, "before");
 
-  for (const route of [
-    "/api/cron/fetch-news",
-    "/api/cron/rewrite-news",
-    "/api/cron/generate-images",
-    "/api/cron/publish"
-  ]) {
+  await runStep(baseUrl, cronSecret, "/api/cron/generate", { count: 1 });
+
+  for (const route of ["/api/cron/fetch-news", "/api/cron/rewrite-news", "/api/cron/generate-images", "/api/cron/publish"]) {
     await runStep(baseUrl, cronSecret, route);
   }
 

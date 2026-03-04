@@ -143,17 +143,20 @@ async function buildUniqueSlug(baseSlug: string) {
   return `${baseSlug}-${Date.now()}`;
 }
 
-export async function runFetchNewsJob() {
+export async function runFetchNewsJob(options?: {
+  sourceLimit?: number;
+  itemsPerSourceLimit?: number;
+}) {
   const limits = getPipelineLimits();
   return ingestRssSources({
-    sourceLimit: limits.fetchSourcesLimit,
-    itemsPerSourceLimit: limits.fetchItemsPerSourceLimit
+    sourceLimit: options?.sourceLimit ?? limits.fetchSourcesLimit,
+    itemsPerSourceLimit: options?.itemsPerSourceLimit ?? limits.fetchItemsPerSourceLimit
   });
 }
 
-export async function runRewriteNewsJob() {
+export async function runRewriteNewsJob(limitOverride?: number) {
   const limits = getPipelineLimits();
-  const pendingRaws = await listUnprocessedRawNews(limits.rewriteBatchLimit);
+  const pendingRaws = await listUnprocessedRawNews(limitOverride ?? limits.rewriteBatchLimit);
 
   let createdDrafts = 0;
   let topicsUpdated = 0;
@@ -220,10 +223,10 @@ export async function runRewriteNewsJob() {
   };
 }
 
-export async function runGenerateImagesJob() {
+export async function runGenerateImagesJob(limitOverride?: number) {
   const limits = getPipelineLimits();
   const draftItems = await listNewsItemsNeedingImageGeneration(
-    limits.imageBatchLimit,
+    limitOverride ?? limits.imageBatchLimit,
     limits.imageMaxAttempts,
     limits.imageStaleMinutes
   );
@@ -336,6 +339,50 @@ export async function runAutopostJob() {
   }
 
   return runPublishJob(env.DAILY_PUBLISH_LIMIT);
+}
+
+export async function runGeneratePipeline(count = 1) {
+  const normalizedCount = Math.max(1, Math.min(10, Math.floor(count)));
+  const limits = getPipelineLimits();
+
+  console.log(`[generate] starting pipeline count=${normalizedCount}`);
+
+  const fetchResult = await markJobLifecycle("fetch", () =>
+    runFetchNewsJob({
+      sourceLimit: limits.fetchSourcesLimit,
+      itemsPerSourceLimit: normalizedCount
+    })
+  );
+  console.log(
+    `[generate] fetch completed job=${fetchResult.jobId} new=${fetchResult.result.newRecords}`
+  );
+
+  const rewriteResult = await markJobLifecycle("rewrite", () => runRewriteNewsJob(normalizedCount));
+  console.log(
+    `[generate] rewrite completed job=${rewriteResult.jobId} drafts=${rewriteResult.result.createdDrafts}`
+  );
+
+  const imageResult = await markJobLifecycle("image", () => runGenerateImagesJob(normalizedCount));
+  console.log(
+    `[generate] image completed job=${imageResult.jobId} requested=${imageResult.result.requested}`
+  );
+
+  const publishResult = await markJobLifecycle("publish", () => runPublishJob(normalizedCount));
+  console.log(
+    `[generate] publish completed job=${publishResult.jobId} published=${publishResult.result.published}`
+  );
+
+  return {
+    ok: true,
+    requested: normalizedCount,
+    generated: publishResult.result.published,
+    steps: {
+      fetch: fetchResult.result,
+      rewrite: rewriteResult.result,
+      image: imageResult.result,
+      publish: publishResult.result
+    }
+  };
 }
 
 export async function runFullPipeline() {

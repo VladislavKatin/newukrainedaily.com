@@ -1,6 +1,6 @@
 # New Ukraine Daily
 
-SEO-focused Next.js publishing stack for `newukrainedaily.com` with separate `/news` and `/blog` sections, protected cron endpoints, Leonardo webhook handling, and Vercel deployment scaffolding.
+SEO-focused Next.js publishing stack for `www.newukrainedaily.com` with separate `/news` and `/blog` sections, protected automation endpoints, Leonardo webhook handling, and Vercel deployment scaffolding.
 
 ## Stack
 
@@ -116,16 +116,16 @@ Stop it with `Ctrl+C`.
 
 1. Import `https://github.com/asdkaasdka1/newukrainedaily.com` into Vercel under team `asdkaasdka1s-projects`.
 2. Add the environment variables from `.env.example` in `Project Settings -> Environment Variables`.
-3. Set `PUBLIC_BASE_URL=https://newukrainedaily.com`.
+3. Set `PUBLIC_BASE_URL=https://www.newukrainedaily.com`.
 4. Deploy the project.
-5. Review scheduled jobs in `Project Settings -> Cron Jobs` and execution logs in the `Functions` / runtime logs view. The default Vercel config schedules `fetch-news`, `rewrite-news`, `generate-images`, and `publish` in sequence.
+5. Vercel Cron is intentionally disabled on Hobby. Use GitHub Actions to call `POST /api/cron/generate` instead.
 
 ## Production environment
 
 Set these variables in Vercel and in your local `.env.local` when testing production integrations:
 
 ```bash
-PUBLIC_BASE_URL=https://newukrainedaily.com
+PUBLIC_BASE_URL=https://www.newukrainedaily.com
 CRON_SECRET=
 DATABASE_URL=
 SUPABASE_DATABASE_URL=
@@ -166,6 +166,27 @@ DAILY_PUBLISH_LIMIT=10
 AUTOPOST_DRY_RUN=true
 ```
 
+## GitHub Actions scheduler
+
+This project does not use Vercel Cron in production on Hobby plans.
+
+Instead:
+
+- `POST /api/cron/generate` runs one article-generation pipeline per call by default.
+- `.github/workflows/generate.yml` calls that endpoint 10 times per day.
+- GitHub Actions provides the external scheduler for free.
+
+Add these GitHub repository secrets:
+
+- `CRON_URL`
+  - Example: `https://www.newukrainedaily.com/api/cron/generate`
+- `CRON_SECRET`
+  - Must match the same `CRON_SECRET` configured in Vercel.
+
+Required Vercel env for this protected endpoint:
+
+- `CRON_SECRET`
+
 ## Supabase schema
 
 1. Create a Supabase project and copy the Postgres connection string into `DATABASE_URL`.
@@ -198,18 +219,18 @@ Target Supabase project:
 
 Target production domain:
 
-- `https://newukrainedaily.com`
+- `https://www.newukrainedaily.com`
 
 Recommended deployment flow:
 
 1. Add `newukrainedaily.com` and `www.newukrainedaily.com` to the Vercel project domains.
 2. In Cloudflare DNS for `newukrainedaily.com`, create the exact DNS records Vercel shows for the project.
-3. Keep `PUBLIC_BASE_URL=https://newukrainedaily.com`.
+3. Keep `PUBLIC_BASE_URL=https://www.newukrainedaily.com`.
 4. After DNS propagation, confirm:
-   - `https://newukrainedaily.com/robots.txt`
-   - `https://newukrainedaily.com/sitemap.xml`
-   - `https://newukrainedaily.com/feed.xml`
-   - `https://newukrainedaily.com/blog/feed.xml`
+   - `https://www.newukrainedaily.com/robots.txt`
+   - `https://www.newukrainedaily.com/sitemap.xml`
+   - `https://www.newukrainedaily.com/feed.xml`
+   - `https://www.newukrainedaily.com/blog/feed.xml`
 
 Current Cloudflare zone:
 
@@ -219,6 +240,7 @@ Current Cloudflare zone:
 
 Protected endpoints:
 
+- `POST /api/cron/generate`
 - `POST /api/cron/fetch-news`
 - `POST /api/cron/rewrite-news`
 - `POST /api/cron/generate-images`
@@ -246,6 +268,15 @@ Operational status snapshot:
 ```bash
 curl http://localhost:3000/api/internal/status \
   -H "Authorization: Bearer local-cron-secret"
+```
+
+Generate one article pipeline run:
+
+```bash
+curl -X POST http://localhost:3000/api/cron/generate \
+  -H "Authorization: Bearer local-cron-secret" \
+  -H "Content-Type: application/json" \
+  --data "{\"count\":1}"
 ```
 
 ## Leonardo images
