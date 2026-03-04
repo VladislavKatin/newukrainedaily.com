@@ -52,7 +52,7 @@ npm run smoke:cron
 
 ## Vercel deployment
 
-1. Import `https://github.com/asdkaasdka1/newukrainedaily.com` into Vercel.
+1. Import `https://github.com/VladislavKatin/newukrainedaily.com` into Vercel.
 2. Add environment variables from `.env.example`.
 3. Set `PUBLIC_BASE_URL=https://www.newukrainedaily.com`.
 4. Deploy the project.

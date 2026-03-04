@@ -48,14 +48,11 @@ async function verifySupabaseStorage() {
   const supabaseUrl = readEnv("SUPABASE_URL");
   const serviceRoleKey = readEnv("SUPABASE_SERVICE_ROLE_KEY");
   const bucket = readEnv("SUPABASE_STORAGE_BUCKET");
-  const publicUrlBase = readEnv("SUPABASE_STORAGE_PUBLIC_URL");
 
   printSection("supabase-storage");
 
-  if (!supabaseUrl || !serviceRoleKey || !bucket || !publicUrlBase) {
-    console.log(
-      "skip: set SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_STORAGE_BUCKET, SUPABASE_STORAGE_PUBLIC_URL"
-    );
+  if (!supabaseUrl || !serviceRoleKey || !bucket) {
+    console.log("skip: set SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_STORAGE_BUCKET");
     return false;
   }
 
@@ -77,7 +74,8 @@ async function verifySupabaseStorage() {
     }
 
     console.log(`ok: bucket reachable (${bucket}), sample objects=${data?.length ?? 0}`);
-    console.log(`public base: ${publicUrlBase}`);
+    const publicUrl = supabase.storage.from(bucket).getPublicUrl("generated/health-check.txt");
+    console.log(`public url sample: ${publicUrl.data.publicUrl}`);
     return true;
   } catch (error) {
     console.log(`error: ${error.message}`);
