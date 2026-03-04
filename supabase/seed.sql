@@ -7,7 +7,9 @@ from (
     ('GOV.UK Ukraine', 'rss', 'https://www.gov.uk/world/ukraine/news.atom'),
     ('NATO News', 'rss', 'https://www.nato.int/cps/en/natohq/news.htm?keywordquery=ukraine&date_from=2026-01-01&display_mode=rss'),
     ('World Bank News', 'rss', 'https://www.worldbank.org/en/news/all?topic_exact=Fragility%2C%20Conflict%20and%20Violence&displayconttype_exact=Press%20Release&qterm=ukraine&lang_exact=English&format=rss'),
-    ('President of Ukraine News', 'rss', 'https://www.president.gov.ua/en/rss/news/all.rss')
+    ('President of Ukraine News', 'rss', 'https://www.president.gov.ua/en/rss/news/all.rss'),
+    ('President Office Updates', 'rss', 'https://www.president.gov.ua/en/rss/news/administration.rss'),
+    ('President Speeches', 'rss', 'https://www.president.gov.ua/en/rss/news/speeches.rss')
 ) as seed(name, type, url)
 where not exists (
   select 1
