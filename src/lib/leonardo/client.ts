@@ -51,8 +51,7 @@ export async function createLeonardoGeneration(input: LeonardoCreateRequest) {
       width: 1536,
       height: 1024,
       num_images: 1,
-      presetStyle: "CINEMATIC",
-      photoReal: true
+      presetStyle: "CINEMATIC"
     }),
     cache: "no-store"
   });
