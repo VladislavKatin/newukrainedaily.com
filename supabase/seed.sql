@@ -1,13 +1,21 @@
 insert into sources (name, type, url)
-values
-  ('UN News', 'rss', 'https://news.un.org/feed/subscribe/en/news/all/rss.xml'),
-  ('ReliefWeb Updates', 'rss', 'https://reliefweb.int/updates?advanced-search=%28D48875%29_%28S167%29&search=ukraine&format=rss'),
-  ('GOV.UK Ukraine', 'rss', 'https://www.gov.uk/world/ukraine/news.atom'),
-  ('NATO News', 'rss', 'https://www.nato.int/cps/en/natohq/news.htm?keywordquery=ukraine&date_from=2026-01-01&display_mode=rss'),
-  ('WHO Europe Ukraine', 'rss', 'https://www.who.int/europe/rss-feeds/news'),
-  ('World Bank News', 'rss', 'https://www.worldbank.org/en/news/all?topic_exact=Fragility%2C%20Conflict%20and%20Violence&displayconttype_exact=Press%20Release&qterm=ukraine&lang_exact=English&format=rss'),
-  ('Consilium Press Releases', 'rss', 'https://www.consilium.europa.eu/en/press/press-releases/rss/')
-on conflict do nothing;
+select seed.name, seed.type::source_type, seed.url
+from (
+  values
+    ('UN News', 'rss', 'https://news.un.org/feed/subscribe/en/news/all/rss.xml'),
+    ('ReliefWeb Updates', 'rss', 'https://reliefweb.int/updates?advanced-search=%28D48875%29_%28S167%29&search=ukraine&format=rss'),
+    ('GOV.UK Ukraine', 'rss', 'https://www.gov.uk/world/ukraine/news.atom'),
+    ('NATO News', 'rss', 'https://www.nato.int/cps/en/natohq/news.htm?keywordquery=ukraine&date_from=2026-01-01&display_mode=rss'),
+    ('WHO Europe Ukraine', 'rss', 'https://www.who.int/europe/rss-feeds/news'),
+    ('World Bank News', 'rss', 'https://www.worldbank.org/en/news/all?topic_exact=Fragility%2C%20Conflict%20and%20Violence&displayconttype_exact=Press%20Release&qterm=ukraine&lang_exact=English&format=rss'),
+    ('Consilium Press Releases', 'rss', 'https://www.consilium.europa.eu/en/press/press-releases/rss/'),
+    ('President of Ukraine News', 'rss', 'https://www.president.gov.ua/en/rss/news/all.rss')
+) as seed(name, type, url)
+where not exists (
+  select 1
+  from sources s
+  where regexp_replace(lower(s.url), '\s+', '', 'g') = regexp_replace(lower(seed.url), '\s+', '', 'g')
+);
 
 insert into topics (tag, title, description)
 values

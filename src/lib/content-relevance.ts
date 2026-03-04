@@ -26,6 +26,17 @@ function normalizeUrlLike(value: string | null | undefined) {
   return (value || "").replace(/\s+/g, "").trim().toLowerCase();
 }
 
+const UKRAINE_FOCUSED_DOMAINS = [
+  "president.gov.ua",
+  "mod.gov.ua",
+  "mfa.gov.ua",
+  "cabinet.gov.ua",
+  "www.president.gov.ua",
+  "www.mod.gov.ua",
+  "www.mfa.gov.ua",
+  "www.kmu.gov.ua"
+];
+
 function matchesUkrainePattern(value: string) {
   return UKRAINE_PATTERNS.some((pattern) => pattern.test(value));
 }
@@ -57,6 +68,7 @@ export function sourceLikelyUkraineFocused(source: Pick<SourceRecord, "name" | "
   }
 
   return (
+    UKRAINE_FOCUSED_DOMAINS.some((domain) => normalizedUrl.includes(domain)) ||
     normalizedUrl.includes("/ukraine/") ||
     normalizedUrl.includes("keywordquery=ukraine") ||
     normalizedUrl.includes("search=ukraine") ||
