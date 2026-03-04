@@ -234,6 +234,7 @@ export async function runGenerateImagesJob(limitOverride?: number) {
   let skipped = 0;
   let failed = 0;
   let retried = 0;
+  const errors: Array<{ slug: string; message: string }> = [];
 
   for (const item of draftItems) {
     if (!item.summary || !item.dek || !item.whyItMatters || item.tags.length === 0) {
@@ -270,17 +271,22 @@ export async function runGenerateImagesJob(limitOverride?: number) {
       await sleep(limits.imageRequestSpacingMs);
     } catch (error) {
       failed += 1;
+      const message = error instanceof Error ? error.message : "Unknown Leonardo error";
+      errors.push({
+        slug: item.slug,
+        message
+      });
       await upsertNewsImageRequest({
         newsItemId: item.id,
         prompt,
         status: "failed",
         attempts,
-        lastError: error instanceof Error ? error.message : "Unknown Leonardo error"
+        lastError: message
       });
     }
   }
 
-  return { ok: true, processed: draftItems.length, requested, retried, skipped, failed };
+  return { ok: true, processed: draftItems.length, requested, retried, skipped, failed, errors };
 }
 
 export async function runPublishJob(limit?: number) {
