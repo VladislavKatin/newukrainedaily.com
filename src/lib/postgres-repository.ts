@@ -919,7 +919,10 @@ export async function listNewsItemsNeedingImageGeneration(
           img.id is null
           or (
             img.status = 'failed'
-            and img.attempts < $2
+            and (
+              img.attempts < $2
+              or ni.status = 'published'
+            )
           )
           or (
             img.status = 'pending'

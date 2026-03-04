@@ -351,7 +351,7 @@ export async function runGenerateImagesJob(limitOverride?: number) {
     }
 
     const previousRequest = await getNewsImageByNewsItemId(item.id);
-    const prompt = item.generatedImagePrompt || buildImagePrompt({
+    const prompt = buildImagePrompt({
       title: item.title,
       dek: item.dek,
       summary: item.summary,
