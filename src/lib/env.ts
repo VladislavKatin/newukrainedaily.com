@@ -66,7 +66,7 @@ const envSchema = z.object({
 
 const parsedEnv = envSchema.parse(process.env);
 
-const publicRequiredKeys = ["PUBLIC_BASE_URL"] as const;
+const publicRequiredKeys = [] as const;
 const pipelineRequiredKeys = [
   "CRON_SECRET",
   "AI_PROVIDER",
