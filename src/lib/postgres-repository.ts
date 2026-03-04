@@ -423,6 +423,60 @@ export async function countRawNews() {
 }
 
 export async function upsertNewsItem(input: UpsertNewsItemInput) {
+  const values = [
+    input.rawId ?? null,
+    input.slug,
+    input.title,
+    input.dek ?? null,
+    input.summary ?? null,
+    JSON.stringify(input.keyPoints ?? []),
+    input.whyItMatters ?? null,
+    input.tags ?? [],
+    input.coverImageUrl ?? null,
+    input.ogImageUrl ?? null,
+    input.sourceName ?? null,
+    input.sourceUrl ?? null,
+    input.status ?? "draft",
+    input.language ?? "en",
+    normalizeTimestampInput(input.publishedAt)
+  ];
+
+  if (input.rawId) {
+    const existing = await query(`select id from news_items where raw_id = $1 limit 1`, [input.rawId]);
+
+    if (existing.rows[0]?.id) {
+      const result = await query(
+        `
+          update news_items
+          set
+            raw_id = $2,
+            slug = $3,
+            title = $4,
+            dek = $5,
+            summary = $6,
+            key_points = $7::jsonb,
+            why_it_matters = $8,
+            tags = $9,
+            cover_image_url = $10,
+            og_image_url = $11,
+            source_name = $12,
+            source_url = $13,
+            status = $14,
+            language = $15,
+            published_at = $16
+          where id = $1
+          returning *
+        `,
+        [
+          existing.rows[0].id,
+          ...values
+        ]
+      );
+
+      return mapNewsItem(result.rows[0]);
+    }
+  }
+
   const result = await query(
     `
       insert into news_items (
@@ -430,9 +484,8 @@ export async function upsertNewsItem(input: UpsertNewsItemInput) {
         cover_image_url, og_image_url, source_name, source_url, status, language, published_at
       )
       values ($1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-      on conflict (raw_id) do update set
+      on conflict (slug) do update set
         raw_id = excluded.raw_id,
-        slug = excluded.slug,
         title = excluded.title,
         dek = excluded.dek,
         summary = excluded.summary,
@@ -448,23 +501,7 @@ export async function upsertNewsItem(input: UpsertNewsItemInput) {
         published_at = excluded.published_at
       returning *
     `,
-    [
-      input.rawId ?? null,
-      input.slug,
-      input.title,
-      input.dek ?? null,
-      input.summary ?? null,
-      JSON.stringify(input.keyPoints ?? []),
-      input.whyItMatters ?? null,
-      input.tags ?? [],
-      input.coverImageUrl ?? null,
-      input.ogImageUrl ?? null,
-      input.sourceName ?? null,
-      input.sourceUrl ?? null,
-      input.status ?? "draft",
-      input.language ?? "en",
-      normalizeTimestampInput(input.publishedAt)
-    ]
+    values
   );
 
   return mapNewsItem(result.rows[0]);
