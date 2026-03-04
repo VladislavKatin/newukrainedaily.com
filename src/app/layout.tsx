@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "@/app/globals.css";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
-import { validateEnv } from "@/lib/env";
+import { getEnv, validateEnv } from "@/lib/env";
 import { absoluteUrl, getBaseUrl, siteConfig } from "@/lib/site";
 
 validateEnv();
@@ -15,7 +15,19 @@ export const metadata: Metadata = {
   },
   description: siteConfig.description,
   alternates: {
-    canonical: "/"
+    canonical: "/",
+    languages: {
+      en: "/"
+    }
+  },
+  icons: {
+    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/apple-icon.svg", type: "image/svg+xml" }],
+    shortcut: ["/icon.svg"]
+  },
+  manifest: "/manifest.webmanifest",
+  verification: {
+    google: getEnv().GOOGLE_SITE_VERIFICATION || undefined
   },
   openGraph: {
     title: siteConfig.name,
@@ -26,7 +38,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: siteConfig.defaultOgImage,
+        url: absoluteUrl(siteConfig.defaultOgImage),
         width: 1200,
         height: 630,
         alt: siteConfig.name
@@ -37,7 +49,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: siteConfig.name,
     description: siteConfig.description,
-    images: [siteConfig.defaultOgImage]
+    images: [absoluteUrl(siteConfig.defaultOgImage)]
   }
 };
 
@@ -56,4 +68,3 @@ export default function RootLayout({
     </html>
   );
 }
-

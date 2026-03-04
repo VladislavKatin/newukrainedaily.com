@@ -4,6 +4,7 @@ import { PaginationNav } from "@/components/pagination-nav";
 import { PageShell } from "@/components/page-shell";
 import { getAllTags, getEntriesByTagPage, getTopic } from "@/lib/content";
 import { buildMetadata } from "@/lib/seo";
+import { absoluteUrl, siteConfig } from "@/lib/site";
 
 const PAGE_SIZE = 12;
 
@@ -43,16 +44,44 @@ export default async function TopicPage({ params, searchParams }: Props) {
   ]);
   const { entries, total } = pageResult;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const pagePath = currentPage > 1 ? `/topic/${tag}?page=${currentPage}` : `/topic/${tag}`;
+  const topicTitle = topic ? topic.title : `#${tag}`;
+  const topicDescription =
+    topic?.description ||
+    "This topic archive groups related published news and blog entries under one indexable route.";
+  const collectionSchema = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: `${topicTitle} Coverage`,
+    description: topicDescription,
+    url: absoluteUrl(pagePath),
+    isPartOf: {
+      "@type": "WebSite",
+      name: siteConfig.name,
+      url: absoluteUrl("/")
+    },
+    mainEntity: {
+      "@type": "ItemList",
+      numberOfItems: entries.length,
+      itemListElement: entries.map((entry, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        url: absoluteUrl(`/${entry.type}/${entry.slug}`),
+        name: entry.title
+      }))
+    }
+  };
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionSchema) }}
+      />
       <PageShell
         eyebrow="Topic"
-        title={topic ? topic.title : `#${tag}`}
-        description={
-          topic?.description ||
-          "This topic archive groups related published news and blog entries under one indexable route."
-        }
+        title={topicTitle}
+        description={topicDescription}
       />
       <div className="container-shell pb-12 sm:pb-16">
         <div className="grid gap-6">

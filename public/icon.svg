@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="New Ukraine Daily icon">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#0A57A4"/>
+      <stop offset="50%" stop-color="#0A57A4"/>
+      <stop offset="50%" stop-color="#F7C948"/>
+      <stop offset="100%" stop-color="#F7C948"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <circle cx="256" cy="256" r="170" fill="#ffffff" fill-opacity="0.92"/>
+  <path d="M170 328V184h48l38 70 38-70h48v144h-44v-71l-25 44h-34l-25-44v71h-44z" fill="#0A57A4"/>
+</svg>

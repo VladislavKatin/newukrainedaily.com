@@ -5,8 +5,8 @@ export const siteConfig = {
   description:
     "English-language publishing platform for Ukraine news, analysis, support resources, and topic archives.",
   locale: "en_US",
-  defaultOgImage:
-    "https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?auto=format&fit=crop&w=1200&q=80"
+  defaultOgImage: "/icon.svg",
+  publisherName: "New Ukraine Daily Editorial Team"
 };
 
 export function getBaseUrl() {
@@ -15,4 +15,8 @@ export function getBaseUrl() {
 
 export function absoluteUrl(path = "/") {
   return new URL(path, getBaseUrl()).toString();
+}
+
+export function getPublisherLogoUrl() {
+  return absoluteUrl("/icon.svg");
 }

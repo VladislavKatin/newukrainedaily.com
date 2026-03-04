@@ -39,6 +39,7 @@ function optionalNonNegativeInt() {
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PUBLIC_BASE_URL: optionalString(z.string().url()),
+  GOOGLE_SITE_VERIFICATION: optionalString(z.string().min(1)),
   CRON_SECRET: optionalString(z.string().min(1)),
   DATABASE_URL: optionalString(z.string().min(1)),
   DIRECT_URL: optionalString(z.string().min(1)),

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import type { ContentEntry } from "@/lib/content-types";
-import { absoluteUrl, siteConfig } from "@/lib/site";
+import { absoluteUrl, getPublisherLogoUrl, siteConfig } from "@/lib/site";
 
 type MetadataInput = {
   title: string;
@@ -10,6 +10,8 @@ type MetadataInput = {
 };
 
 export function buildMetadata({ title, description, path, keywords }: MetadataInput): Metadata {
+  const defaultImage = absoluteUrl(siteConfig.defaultOgImage);
+
   return {
     title,
     description,
@@ -26,7 +28,7 @@ export function buildMetadata({ title, description, path, keywords }: MetadataIn
       locale: siteConfig.locale,
       images: [
         {
-          url: siteConfig.defaultOgImage,
+          url: defaultImage,
           width: 1200,
           height: 630,
           alt: title
@@ -37,14 +39,14 @@ export function buildMetadata({ title, description, path, keywords }: MetadataIn
       card: "summary_large_image",
       title,
       description,
-      images: [siteConfig.defaultOgImage]
+      images: [defaultImage]
     }
   };
 }
 
 export function buildArticleMetadata(entry: ContentEntry): Metadata {
   const path = `/${entry.type}/${entry.slug}`;
-  const imageUrl = entry.imageUrl || siteConfig.defaultOgImage;
+  const imageUrl = entry.imageUrl || absoluteUrl(siteConfig.defaultOgImage);
   const imageAlt = entry.imageAlt || entry.title;
 
   return {
@@ -56,6 +58,10 @@ export function buildArticleMetadata(entry: ContentEntry): Metadata {
         "application/rss+xml":
           entry.type === "news" ? absoluteUrl("/feed.xml") : absoluteUrl("/blog/feed.xml")
       }
+    },
+    robots: {
+      index: entry.status === "published",
+      follow: entry.status === "published"
     },
     openGraph: {
       title: entry.title,
@@ -95,8 +101,8 @@ export function buildArticleJsonLd(entry: ContentEntry) {
     datePublished: entry.publishedAt,
     dateModified: entry.updatedAt || entry.publishedAt,
     author: {
-      "@type": "Person",
-      name: entry.author
+      "@type": "Organization",
+      name: siteConfig.publisherName
     },
     publisher: {
       "@type": "Organization",
@@ -104,7 +110,7 @@ export function buildArticleJsonLd(entry: ContentEntry) {
       url: absoluteUrl("/"),
       logo: {
         "@type": "ImageObject",
-        url: siteConfig.defaultOgImage
+        url: getPublisherLogoUrl()
       }
     },
     mainEntityOfPage: absoluteUrl(`/${entry.type}/${entry.slug}`),

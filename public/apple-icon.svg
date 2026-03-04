@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" role="img" aria-label="New Ukraine Daily apple icon">
+  <defs>
+    <linearGradient id="uaflag" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#0A57A4"/>
+      <stop offset="50%" stop-color="#0A57A4"/>
+      <stop offset="50%" stop-color="#F7C948"/>
+      <stop offset="100%" stop-color="#F7C948"/>
+    </linearGradient>
+  </defs>
+  <rect width="180" height="180" rx="38" fill="url(#uaflag)"/>
+  <circle cx="90" cy="90" r="58" fill="#ffffff" fill-opacity="0.95"/>
+  <text x="90" y="105" text-anchor="middle" font-size="52" font-family="Georgia, serif" fill="#0A57A4">N</text>
+</svg>

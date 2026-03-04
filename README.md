@@ -64,14 +64,17 @@ Set these variables in Vercel and in your local `.env.local` when testing produc
 
 ```bash
 PUBLIC_BASE_URL=https://www.newukrainedaily.com
+GOOGLE_SITE_VERIFICATION=
 CRON_SECRET=
 DATABASE_URL=
+DIRECT_URL=
 SUPABASE_DATABASE_URL=
 SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
 SUPABASE_STORAGE_BUCKET=
 AI_PROVIDER=
 AI_API_KEY=
+OPENAI_API_KEY=
 LEONARDO_API_KEY=
 LEONARDO_WEBHOOK_SECRET=
 DAILY_PUBLISH_LIMIT=
@@ -149,8 +152,11 @@ Recommended deployment flow:
 4. After DNS propagation, confirm:
    - `https://www.newukrainedaily.com/robots.txt`
    - `https://www.newukrainedaily.com/sitemap.xml`
+   - `https://www.newukrainedaily.com/news-sitemap.xml`
+   - `https://www.newukrainedaily.com/rss.xml`
    - `https://www.newukrainedaily.com/feed.xml`
    - `https://www.newukrainedaily.com/blog/feed.xml`
+   - favicon and app icons are visible in browser tabs and social previews
 
 ## Automation endpoints
 
