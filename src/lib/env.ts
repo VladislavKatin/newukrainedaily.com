@@ -40,6 +40,7 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PUBLIC_BASE_URL: optionalString(z.string().url()),
   GOOGLE_SITE_VERIFICATION: optionalString(z.string().min(1)),
+  GOOGLE_ANALYTICS_ID: optionalString(z.string().min(1)),
   CRON_SECRET: optionalString(z.string().min(1)),
   DATABASE_URL: optionalString(z.string().min(1)),
   DIRECT_URL: optionalString(z.string().min(1)),
@@ -66,6 +67,10 @@ const envSchema = z.object({
   IMAGE_STALE_MINUTES: optionalPositiveInt(),
   IMAGE_REQUEST_SPACING_MS: optionalNonNegativeInt(),
   PUBLISH_BATCH_LIMIT: optionalPositiveInt()
+  ,
+  ARTICLES_PER_DAY: optionalPositiveInt(),
+  MIN_ARTICLE_LENGTH: optionalPositiveInt(),
+  INTERNAL_LINKS_COUNT: optionalPositiveInt()
 });
 
 const parsedEnv = envSchema.parse(process.env);
