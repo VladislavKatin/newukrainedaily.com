@@ -301,6 +301,10 @@ function createDatabaseContentRepository(): ContentRepository {
 export async function getContentRepository(): Promise<ContentRepository> {
   const env = getEnv();
 
+  if (isBuildPhase()) {
+    return createEmptyContentRepository();
+  }
+
   if (!hasConfiguredDatabaseUrl()) {
     if (env.NODE_ENV !== "production" && env.LOCAL_PREVIEW_CONTENT) {
       return createPreviewContentRepository();
