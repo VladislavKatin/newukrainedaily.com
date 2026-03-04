@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { ContentEntry } from "@/lib/content-types";
 
@@ -11,7 +12,21 @@ function formatDate(date: string) {
 
 export function EntryCard({ entry }: { entry: ContentEntry }) {
   return (
-    <article className="panel p-6">
+    <article className="panel overflow-hidden p-6">
+      {entry.imageUrl ? (
+        <Link
+          href={`/${entry.type}/${entry.slug}`}
+          className="mb-5 block overflow-hidden rounded-2xl border border-line bg-mist"
+        >
+          <Image
+            src={entry.imageUrl}
+            alt={entry.imageAlt || entry.title}
+            width={1200}
+            height={675}
+            className="h-44 w-full object-cover transition duration-300 hover:scale-[1.02]"
+          />
+        </Link>
+      ) : null}
       <div className="flex items-center justify-between gap-3 text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
         <span>{entry.type}</span>
         <time dateTime={entry.publishedAt}>{formatDate(entry.publishedAt)}</time>

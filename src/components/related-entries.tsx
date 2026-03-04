@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { ContentEntry } from "@/lib/content-types";
 
@@ -20,17 +21,29 @@ export function RelatedEntries({
           <Link
             key={`${entry.type}-${entry.slug}`}
             href={`/${entry.type}/${entry.slug}`}
-            className="rounded-2xl border border-line bg-mist p-5 transition hover:border-brand hover:bg-white"
+            className="overflow-hidden rounded-2xl border border-line bg-mist transition hover:border-brand hover:bg-white"
           >
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand">
-              {entry.type}
-            </p>
-            <h3 className="mt-2 text-lg font-semibold text-ink">{entry.title}</h3>
-            <p className="mt-2 text-sm leading-6 text-slate-600">{entry.excerpt}</p>
+            {entry.imageUrl ? (
+              <div className="border-b border-line bg-white">
+                <Image
+                  src={entry.imageUrl}
+                  alt={entry.imageAlt || entry.title}
+                  width={1200}
+                  height={675}
+                  className="h-36 w-full object-cover"
+                />
+              </div>
+            ) : null}
+            <div className="p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand">
+                {entry.type}
+              </p>
+              <h3 className="mt-2 text-lg font-semibold text-ink">{entry.title}</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-600">{entry.excerpt}</p>
+            </div>
           </Link>
         ))}
       </div>
     </aside>
   );
 }
-
