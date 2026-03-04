@@ -11,16 +11,19 @@ function formatDate(date: string) {
 }
 
 export function EntryCard({ entry }: { entry: ContentEntry }) {
+  const previewUrl = entry.previewImageUrl || entry.imageUrl;
+  const previewAlt = entry.previewImageAlt || entry.imageAlt || entry.title;
+
   return (
     <article className="panel overflow-hidden p-6">
-      {entry.imageUrl ? (
+      {previewUrl ? (
         <Link
           href={`/${entry.type}/${entry.slug}`}
           className="mb-5 block overflow-hidden rounded-2xl border border-line bg-mist"
         >
           <Image
-            src={entry.imageUrl}
-            alt={entry.imageAlt || entry.title}
+            src={previewUrl}
+            alt={previewAlt}
             width={1200}
             height={675}
             className="h-32 w-full object-cover transition duration-300 hover:scale-[1.02] sm:h-36"

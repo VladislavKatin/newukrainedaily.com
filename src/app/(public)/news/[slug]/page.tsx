@@ -59,11 +59,11 @@ export default async function NewsArticlePage({ params }: Props) {
           <span>{entry.author}</span>
           <time dateTime={entry.publishedAt}>{new Date(entry.publishedAt).toLocaleDateString("en-US")}</time>
         </div>
-        {entry.imageUrl ? (
+        {entry.previewImageUrl ? (
           <div className="mt-8 overflow-hidden rounded-3xl border border-line">
             <Image
-              src={entry.imageUrl}
-              alt={entry.imageAlt || entry.title}
+              src={entry.previewImageUrl}
+              alt={entry.previewImageAlt || entry.title}
               width={1200}
               height={675}
               className="h-auto w-full object-cover"
@@ -71,9 +71,30 @@ export default async function NewsArticlePage({ params }: Props) {
             />
           </div>
         ) : null}
+        {entry.previewImageCaption ? (
+          <p className="mt-3 text-xs text-slate-500">{entry.previewImageCaption}</p>
+        ) : null}
         <div className="mt-8 space-y-6 text-base leading-8 text-slate-700">
-          {entry.body.map((paragraph) => (
-            <p key={paragraph}>{paragraph}</p>
+          {entry.body.map((paragraph, index) => (
+            <div key={`${index}-${paragraph.slice(0, 24)}`} className="space-y-6">
+              <p>{paragraph}</p>
+              {index === 0 && entry.generatedImageUrl ? (
+                <figure className="overflow-hidden rounded-3xl border border-line">
+                  <Image
+                    src={entry.generatedImageUrl}
+                    alt={entry.generatedImageAlt || entry.title}
+                    width={1200}
+                    height={675}
+                    className="h-auto w-full object-cover"
+                  />
+                  {entry.generatedImageCaption ? (
+                    <figcaption className="border-t border-line bg-mist px-4 py-3 text-xs text-slate-600">
+                      {entry.generatedImageCaption}
+                    </figcaption>
+                  ) : null}
+                </figure>
+              ) : null}
+            </div>
           ))}
         </div>
         {entry.sourceUrl ? (

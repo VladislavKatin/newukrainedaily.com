@@ -15,6 +15,12 @@ export type ContentEntry = {
   sourceUrl?: string;
   imageUrl?: string;
   imageAlt?: string;
+  previewImageUrl?: string;
+  previewImageAlt?: string;
+  previewImageCaption?: string;
+  generatedImageUrl?: string;
+  generatedImageAlt?: string;
+  generatedImageCaption?: string;
   status: "draft" | "scheduled" | "published";
   featured?: boolean;
 };

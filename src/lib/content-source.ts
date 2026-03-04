@@ -46,6 +46,15 @@ function sortEntries(entries: ContentEntry[]) {
 function mapNewsItemToContentEntry(newsItem: Awaited<ReturnType<typeof getNewsBySlug>> extends infer T
   ? NonNullable<T>
   : never): ContentEntry {
+  const bodyParagraphs = (newsItem.content || newsItem.summary || newsItem.dek || newsItem.title)
+    .split(/\n{2,}/)
+    .map((chunk) => chunk.trim())
+    .filter(Boolean);
+
+  const previewImageUrl = newsItem.previewImageUrl || undefined;
+  const generatedImageUrl =
+    newsItem.generatedImageUrl || newsItem.coverImageUrl || newsItem.ogImageUrl || undefined;
+
   return {
     id: newsItem.id,
     type: "news",
@@ -57,12 +66,27 @@ function mapNewsItemToContentEntry(newsItem: Awaited<ReturnType<typeof getNewsBy
     updatedAt: newsItem.updatedAt,
     author: newsItem.sourceName || "Editorial Desk",
     tags: newsItem.tags,
-    body: newsItem.whyItMatters
-      ? [newsItem.summary || newsItem.dek || newsItem.title, newsItem.whyItMatters]
-      : [newsItem.summary || newsItem.dek || newsItem.title],
+    body: bodyParagraphs.length > 0
+      ? bodyParagraphs
+      : newsItem.whyItMatters
+        ? [newsItem.summary || newsItem.dek || newsItem.title, newsItem.whyItMatters]
+        : [newsItem.summary || newsItem.dek || newsItem.title],
     sourceUrl: newsItem.sourceUrl || undefined,
-    imageUrl: newsItem.ogImageUrl || newsItem.coverImageUrl || undefined,
-    imageAlt: `${newsItem.title} cover image`,
+    imageUrl: previewImageUrl || generatedImageUrl,
+    imageAlt: newsItem.previewImageCaption || `${newsItem.title} preview image`,
+    previewImageUrl,
+    previewImageAlt: newsItem.previewImageCaption || `${newsItem.title} preview image`,
+    previewImageCaption:
+      newsItem.previewImageCaption ||
+      (previewImageUrl
+        ? `Preview: original image from ${newsItem.sourceName || "Source"}`
+        : undefined),
+    generatedImageUrl,
+    generatedImageAlt:
+      newsItem.generatedImageAlt || newsItem.ogImageAlt || `${newsItem.title} generated illustration`,
+    generatedImageCaption:
+      newsItem.generatedImageCaption ||
+      "Illustration generated with AI (Leonardo) based on the headline",
     status: newsItem.status,
     featured: false
   };
