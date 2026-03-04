@@ -23,7 +23,7 @@ export function EntryCard({ entry }: { entry: ContentEntry }) {
             alt={entry.imageAlt || entry.title}
             width={1200}
             height={675}
-            className="h-44 w-full object-cover transition duration-300 hover:scale-[1.02]"
+            className="h-32 w-full object-cover transition duration-300 hover:scale-[1.02] sm:h-36"
           />
         </Link>
       ) : null}
@@ -31,8 +31,8 @@ export function EntryCard({ entry }: { entry: ContentEntry }) {
         <span>{entry.type}</span>
         <time dateTime={entry.publishedAt}>{formatDate(entry.publishedAt)}</time>
       </div>
-      <h2 className="mt-4 text-2xl font-semibold tracking-tight text-ink">{entry.title}</h2>
-      <p className="mt-3 text-sm leading-6 text-slate-600">{entry.excerpt}</p>
+      <h2 className="mt-4 text-xl font-semibold tracking-tight text-ink sm:text-2xl">{entry.title}</h2>
+      <p className="mt-3 line-clamp-4 text-sm leading-6 text-slate-600">{entry.excerpt}</p>
       <div className="mt-4 flex flex-wrap gap-2">
         {entry.tags.map((tag) => (
           <Link

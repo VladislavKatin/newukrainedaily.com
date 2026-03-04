@@ -30,7 +30,7 @@ export function RelatedEntries({
                   alt={entry.imageAlt || entry.title}
                   width={1200}
                   height={675}
-                  className="h-36 w-full object-cover"
+                  className="h-28 w-full object-cover sm:h-32"
                 />
               </div>
             ) : null}
@@ -39,7 +39,7 @@ export function RelatedEntries({
                 {entry.type}
               </p>
               <h3 className="mt-2 text-lg font-semibold text-ink">{entry.title}</h3>
-              <p className="mt-2 text-sm leading-6 text-slate-600">{entry.excerpt}</p>
+              <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-600">{entry.excerpt}</p>
             </div>
           </Link>
         ))}
