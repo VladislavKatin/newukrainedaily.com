@@ -659,7 +659,6 @@ export async function listNewsItemsNeedingImageGeneration(
           )
           or (
             img.status = 'requested'
-            and img.attempts < $2
           )
         )
       order by ni.created_at asc
