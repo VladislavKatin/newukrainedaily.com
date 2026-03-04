@@ -638,8 +638,7 @@ export async function listDraftNewsWithoutImages(limit = 20) {
 
 export async function listNewsItemsNeedingImageGeneration(
   limit = 10,
-  maxAttempts = 3,
-  staleRequestedMinutes = 60
+  maxAttempts = 3
 ) {
   const result = await query(
     `
@@ -666,7 +665,7 @@ export async function listNewsItemsNeedingImageGeneration(
       order by ni.created_at asc
       limit $1
     `,
-    [limit, maxAttempts, staleRequestedMinutes]
+    [limit, maxAttempts]
   );
 
   return result.rows.map(mapNewsItem);

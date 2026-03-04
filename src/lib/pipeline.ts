@@ -227,8 +227,7 @@ export async function runGenerateImagesJob(limitOverride?: number) {
   const limits = getPipelineLimits();
   const draftItems = await listNewsItemsNeedingImageGeneration(
     limitOverride ?? limits.imageBatchLimit,
-    limits.imageMaxAttempts,
-    limits.imageStaleMinutes
+    limits.imageMaxAttempts
   );
   let requested = 0;
   let completed = 0;
