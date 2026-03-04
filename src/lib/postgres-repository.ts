@@ -260,7 +260,7 @@ function mapSource(row: Record<string, unknown>): SourceRecord {
     id: String(row.id),
     name: String(row.name),
     type: row.type as SourceRecord["type"],
-    url: String(row.url),
+    url: String(row.url).replace(/\s+/g, "").trim(),
     isActive: Boolean(row.is_active),
     createdAt: String(row.created_at)
   };
@@ -343,9 +343,20 @@ export async function createRawNews(input: CreateRawNewsInput) {
 export async function listActiveSources(limit = 50) {
   const result = await query(
     `
+      with ranked_sources as (
+        select
+          *,
+          regexp_replace(lower(url), '\s+', '', 'g') as normalized_url,
+          row_number() over (
+            partition by regexp_replace(lower(url), '\s+', '', 'g')
+            order by created_at asc, id asc
+          ) as source_rank
+        from sources
+        where is_active = true
+      )
       select *
-      from sources
-      where is_active = true
+      from ranked_sources
+      where source_rank = 1
       order by created_at asc
       limit $1
     `,
@@ -695,7 +706,14 @@ export async function listPublishReadyNews(limit = 20) {
         and coalesce(nullif(trim(summary), ''), null) is not null
         and coalesce(nullif(trim(dek), ''), null) is not null
         and coalesce(nullif(trim(why_it_matters), ''), null) is not null
+        and char_length(trim(summary)) >= 180
+        and char_length(trim(why_it_matters)) >= 80
+        and coalesce(nullif(trim(source_name), ''), null) is not null
+        and coalesce(nullif(trim(source_url), ''), null) is not null
         and array_length(tags, 1) is not null
+        and array_length(tags, 1) >= 3
+        and jsonb_typeof(key_points) = 'array'
+        and jsonb_array_length(key_points) >= 3
         and cover_image_url is not null
         and og_image_url is not null
       order by published_at asc nulls last, created_at asc

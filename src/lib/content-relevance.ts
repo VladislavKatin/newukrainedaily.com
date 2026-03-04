@@ -22,6 +22,10 @@ function normalize(value: string | null | undefined) {
   return (value || "").replace(/\s+/g, " ").trim();
 }
 
+function normalizeUrlLike(value: string | null | undefined) {
+  return (value || "").replace(/\s+/g, "").trim().toLowerCase();
+}
+
 function matchesUkrainePattern(value: string) {
   return UKRAINE_PATTERNS.some((pattern) => pattern.test(value));
 }
@@ -46,5 +50,16 @@ export function isUkraineRelevantFeedItem(item: {
 }
 
 export function sourceLikelyUkraineFocused(source: Pick<SourceRecord, "name" | "url">) {
-  return isUkraineRelevantText(source.name) || isUkraineRelevantText(source.url);
+  const normalizedUrl = normalizeUrlLike(source.url);
+
+  if (!normalizedUrl) {
+    return false;
+  }
+
+  return (
+    normalizedUrl.includes("/ukraine/") ||
+    normalizedUrl.includes("keywordquery=ukraine") ||
+    normalizedUrl.includes("search=ukraine") ||
+    normalizedUrl.includes("qterm=ukraine")
+  );
 }
