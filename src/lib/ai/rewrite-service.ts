@@ -1,4 +1,5 @@
 import "server-only";
+import { isUkraineRelevantRaw } from "@/lib/content-relevance";
 import { getRewriteProvider } from "@/lib/ai/provider";
 import { rewriteOutputSchema, type RewriteOutput } from "@/lib/ai/rewrite-schema";
 import type { NewsRawRecord } from "@/lib/postgres-repository";
@@ -27,7 +28,7 @@ export function buildRewriteSourceText(raw: NewsRawRecord) {
 
 export function isRewriteCandidate(raw: NewsRawRecord) {
   const snippet = cleanSnippet(raw.contentSnippet);
-  return snippet.length >= 120 && countSentences(snippet) >= 2;
+  return isUkraineRelevantRaw(raw) && snippet.length >= 120 && countSentences(snippet) >= 2;
 }
 
 export async function rewriteRawNews(raw: NewsRawRecord): Promise<RewriteOutput | null> {

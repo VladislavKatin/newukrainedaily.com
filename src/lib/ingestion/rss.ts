@@ -1,6 +1,7 @@
 import "server-only";
 import crypto from "node:crypto";
 import { XMLParser } from "fast-xml-parser";
+import { isUkraineRelevantFeedItem, sourceLikelyUkraineFocused } from "@/lib/content-relevance";
 import { createRawNews, listActiveSources } from "@/lib/postgres-repository";
 
 type ParsedFeedItem = {
@@ -139,7 +140,9 @@ export async function ingestRssSources(options?: {
       }
 
       const xml = await response.text();
-      const items = extractItems(xml).slice(0, itemsPerSourceLimit);
+      const items = extractItems(xml)
+        .filter((item) => sourceLikelyUkraineFocused(source) || isUkraineRelevantFeedItem(item))
+        .slice(0, itemsPerSourceLimit);
       scannedItems += items.length;
 
       let sourceNewRecords = 0;
