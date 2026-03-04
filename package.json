@@ -1,0 +1,43 @@
+{
+  "name": "newukrainedaily-com",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "verify:stack": "node scripts/verify-stack.mjs",
+    "db:apply": "node scripts/apply-sql.mjs supabase/schema.sql supabase/seed.sql",
+    "db:seed-real": "node scripts/seed-real-preview-content.mjs",
+    "smoke:cron": "node scripts/smoke-cron.mjs",
+    "push:main": "powershell -ExecutionPolicy Bypass -File .\\scripts\\push-main.ps1",
+    "autopush": "node scripts/autopush.mjs",
+    "local:start": "powershell -ExecutionPolicy Bypass -File .\\scripts\\start-local-site.ps1",
+    "local:stop": "powershell -ExecutionPolicy Bypass -File .\\scripts\\stop-local-site.ps1"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.50.0",
+    "fast-xml-parser": "^4.5.4",
+    "next": "^15.5.12",
+    "pg": "8.14.1",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "zod": "3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "22.13.10",
+    "@types/pg": "8.11.11",
+    "@types/react": "19.0.10",
+    "@types/react-dom": "19.0.4",
+    "autoprefixer": "10.4.20",
+    "eslint": "^9.38.0",
+    "eslint-config-next": "^15.5.12",
+    "eslint-config-prettier": "10.1.1",
+    "postcss": "8.5.3",
+    "prettier": "3.5.3",
+    "tailwindcss": "3.4.17",
+    "typescript": "5.8.2"
+  }
+}
