@@ -168,8 +168,21 @@ type EnqueueJobInput = {
   status?: JobRecord["status"];
   attempts?: number;
   lastError?: string | null;
-  runAt?: string;
+  runAt?: string | Date;
 };
+
+function normalizeTimestampInput(value: string | Date | null | undefined) {
+  if (!value) {
+    return null;
+  }
+
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value.toISOString();
+  }
+
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+}
 
 type UpdateJobInput = {
   status?: JobRecord["status"];
@@ -315,7 +328,7 @@ export async function createRawNews(input: CreateRawNewsInput) {
       input.url,
       input.title,
       input.contentSnippet ?? null,
-      input.publishedAt ?? null,
+      normalizeTimestampInput(input.publishedAt),
       input.hash
     ]
   );
@@ -450,7 +463,7 @@ export async function upsertNewsItem(input: UpsertNewsItemInput) {
       input.sourceUrl ?? null,
       input.status ?? "draft",
       input.language ?? "en",
-      input.publishedAt ?? null
+      normalizeTimestampInput(input.publishedAt)
     ]
   );
 
@@ -850,7 +863,7 @@ export async function createBlogPost(input: CreateBlogPostInput) {
       input.tags ?? [],
       input.coverImageUrl ?? null,
       input.status ?? "draft",
-      input.publishedAt ?? null
+      normalizeTimestampInput(input.publishedAt)
     ]
   );
 
@@ -1029,7 +1042,7 @@ export async function enqueueJob(input: EnqueueJobInput, client: PoolClient | nu
       input.status ?? "pending",
       input.attempts ?? 0,
       input.lastError ?? null,
-      input.runAt ?? new Date().toISOString()
+      normalizeTimestampInput(input.runAt) ?? new Date().toISOString()
     ]
   );
 
@@ -1164,7 +1177,7 @@ export async function createRawNewsWithPublishJob(
         rawInput.url,
         rawInput.title,
         rawInput.contentSnippet ?? null,
-        rawInput.publishedAt ?? null,
+        normalizeTimestampInput(rawInput.publishedAt),
         rawInput.hash
       ]
     );
