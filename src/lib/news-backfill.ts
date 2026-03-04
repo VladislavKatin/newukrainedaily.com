@@ -37,11 +37,12 @@ export async function backfillNewsImagesAndSeo(limit = 200) {
       }
     }
 
-    const fallbackGenerated =
-      generatedImageUrl || coverImageUrl || ogImageUrl || absoluteUrl(siteConfig.defaultOgImage);
-    generatedImageUrl = fallbackGenerated;
-    coverImageUrl = coverImageUrl || fallbackGenerated;
-    ogImageUrl = ogImageUrl || fallbackGenerated;
+    // Do not mark fallback icon as generated illustration.
+    // Prefer source preview for card OG fallbacks and keep generated image null until Leonardo completes.
+    const cardFallback = previewImageUrl || coverImageUrl || ogImageUrl || absoluteUrl(siteConfig.defaultOgImage);
+    generatedImageUrl = generatedImageUrl || null;
+    coverImageUrl = coverImageUrl || cardFallback;
+    ogImageUrl = ogImageUrl || cardFallback;
 
     if (previewImageUrl && !previewImageCaption) {
       previewImageCaption = `Preview: original image from ${previewImageSource || "Source"}`;

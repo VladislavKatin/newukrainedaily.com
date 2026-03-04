@@ -911,8 +911,10 @@ export async function listNewsItemsNeedingImageGeneration(
       select ni.*
       from news_items ni
       left join news_images img on img.news_item_id = ni.id
-      where ni.status = 'draft'
-        and ni.cover_image_url is null
+      where (
+          (ni.status = 'draft' and (ni.cover_image_url is null or ni.og_image_url is null))
+          or (ni.status = 'published' and ni.generated_image_url is null)
+        )
         and (
           img.id is null
           or (
