@@ -20,6 +20,11 @@ export type NewsRawRecord = {
   canonicalUrl?: string | null;
   title: string;
   contentSnippet: string | null;
+  previewImageUrl: string | null;
+  previewImageMethod: string | null;
+  previewImageConfidence: number | null;
+  previewImageSource: string | null;
+  previewImageCaption: string | null;
   publishedAt: string | null;
   fetchedAt: string;
   hash: string;
@@ -41,6 +46,13 @@ export type NewsItemRecord = {
   coverImageUrl: string | null;
   ogImageUrl: string | null;
   ogImageAlt: string | null;
+  previewImageUrl: string | null;
+  previewImageSource: string | null;
+  previewImageCaption: string | null;
+  generatedImagePrompt: string | null;
+  generatedImageUrl: string | null;
+  generatedImageAlt: string | null;
+  generatedImageCaption: string | null;
   sourceName: string | null;
   sourceUrl: string | null;
   canonicalUrl: string | null;
@@ -154,6 +166,11 @@ type CreateRawNewsInput = {
   canonicalUrl?: string | null;
   title: string;
   contentSnippet?: string | null;
+  previewImageUrl?: string | null;
+  previewImageMethod?: string | null;
+  previewImageConfidence?: number | null;
+  previewImageSource?: string | null;
+  previewImageCaption?: string | null;
   publishedAt?: string | null;
   hash: string;
 };
@@ -173,6 +190,13 @@ type UpsertNewsItemInput = {
   coverImageUrl?: string | null;
   ogImageUrl?: string | null;
   ogImageAlt?: string | null;
+  previewImageUrl?: string | null;
+  previewImageSource?: string | null;
+  previewImageCaption?: string | null;
+  generatedImagePrompt?: string | null;
+  generatedImageUrl?: string | null;
+  generatedImageAlt?: string | null;
+  generatedImageCaption?: string | null;
   sourceName?: string | null;
   sourceUrl?: string | null;
   canonicalUrl?: string | null;
@@ -251,6 +275,14 @@ function mapNewsRaw(row: Record<string, unknown>): NewsRawRecord {
     canonicalUrl: row.canonical_url ? String(row.canonical_url) : null,
     title: String(row.title),
     contentSnippet: row.content_snippet ? String(row.content_snippet) : null,
+    previewImageUrl: row.preview_image_url ? String(row.preview_image_url) : null,
+    previewImageMethod: row.preview_image_method ? String(row.preview_image_method) : null,
+    previewImageConfidence:
+      row.preview_image_confidence === null || row.preview_image_confidence === undefined
+        ? null
+        : Number(row.preview_image_confidence),
+    previewImageSource: row.preview_image_source ? String(row.preview_image_source) : null,
+    previewImageCaption: row.preview_image_caption ? String(row.preview_image_caption) : null,
     publishedAt: row.published_at ? String(row.published_at) : null,
     fetchedAt: String(row.fetched_at),
     hash: String(row.hash)
@@ -274,6 +306,13 @@ function mapNewsItem(row: Record<string, unknown>): NewsItemRecord {
     coverImageUrl: row.cover_image_url ? String(row.cover_image_url) : null,
     ogImageUrl: row.og_image_url ? String(row.og_image_url) : null,
     ogImageAlt: row.og_image_alt ? String(row.og_image_alt) : null,
+    previewImageUrl: row.preview_image_url ? String(row.preview_image_url) : null,
+    previewImageSource: row.preview_image_source ? String(row.preview_image_source) : null,
+    previewImageCaption: row.preview_image_caption ? String(row.preview_image_caption) : null,
+    generatedImagePrompt: row.generated_image_prompt ? String(row.generated_image_prompt) : null,
+    generatedImageUrl: row.generated_image_url ? String(row.generated_image_url) : null,
+    generatedImageAlt: row.generated_image_alt ? String(row.generated_image_alt) : null,
+    generatedImageCaption: row.generated_image_caption ? String(row.generated_image_caption) : null,
     sourceName: row.source_name ? String(row.source_name) : null,
     sourceUrl: row.source_url ? String(row.source_url) : null,
     canonicalUrl: row.canonical_url ? String(row.canonical_url) : null,
@@ -396,12 +435,16 @@ async function runClientQuery<T extends Record<string, unknown>>(
 export async function createRawNews(input: CreateRawNewsInput) {
   const result = await query(
     `
-      insert into news_raw (source_id, url, canonical_url, title, content_snippet, published_at, hash)
-      select $1, $2, $3, $4, $5, $6, $7
+      insert into news_raw (
+        source_id, url, canonical_url, title, content_snippet,
+        preview_image_url, preview_image_method, preview_image_confidence, preview_image_source, preview_image_caption,
+        published_at, hash
+      )
+      select $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
       where not exists (
         select 1
         from news_raw
-        where url = $2 or hash = $7 or ($3 is not null and canonical_url = $3)
+        where url = $2 or hash = $12 or ($3 is not null and canonical_url = $3)
       )
       returning *
     `,
@@ -411,6 +454,11 @@ export async function createRawNews(input: CreateRawNewsInput) {
       input.canonicalUrl ?? null,
       input.title,
       input.contentSnippet ?? null,
+      input.previewImageUrl ?? null,
+      input.previewImageMethod ?? null,
+      input.previewImageConfidence ?? null,
+      input.previewImageSource ?? null,
+      input.previewImageCaption ?? null,
       normalizeTimestampInput(input.publishedAt),
       input.hash
     ]
@@ -553,6 +601,13 @@ export async function upsertNewsItem(input: UpsertNewsItemInput) {
     input.coverImageUrl ?? null,
     input.ogImageUrl ?? null,
     input.ogImageAlt ?? null,
+    input.previewImageUrl ?? null,
+    input.previewImageSource ?? null,
+    input.previewImageCaption ?? null,
+    input.generatedImagePrompt ?? null,
+    input.generatedImageUrl ?? null,
+    input.generatedImageAlt ?? null,
+    input.generatedImageCaption ?? null,
     input.sourceName ?? null,
     input.sourceUrl ?? null,
     input.canonicalUrl ?? null,
@@ -597,26 +652,33 @@ export async function upsertNewsItem(input: UpsertNewsItemInput) {
             cover_image_url = $13,
             og_image_url = $14,
             og_image_alt = $15,
-            source_name = $16,
-            source_url = $17,
-            canonical_url = $18,
-            meta_title = $19,
-            meta_description = $20,
-            reading_time_minutes = $21,
-            word_count = $22,
-            char_count = $23,
-            internal_links = $24::jsonb,
-            related_ids = $25,
-            fingerprint = $26,
-            is_duplicate = $27,
-            quality_score = $28,
-            primary_topic = $29,
-            location = $30,
-            scheduled_at = $31,
-            indexable = $32,
-            status = $33,
-            language = $34,
-            published_at = $35
+            preview_image_url = $16,
+            preview_image_source = $17,
+            preview_image_caption = $18,
+            generated_image_prompt = $19,
+            generated_image_url = $20,
+            generated_image_alt = $21,
+            generated_image_caption = $22,
+            source_name = $23,
+            source_url = $24,
+            canonical_url = $25,
+            meta_title = $26,
+            meta_description = $27,
+            reading_time_minutes = $28,
+            word_count = $29,
+            char_count = $30,
+            internal_links = $31::jsonb,
+            related_ids = $32,
+            fingerprint = $33,
+            is_duplicate = $34,
+            quality_score = $35,
+            primary_topic = $36,
+            location = $37,
+            scheduled_at = $38,
+            indexable = $39,
+            status = $40,
+            language = $41,
+            published_at = $42
           where id = $1
           returning *
         `,
@@ -634,15 +696,18 @@ export async function upsertNewsItem(input: UpsertNewsItemInput) {
     `
       insert into news_items (
         raw_id, slug, title, dek, summary, content, key_points, why_it_matters, tags, topics, entities,
-        cover_image_url, og_image_url, og_image_alt, source_name, source_url, canonical_url,
+        cover_image_url, og_image_url, og_image_alt,
+        preview_image_url, preview_image_source, preview_image_caption,
+        generated_image_prompt, generated_image_url, generated_image_alt, generated_image_caption,
+        source_name, source_url, canonical_url,
         meta_title, meta_description, reading_time_minutes, word_count, char_count,
         internal_links, related_ids, fingerprint, is_duplicate, quality_score, primary_topic,
         location, scheduled_at, indexable, status, language, published_at
       )
       values (
         $1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9, $10, $11,
-        $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22,
-        $23::jsonb, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35
+        $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
+        $31::jsonb, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42
       )
       on conflict (slug) do update set
         raw_id = excluded.raw_id,
@@ -658,6 +723,13 @@ export async function upsertNewsItem(input: UpsertNewsItemInput) {
         cover_image_url = excluded.cover_image_url,
         og_image_url = excluded.og_image_url,
         og_image_alt = excluded.og_image_alt,
+        preview_image_url = excluded.preview_image_url,
+        preview_image_source = excluded.preview_image_source,
+        preview_image_caption = excluded.preview_image_caption,
+        generated_image_prompt = excluded.generated_image_prompt,
+        generated_image_url = excluded.generated_image_url,
+        generated_image_alt = excluded.generated_image_alt,
+        generated_image_caption = excluded.generated_image_caption,
         source_name = excluded.source_name,
         source_url = excluded.source_url,
         canonical_url = excluded.canonical_url,
@@ -925,18 +997,31 @@ export async function countPublishedNewsSince(sinceIso: string) {
 
 export async function updateNewsItemAssets(
   id: string,
-  input: { coverImageUrl?: string | null; ogImageUrl?: string | null }
+  input: {
+    coverImageUrl?: string | null;
+    ogImageUrl?: string | null;
+    generatedImageUrl?: string | null;
+    generatedImageCaption?: string | null;
+  }
 ) {
   const result = await query(
     `
       update news_items
       set
         cover_image_url = coalesce($2, cover_image_url),
-        og_image_url = coalesce($3, og_image_url)
+        og_image_url = coalesce($3, og_image_url),
+        generated_image_url = coalesce($4, generated_image_url),
+        generated_image_caption = coalesce($5, generated_image_caption)
       where id = $1
       returning *
     `,
-    [id, input.coverImageUrl ?? null, input.ogImageUrl ?? null]
+    [
+      id,
+      input.coverImageUrl ?? null,
+      input.ogImageUrl ?? null,
+      input.generatedImageUrl ?? null,
+      input.generatedImageCaption ?? null
+    ]
   );
 
   return result.rows[0] ? mapNewsItem(result.rows[0]) : null;

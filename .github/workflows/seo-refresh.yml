@@ -1,0 +1,30 @@
+name: Refresh Published SEO
+
+on:
+  schedule:
+    - cron: "10 1 * * *"
+  workflow_dispatch:
+
+jobs:
+  seo-refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger SEO refresh endpoint
+        env:
+          SEO_REFRESH_URL: ${{ secrets.SEO_REFRESH_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$SEO_REFRESH_URL" ]; then
+            echo "Missing SEO_REFRESH_URL secret"
+            exit 1
+          fi
+
+          if [ -z "$CRON_SECRET" ]; then
+            echo "Missing CRON_SECRET secret"
+            exit 1
+          fi
+
+          curl --fail-with-body --show-error --silent \
+            -X POST "$SEO_REFRESH_URL" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -H "Content-Type: application/json"

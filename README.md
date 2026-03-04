@@ -50,6 +50,14 @@ With the app running locally and `CRON_SECRET` configured:
 npm run smoke:cron
 ```
 
+## SEO refresh for existing content
+
+To re-apply SEO fields for all already published news/blog entries (canonical, meta, OG, stats, related links):
+
+```bash
+npm run seo:refresh
+```
+
 ## Vercel deployment
 
 1. Import `https://github.com/VladislavKatin/newukrainedaily.com` into Vercel.
@@ -112,6 +120,8 @@ This project does not use Vercel Cron in production on Hobby plans.
 
 - `POST /api/cron/generate` runs one article-generation pipeline per call by default.
 - `.github/workflows/generate.yml` calls that endpoint 10 times per day.
+- `POST /api/cron/seo-refresh` refreshes SEO fields for already published news/blog.
+- `.github/workflows/seo-refresh.yml` calls that endpoint once per day.
 - GitHub Actions provides the external scheduler for free.
 
 Add these GitHub repository secrets:
@@ -120,6 +130,8 @@ Add these GitHub repository secrets:
   - Example: `https://www.newukrainedaily.com/api/cron/generate`
 - `CRON_SECRET`
   - Must match the same `CRON_SECRET` configured in Vercel.
+- `SEO_REFRESH_URL`
+  - Example: `https://www.newukrainedaily.com/api/cron/seo-refresh`
 
 Required Vercel env for this protected endpoint:
 
@@ -168,6 +180,7 @@ Protected endpoints:
 - `POST /api/cron/generate-images`
 - `POST /api/cron/publish`
 - `POST /api/cron/autopost`
+- `POST /api/cron/seo-refresh`
 - `GET /api/internal/status`
 - `POST /api/internal/run-pipeline`
 - `POST /api/webhooks/leonardo`

@@ -11,6 +11,7 @@
     "verify:stack": "node scripts/verify-stack.mjs",
     "db:apply": "node scripts/apply-sql.mjs supabase/schema.sql supabase/seed.sql",
     "db:seed-real": "node scripts/seed-real-preview-content.mjs",
+    "seo:refresh": "node scripts/seo-refresh-content.mjs",
     "smoke:cron": "node scripts/smoke-cron.mjs",
     "push:main": "powershell -ExecutionPolicy Bypass -File .\\scripts\\push-main.ps1",
     "autopush": "node scripts/autopush.mjs",

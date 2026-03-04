@@ -3,13 +3,25 @@ alter type job_type add value if not exists 'select_candidates';
 alter type job_type add value if not exists 'link';
 
 alter table if exists public.news_raw
-  add column if not exists canonical_url text;
+  add column if not exists canonical_url text,
+  add column if not exists preview_image_url text,
+  add column if not exists preview_image_method text,
+  add column if not exists preview_image_confidence numeric(4,3),
+  add column if not exists preview_image_source text,
+  add column if not exists preview_image_caption text;
 
 alter table if exists public.news_items
   add column if not exists content text,
   add column if not exists topics text[] not null default '{}',
   add column if not exists entities text[] not null default '{}',
   add column if not exists og_image_alt text,
+  add column if not exists preview_image_url text,
+  add column if not exists preview_image_source text,
+  add column if not exists preview_image_caption text,
+  add column if not exists generated_image_prompt text,
+  add column if not exists generated_image_url text,
+  add column if not exists generated_image_alt text,
+  add column if not exists generated_image_caption text,
   add column if not exists canonical_url text,
   add column if not exists meta_title text,
   add column if not exists meta_description text,

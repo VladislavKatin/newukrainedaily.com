@@ -1,5 +1,13 @@
 import "server-only";
 import { rewriteRawNews } from "@/lib/ai/rewrite-service";
+import { buildInternalLinks } from "@/lib/internal-linker";
+import {
+  buildNewsFingerprint,
+  charCount,
+  normalizeCanonicalUrl,
+  readingTimeMinutes,
+  wordCount
+} from "@/lib/news-normalization";
 import { getEnv } from "@/lib/env";
 import { ingestRssSources } from "@/lib/ingestion/rss";
 import { createLeonardoGeneration, getLeonardoGeneration } from "@/lib/leonardo/client";
@@ -14,6 +22,7 @@ import {
   getNewsImageByNewsItemId,
   getNewsBySlug,
   getNewsByTitle,
+  listRecentPublishedNews,
   listNewsItemsNeedingImageGeneration,
   listPendingJobs,
   listPublishReadyNews,
@@ -171,6 +180,7 @@ export async function runFetchNewsJob(options?: {
 export async function runRewriteNewsJob(limitOverride?: number) {
   const limits = getPipelineLimits();
   const pendingRaws = await listUnprocessedRawNews(limitOverride ?? limits.rewriteBatchLimit);
+  const publishedPool = await listRecentPublishedNews(200);
 
   let createdDrafts = 0;
   let topicsUpdated = 0;
@@ -190,18 +200,101 @@ export async function runRewriteNewsJob(limitOverride?: number) {
     const slug = await buildUniqueSlug(slugBase);
     const title = await buildUniqueTitle(rewritten.title);
     const tags = Array.from(new Set([...rewritten.tags, ...deriveTags(raw.title, cleanedSnippet)])).slice(0, 10);
+    const topics = Array.from(new Set(rewritten.topics)).slice(0, 6);
+    const entities = Array.from(new Set(rewritten.entities)).slice(0, 12);
+    const primaryTopic = rewritten.primary_topic || topics[0] || tags[0] || "World";
+    const canonicalUrl = normalizeCanonicalUrl(raw.canonicalUrl || raw.url);
+    const content = rewritten.body;
+    const entryCharCount = charCount(content);
+    const entryWordCount = wordCount(content);
+    const entryReadingTime = readingTimeMinutes(content);
+    const fingerprint = buildNewsFingerprint({
+      title,
+      sourceName: raw.sourceName,
+      canonicalUrl,
+      publishedAt: raw.publishedAt
+    });
+
+    const linkingSeed = {
+      id: `draft:${slug}`,
+      rawId: raw.id,
+      slug,
+      title,
+      dek: rewritten.lede,
+      summary: rewritten.body,
+      content,
+      keyPoints: rewritten.key_points,
+      whyItMatters: rewritten.why_it_matters,
+      tags,
+      topics,
+      entities,
+      coverImageUrl: null,
+      ogImageUrl: null,
+      ogImageAlt: rewritten.image_alt,
+      previewImageUrl: raw.previewImageUrl ?? null,
+      previewImageSource: raw.previewImageSource ?? null,
+      previewImageCaption: raw.previewImageCaption ?? null,
+      generatedImagePrompt: rewritten.image_prompt,
+      generatedImageUrl: null,
+      generatedImageAlt: rewritten.image_alt,
+      generatedImageCaption: null,
+      sourceName: raw.sourceName || "Unknown Source",
+      sourceUrl: raw.sourceUrl || raw.url,
+      canonicalUrl,
+      metaTitle: rewritten.meta_title,
+      metaDescription: rewritten.meta_description,
+      readingTimeMinutes: entryReadingTime,
+      wordCount: entryWordCount,
+      charCount: entryCharCount,
+      internalLinks: [],
+      relatedIds: [],
+      fingerprint,
+      isDuplicate: false,
+      qualityScore: 0.9,
+      primaryTopic,
+      location: rewritten.location || null,
+      scheduledAt: null,
+      indexable: true,
+      status: "draft" as const,
+      language: "en",
+      publishedAt: raw.publishedAt,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    const linking = buildInternalLinks(linkingSeed, publishedPool);
 
     await upsertNewsItem({
       rawId: raw.id,
       slug,
       title,
       dek: rewritten.lede,
-      summary: [rewritten.lede, rewritten.body].join("\n\n"),
+      summary: rewritten.lede,
+      content,
       keyPoints: rewritten.key_points,
       whyItMatters: rewritten.why_it_matters,
       tags,
+      topics,
+      entities,
+      previewImageUrl: raw.previewImageUrl ?? null,
+      previewImageSource: raw.previewImageSource ?? null,
+      previewImageCaption: raw.previewImageCaption ?? null,
+      generatedImagePrompt: rewritten.image_prompt,
+      generatedImageAlt: rewritten.image_alt,
       sourceName: raw.sourceName || "Unknown Source",
       sourceUrl: raw.sourceUrl || raw.url,
+      canonicalUrl,
+      metaTitle: rewritten.meta_title,
+      metaDescription: rewritten.meta_description,
+      readingTimeMinutes: entryReadingTime,
+      wordCount: entryWordCount,
+      charCount: entryCharCount,
+      internalLinks: linking.links,
+      relatedIds: linking.relatedIds,
+      fingerprint,
+      qualityScore: 0.9,
+      primaryTopic,
+      location: rewritten.location || null,
       status: "draft",
       language: "en",
       publishedAt: raw.publishedAt
@@ -257,7 +350,7 @@ export async function runGenerateImagesJob(limitOverride?: number) {
     }
 
     const previousRequest = await getNewsImageByNewsItemId(item.id);
-    const prompt = buildImagePrompt({
+    const prompt = item.generatedImagePrompt || buildImagePrompt({
       title: item.title,
       dek: item.dek,
       summary: item.summary,
@@ -295,7 +388,11 @@ export async function runGenerateImagesJob(limitOverride?: number) {
           });
           await updateNewsItemAssets(item.id, {
             coverImageUrl: stored.publicUrl,
-            ogImageUrl: stored.publicUrl
+            ogImageUrl: stored.publicUrl,
+            generatedImageUrl: stored.publicUrl,
+            generatedImageCaption:
+              item.generatedImageCaption ||
+              "Illustration generated with AI (Leonardo) based on the headline"
           });
           completed += 1;
           continue;
@@ -515,18 +612,100 @@ export async function replayRewriteJob(rawId: string) {
   const slug = await buildUniqueSlug(slugBase);
   const title = await buildUniqueTitle(rewritten.title);
   const tags = Array.from(new Set([...rewritten.tags, ...deriveTags(raw.title, cleanedSnippet)])).slice(0, 10);
+  const topics = Array.from(new Set(rewritten.topics)).slice(0, 6);
+  const entities = Array.from(new Set(rewritten.entities)).slice(0, 12);
+  const primaryTopic = rewritten.primary_topic || topics[0] || tags[0] || "World";
+  const canonicalUrl = normalizeCanonicalUrl(raw.canonicalUrl || raw.url);
+  const content = rewritten.body;
+  const entryCharCount = charCount(content);
+  const entryWordCount = wordCount(content);
+  const entryReadingTime = readingTimeMinutes(content);
+  const fingerprint = buildNewsFingerprint({
+    title,
+    sourceName: raw.sourceName,
+    canonicalUrl,
+    publishedAt: raw.publishedAt
+  });
+  const publishedPool = await listRecentPublishedNews(200);
+  const linkingSeed = {
+    id: `draft:${slug}`,
+    rawId: raw.id,
+    slug,
+    title,
+    dek: rewritten.lede,
+    summary: rewritten.body,
+    content,
+    keyPoints: rewritten.key_points,
+    whyItMatters: rewritten.why_it_matters,
+    tags,
+    topics,
+    entities,
+    coverImageUrl: null,
+    ogImageUrl: null,
+    ogImageAlt: rewritten.image_alt,
+    previewImageUrl: raw.previewImageUrl ?? null,
+    previewImageSource: raw.previewImageSource ?? null,
+    previewImageCaption: raw.previewImageCaption ?? null,
+    generatedImagePrompt: rewritten.image_prompt,
+    generatedImageUrl: null,
+    generatedImageAlt: rewritten.image_alt,
+    generatedImageCaption: null,
+    sourceName: raw.sourceName || "Unknown Source",
+    sourceUrl: raw.sourceUrl || raw.url,
+    canonicalUrl,
+    metaTitle: rewritten.meta_title,
+    metaDescription: rewritten.meta_description,
+    readingTimeMinutes: entryReadingTime,
+    wordCount: entryWordCount,
+    charCount: entryCharCount,
+    internalLinks: [],
+    relatedIds: [],
+    fingerprint,
+    isDuplicate: false,
+    qualityScore: 0.9,
+    primaryTopic,
+    location: rewritten.location || null,
+    scheduledAt: null,
+    indexable: true,
+    status: "draft" as const,
+    language: "en",
+    publishedAt: raw.publishedAt,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  const linking = buildInternalLinks(linkingSeed, publishedPool);
 
   const draft = await upsertNewsItem({
     rawId: raw.id,
     slug,
     title,
     dek: rewritten.lede,
-    summary: [rewritten.lede, rewritten.body].join("\n\n"),
+    summary: rewritten.lede,
+    content,
     keyPoints: rewritten.key_points,
     whyItMatters: rewritten.why_it_matters,
     tags,
+    topics,
+    entities,
+    previewImageUrl: raw.previewImageUrl ?? null,
+    previewImageSource: raw.previewImageSource ?? null,
+    previewImageCaption: raw.previewImageCaption ?? null,
+    generatedImagePrompt: rewritten.image_prompt,
+    generatedImageAlt: rewritten.image_alt,
     sourceName: raw.sourceName || "Unknown Source",
     sourceUrl: raw.sourceUrl || raw.url,
+    canonicalUrl,
+    metaTitle: rewritten.meta_title,
+    metaDescription: rewritten.meta_description,
+    readingTimeMinutes: entryReadingTime,
+    wordCount: entryWordCount,
+    charCount: entryCharCount,
+    internalLinks: linking.links,
+    relatedIds: linking.relatedIds,
+    fingerprint,
+    qualityScore: 0.9,
+    primaryTopic,
+    location: rewritten.location || null,
     status: "draft",
     language: "en",
     publishedAt: raw.publishedAt
@@ -580,7 +759,9 @@ export async function handleLeonardoWebhook(payload: Record<string, unknown>) {
 
   await updateNewsItemAssets(imageRecord.newsItemId, {
     coverImageUrl: stored.publicUrl,
-    ogImageUrl: stored.publicUrl
+    ogImageUrl: stored.publicUrl,
+    generatedImageUrl: stored.publicUrl,
+    generatedImageCaption: "Illustration generated with AI (Leonardo) based on the headline"
   });
 
   await enqueueJob({

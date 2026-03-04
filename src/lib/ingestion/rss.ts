@@ -2,11 +2,15 @@ import "server-only";
 import crypto from "node:crypto";
 import { XMLParser } from "fast-xml-parser";
 import { isUkraineRelevantFeedItem, sourceLikelyUkraineFocused } from "@/lib/content-relevance";
+import { extractMainImage } from "@/lib/ingestion/main-image";
+import { normalizeCanonicalUrl } from "@/lib/news-normalization";
 import { createRawNews, listActiveSources } from "@/lib/postgres-repository";
 
 type ParsedFeedItem = {
+  raw: Record<string, unknown>;
   title: string;
   url: string;
+  canonicalUrl: string | null;
   contentSnippet: string | null;
   publishedAt: string | null;
 };
@@ -54,10 +58,50 @@ function normalizePublishedAt(value: string | null) {
   return parsed.toISOString();
 }
 
+function pickLinkValue(item: Record<string, unknown>) {
+  const linkNode = item.link;
+
+  if (typeof linkNode === "string") {
+    return linkNode.trim() || null;
+  }
+
+  if (linkNode && typeof linkNode === "object") {
+    const linkRecord = linkNode as Record<string, unknown>;
+    const href =
+      pickText(linkRecord.href) ||
+      pickText(linkRecord.url) ||
+      pickText(linkRecord["#text"]);
+
+    if (href) {
+      return href;
+    }
+  }
+
+  const links = toArray(item.link as Record<string, unknown> | Record<string, unknown>[] | undefined);
+  for (const link of links) {
+    if (!link || typeof link !== "object") {
+      continue;
+    }
+
+    const linkRecord = link as Record<string, unknown>;
+    const rel = (pickText(linkRecord.rel) || "").toLowerCase();
+    const href = pickText(linkRecord.href) || pickText(linkRecord.url) || pickText(linkRecord["#text"]);
+    if (!href) {
+      continue;
+    }
+
+    if (!rel || rel === "alternate" || rel === "canonical") {
+      return href;
+    }
+  }
+
+  return null;
+}
+
 function normalizeItem(item: Record<string, unknown>): ParsedFeedItem | null {
   const title = pickText(item.title) || "Untitled item";
   const url =
-    pickText(item.link) ||
+    pickLinkValue(item) ||
     pickText(item.guid) ||
     pickText((item.link as Record<string, unknown> | undefined)?.href);
 
@@ -76,8 +120,10 @@ function normalizeItem(item: Record<string, unknown>): ParsedFeedItem | null {
   );
 
   return {
+    raw: item,
     title,
     url,
+    canonicalUrl: normalizeCanonicalUrl(url),
     contentSnippet,
     publishedAt
   };
@@ -148,11 +194,25 @@ export async function ingestRssSources(options?: {
       let sourceNewRecords = 0;
 
       for (const item of items) {
+        const previewImage = await extractMainImage({
+          rssItem: item.raw,
+          articleUrl: item.url,
+          feedUrl: source.url
+        });
+
         const created = await createRawNews({
           sourceId: source.id,
           url: item.url,
+          canonicalUrl: item.canonicalUrl,
           title: item.title,
           contentSnippet: item.contentSnippet,
+          previewImageUrl: previewImage.url,
+          previewImageMethod: previewImage.methodUsed,
+          previewImageConfidence: previewImage.confidence,
+          previewImageSource: source.name,
+          previewImageCaption: previewImage.url
+            ? `Preview: original image from ${source.name}`
+            : null,
           publishedAt: item.publishedAt,
           hash: buildHash(item)
         });
@@ -160,6 +220,14 @@ export async function ingestRssSources(options?: {
         if (created) {
           newRecords += 1;
           sourceNewRecords += 1;
+        }
+
+        if (previewImage.url) {
+          console.log(
+            `[ingestion:image] source=${source.name} method=${previewImage.methodUsed} confidence=${previewImage.confidence.toFixed(
+              2
+            )} url=${previewImage.url}`
+          );
         }
       }
 
