@@ -28,4 +28,4 @@ jobs:
             -X POST "$CRON_URL" \
             -H "Authorization: Bearer $CRON_SECRET" \
             -H "Content-Type: application/json" \
-            --data '{"count":1}'
+            --data '{"sources":[]}'

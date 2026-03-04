@@ -4,11 +4,25 @@ import { runGeneratePipeline } from "@/lib/pipeline";
 
 type GeneratePayload = {
   count?: number;
+  sources?: string[];
 };
 
-function parseCount(payload: GeneratePayload | null) {
+function parsePayload(payload: GeneratePayload | null) {
+  if (!payload) {
+    return { count: 1, sources: [] as string[] };
+  }
+
+  if (payload.sources !== undefined) {
+    if (!Array.isArray(payload.sources) || payload.sources.some((source) => typeof source !== "string")) {
+      return null;
+    }
+  }
+
   if (!payload || payload.count === undefined) {
-    return 1;
+    return {
+      count: 1,
+      sources: payload.sources ?? []
+    };
   }
 
   if (!Number.isFinite(payload.count)) {
@@ -21,7 +35,10 @@ function parseCount(payload: GeneratePayload | null) {
     return null;
   }
 
-  return normalized;
+  return {
+    count: normalized,
+    sources: payload.sources ?? []
+  };
 }
 
 export function GET() {
@@ -43,17 +60,21 @@ export async function POST(request: Request) {
     payload = null;
   }
 
-  const count = parseCount(payload);
+  const parsed = parsePayload(payload);
 
-  if (count === null) {
+  if (parsed === null) {
     return NextResponse.json(
-      { ok: false, error: "Invalid count. Use a number between 1 and 10." },
+      {
+        ok: false,
+        error:
+          "Invalid payload. Use {\"count\":1} or {\"count\":1,\"sources\":[]} with sources as an array."
+      },
       { status: 400 }
     );
   }
 
   try {
-    const result = await runGeneratePipeline(count);
+    const result = await runGeneratePipeline(parsed.count);
 
     return NextResponse.json(result);
   } catch (error) {
