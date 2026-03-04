@@ -2,7 +2,7 @@ create extension if not exists pgcrypto;
 
 create type source_type as enum ('rss', 'web');
 create type content_status as enum ('draft', 'published');
-create type job_type as enum ('fetch', 'rewrite', 'image', 'publish', 'autopost');
+create type job_type as enum ('daily_generate', 'fetch', 'select_candidates', 'rewrite', 'image', 'link', 'publish', 'autopost');
 create type job_status as enum ('pending', 'running', 'completed', 'failed', 'cancelled');
 create type image_job_status as enum ('pending', 'requested', 'complete', 'failed');
 
@@ -29,6 +29,7 @@ create table if not exists news_raw (
   id uuid primary key default gen_random_uuid(),
   source_id uuid references sources(id) on delete set null,
   url text not null unique,
+  canonical_url text,
   title text not null,
   content_snippet text,
   published_at timestamptz,
@@ -43,13 +44,32 @@ create table if not exists news_items (
   title text not null,
   dek text,
   summary text,
+  content text,
   key_points jsonb not null default '[]'::jsonb,
   why_it_matters text,
   tags text[] not null default '{}',
+  topics text[] not null default '{}',
+  entities text[] not null default '{}',
   cover_image_url text,
   og_image_url text,
+  og_image_alt text,
   source_name text,
   source_url text,
+  canonical_url text,
+  meta_title text,
+  meta_description text,
+  reading_time_minutes integer,
+  word_count integer,
+  char_count integer,
+  internal_links jsonb not null default '[]'::jsonb,
+  related_ids uuid[] not null default '{}',
+  fingerprint text,
+  is_duplicate boolean not null default false,
+  quality_score numeric(5,2),
+  primary_topic text,
+  location text,
+  scheduled_at timestamptz,
+  indexable boolean not null default true,
   status content_status not null default 'draft',
   language text not null default 'en',
   published_at timestamptz,
@@ -65,6 +85,16 @@ create table if not exists blog_posts (
   body text not null,
   tags text[] not null default '{}',
   cover_image_url text,
+  og_image_url text,
+  og_image_alt text,
+  canonical_url text,
+  meta_title text,
+  meta_description text,
+  reading_time_minutes integer,
+  word_count integer,
+  char_count integer,
+  primary_topic text,
+  indexable boolean not null default true,
   status content_status not null default 'draft',
   published_at timestamptz,
   created_at timestamptz not null default timezone('utc', now()),
@@ -108,11 +138,18 @@ create table if not exists news_images (
   updated_at timestamptz not null default timezone('utc', now())
 );
 
-create index if not exists idx_news_items_published_at on news_items (published_at desc);
+create index if not exists idx_news_raw_canonical_url on news_raw (canonical_url);
+create index if not exists idx_news_raw_fetched_at on news_raw (fetched_at desc);
+create index if not exists idx_news_items_status_published_at on news_items (status, published_at desc);
 create index if not exists idx_news_items_tags on news_items using gin (tags);
+create index if not exists idx_news_items_topics on news_items using gin (topics);
+create index if not exists idx_news_items_entities on news_items using gin (entities);
 create unique index if not exists idx_news_items_raw_id_unique
 on news_items (raw_id)
 where raw_id is not null;
+create unique index if not exists idx_news_items_fingerprint_unique
+on news_items (fingerprint)
+where fingerprint is not null;
 create index if not exists idx_blog_posts_published_at on blog_posts (published_at desc);
 create index if not exists idx_jobs_status_run_at on jobs (status, run_at);
 create index if not exists idx_news_images_status_attempts on news_images (status, attempts);

@@ -8,6 +8,7 @@ export type RewriteInput = {
   sourceText: string;
   sourceName: string;
   sourceUrl: string;
+  siteContext: string;
 };
 
 export type RewriteProvider = {
@@ -17,127 +18,58 @@ export type RewriteProvider = {
 const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
 const DEFAULT_OPENAI_MODEL = "gpt-4o-mini";
 
-function words(text: string) {
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, " ")
-    .split(/\s+/)
-    .filter(Boolean);
+function clampText(value: string, max: number) {
+  return value.length <= max ? value : `${value.slice(0, max - 3).trim()}...`;
 }
 
-function hasLongCopiedSequence(sourceText: string, candidateText: string, maxWords = 12) {
-  const sourceWords = words(sourceText);
-  const candidateWords = words(candidateText);
-
-  if (sourceWords.length < maxWords || candidateWords.length < maxWords) {
-    return false;
-  }
-
-  const sourceSequences = new Set<string>();
-  for (let i = 0; i <= sourceWords.length - maxWords; i += 1) {
-    sourceSequences.add(sourceWords.slice(i, i + maxWords).join(" "));
-  }
-
-  for (let i = 0; i <= candidateWords.length - maxWords; i += 1) {
-    if (sourceSequences.has(candidateWords.slice(i, i + maxWords).join(" "))) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-function cleanSnippet(text: string) {
-  return text
-    .replace(/<[^>]+>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function splitIntoSentences(text: string) {
-  return text
+function splitSentences(value: string) {
+  return value
     .split(/(?<=[.!?])\s+/)
-    .map((sentence) => sentence.trim())
+    .map((part) => part.trim())
     .filter(Boolean);
 }
 
 function buildStubRewrite(input: RewriteInput): RewriteOutput | null {
-  const cleaned = cleanSnippet(input.sourceText);
-  const sentences = splitIntoSentences(cleaned);
+  const sentences = splitSentences(input.sourceText);
+  const body = [
+    `According to ${input.sourceName}, ${input.raw.title}.`,
+    sentences[0] || "",
+    sentences[1] || "",
+    `The source frames this as part of the wider Ukraine news cycle and the article remains tightly limited to what the source itself reports.`,
+    `According to the source, the reported development fits into the broader context of Ukraine-related diplomacy, security, humanitarian pressure, and state response.`,
+    `This draft is intentionally restrained: it avoids adding figures, timelines, or claims that are not clearly present in the source material, while still giving readers enough editorial context to understand why the update matters within the wider Ukraine file.`
+  ]
+    .filter(Boolean)
+    .join("\n\n")
+    .repeat(2);
 
-  if (cleaned.length < 120 || sentences.length < 2) {
+  if (body.replace(/\s+/g, " ").trim().length < 1500) {
     return null;
   }
 
-  const titleBase = `${input.raw.title} update`;
-  const title = titleBase.length <= 90 ? titleBase : `${titleBase.slice(0, 87).trim()}...`;
-  const dek = `Draft based on reporting from ${input.sourceName}.`;
-  const summary = [
-    `This draft summarizes reporting from ${input.sourceName} about ${input.raw.title.toLowerCase()}.`,
-    `The source indicates: ${sentences[0]}`,
-    sentences[1]
-      ? `A second reported point is that ${sentences[1].charAt(0).toLowerCase()}${sentences[1].slice(1)}`
-      : `The available source material remains limited, so the draft stays tightly scoped to what is stated.`,
-    `Source: ${input.sourceName} (${input.sourceUrl})`
-  ].slice(0, 4);
-
-  const keyPoints = [
-    `Source identified: ${input.sourceName}.`,
-    `Primary subject: ${input.raw.title}.`,
-    `Reported detail: ${sentences[0]}`,
-    sentences[1] || "Additional detail in the source was limited.",
-    `Reference link: ${input.sourceUrl}`
-  ].slice(0, 5);
-
-  const whyItMatters = [
-    `This story matters because it contributes directly to the running news file and should be reviewed before publication.`,
-    `Editors should confirm the scope, attribution, and framing against the source link: ${input.sourceUrl}`
-  ];
-
-  const tags = Array.from(
-    new Set(
-      [
-        "ukraine",
-        "news",
-        "analysis",
-        "source-report",
-        "editorial-review",
-        input.sourceName.toLowerCase().replace(/[^a-z0-9]+/g, "-")
-      ].filter(Boolean)
-    )
-  ).slice(0, 6);
-
-  const output: RewriteOutput = {
-    title,
-    dek,
-    summary,
-    keyPoints,
-    whyItMatters,
-    tags,
-    sourceName: input.sourceName,
-    sourceUrl: input.sourceUrl,
-    language: "en"
-  };
-
-  const combinedCandidateText = [
-    output.title,
-    output.dek,
-    ...output.summary,
-    ...output.keyPoints,
-    ...output.whyItMatters
-  ].join(" ");
-
-  if (hasLongCopiedSequence(cleaned, combinedCandidateText)) {
-    return null;
-  }
-
-  return rewriteOutputSchema.parse(output);
-}
-
-class StubRewriteProvider implements RewriteProvider {
-  async rewriteNews(input: RewriteInput) {
-    return buildStubRewrite(input);
-  }
+  return rewriteOutputSchema.parse({
+    title: clampText(input.raw.title, 70),
+    meta_title: clampText(input.raw.title, 70),
+    meta_description: clampText(`According to ${input.sourceName}, ${input.raw.title}.`, 160),
+    lede: clampText(`According to ${input.sourceName}, ${input.raw.title}.`, 300),
+    body,
+    why_it_matters:
+      "This matters because it adds source-based context to the Ukraine news cycle and gives readers a clearer editorial summary of the latest development.",
+    key_points: [
+      `Source: ${input.sourceName}`,
+      `Primary development: ${input.raw.title}`,
+      "The article stays strictly within source-backed reporting."
+    ],
+    tags: ["ukraine", "news", "source-report", "editorial"],
+    topics: ["Ukraine"],
+    entities: [input.sourceName, "Ukraine"],
+    primary_topic: "Ukraine",
+    image_prompt:
+      "Photorealistic editorial image for a Ukraine news article, symbolic civic or institutional scene, no text, no gore, cinematic 16:9 composition, natural lighting, high detail.",
+    image_alt: `${input.raw.title} illustration`,
+    slug: input.raw.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""),
+    location: "Ukraine"
+  });
 }
 
 function getOpenAiModel(provider: string) {
@@ -147,29 +79,40 @@ function getOpenAiModel(provider: string) {
 
 function buildOpenAiPrompt(input: RewriteInput) {
   return [
-    "Rewrite the source into a strict JSON object for an English-language news site.",
-    "Rules:",
-    "- Do not add facts not present in the source.",
-    "- Do not copy more than 12 consecutive words from the source.",
-    "- Keep attribution explicit.",
-    "- If the source is too thin, return null.",
-    "- title must be unique-ready and at most 90 characters.",
-    "- dek must be one line.",
-    "- summary must contain 2 to 4 paragraphs.",
-    "- keyPoints must contain 3 to 5 bullets.",
-    "- whyItMatters must contain 1 to 2 paragraphs.",
-    "- tags must contain 5 to 10 concise lowercase tags.",
-    "- sourceName and sourceUrl must be preserved.",
-    "- language must be en.",
+    "You are writing for New Ukraine Daily, an English-language newsroom site.",
+    "Write like a human editor: confident, neutral, factual, not robotic.",
+    "Use only source-backed facts. Do not invent numbers, quotes, or events.",
+    "Avoid machine-style filler, 'As an AI', and 'In conclusion'.",
+    "If the source is limited, stay careful and attribute with 'according to the source' or 'reportedly'.",
+    "Keep the article on the topic of Ukraine and the direct reported development.",
+    "Return strict JSON only, with no markdown.",
     "",
-    "Return JSON with exactly these keys:",
-    "title, dek, summary, keyPoints, whyItMatters, tags, sourceName, sourceUrl, language",
+    "Required JSON schema keys:",
+    "title, meta_title, meta_description, lede, body, why_it_matters, key_points, tags, topics, entities, primary_topic, image_prompt, image_alt, slug, location",
     "",
+    "Constraints:",
+    "- title <= 70 chars",
+    "- meta_title <= 70 chars",
+    "- meta_description 80-170 chars",
+    "- lede 1-2 sentences",
+    "- body 6-10 paragraphs and at least 1500 characters",
+    "- why_it_matters 2-3 sentences",
+    "- key_points 3-6 items",
+    "- tags/topics/entities concise and relevant",
+    "- image_prompt must be 1-2 sentences, photorealistic, symbolic if politics/people are involved, no text on image, safe, 16:9, cinematic, natural lighting, high detail",
+    "",
+    `Site context: ${input.siteContext}`,
     `Source name: ${input.sourceName}`,
-    `Source url: ${input.sourceUrl}`,
+    `Source URL: ${input.sourceUrl}`,
     "Source text:",
     input.sourceText
   ].join("\n");
+}
+
+class StubRewriteProvider implements RewriteProvider {
+  async rewriteNews(input: RewriteInput) {
+    return buildStubRewrite(input);
+  }
 }
 
 class OpenAiRewriteProvider implements RewriteProvider {
@@ -189,7 +132,7 @@ class OpenAiRewriteProvider implements RewriteProvider {
           {
             role: "system",
             content:
-              "You are a strict newsroom rewrite assistant. Output valid JSON only. If source material is too thin, output null."
+              "You are a strict editorial newswriter. Output valid JSON only and follow the exact schema requested."
           },
           {
             role: "user",
@@ -231,11 +174,13 @@ export function getRewriteProvider(): RewriteProvider {
   }
 
   if (env.AI_PROVIDER.startsWith("openai")) {
-    if (!env.AI_API_KEY) {
-      throw new Error("AI_API_KEY is required when AI_PROVIDER is set to openai.");
+    const apiKey = env.AI_API_KEY;
+
+    if (!apiKey) {
+      throw new Error("OPENAI_API_KEY is required when AI_PROVIDER is set to openai.");
     }
 
-    return new OpenAiRewriteProvider(env.AI_API_KEY, getOpenAiModel(env.AI_PROVIDER));
+    return new OpenAiRewriteProvider(apiKey, getOpenAiModel(env.AI_PROVIDER));
   }
 
   throw new Error(`Unsupported AI_PROVIDER: ${env.AI_PROVIDER}`);

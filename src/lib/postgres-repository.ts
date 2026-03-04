@@ -17,6 +17,7 @@ export type NewsRawRecord = {
   sourceName?: string | null;
   sourceUrl?: string | null;
   url: string;
+  canonicalUrl?: string | null;
   title: string;
   contentSnippet: string | null;
   publishedAt: string | null;
@@ -31,13 +32,32 @@ export type NewsItemRecord = {
   title: string;
   dek: string | null;
   summary: string | null;
+  content: string | null;
   keyPoints: unknown;
   whyItMatters: string | null;
   tags: string[];
+  topics: string[];
+  entities: string[];
   coverImageUrl: string | null;
   ogImageUrl: string | null;
+  ogImageAlt: string | null;
   sourceName: string | null;
   sourceUrl: string | null;
+  canonicalUrl: string | null;
+  metaTitle: string | null;
+  metaDescription: string | null;
+  readingTimeMinutes: number | null;
+  wordCount: number | null;
+  charCount: number | null;
+  internalLinks: unknown;
+  relatedIds: string[];
+  fingerprint: string | null;
+  isDuplicate: boolean;
+  qualityScore: number | null;
+  primaryTopic: string | null;
+  location: string | null;
+  scheduledAt: string | null;
+  indexable: boolean;
   status: "draft" | "published";
   language: string;
   publishedAt: string | null;
@@ -53,6 +73,16 @@ export type BlogPostRecord = {
   body: string;
   tags: string[];
   coverImageUrl: string | null;
+  ogImageUrl: string | null;
+  ogImageAlt: string | null;
+  canonicalUrl: string | null;
+  metaTitle: string | null;
+  metaDescription: string | null;
+  readingTimeMinutes: number | null;
+  wordCount: number | null;
+  charCount: number | null;
+  primaryTopic: string | null;
+  indexable: boolean;
   status: "draft" | "published";
   publishedAt: string | null;
   createdAt: string;
@@ -86,7 +116,7 @@ export type TopicRecord = {
 
 export type JobRecord = {
   id: string;
-  type: "fetch" | "rewrite" | "image" | "publish" | "autopost";
+  type: "daily_generate" | "fetch" | "select_candidates" | "rewrite" | "image" | "link" | "publish" | "autopost";
   payload: unknown;
   status: "pending" | "running" | "completed" | "failed" | "cancelled";
   attempts: number;
@@ -121,6 +151,7 @@ export type OperationalStatusSnapshot = {
 type CreateRawNewsInput = {
   sourceId?: string | null;
   url: string;
+  canonicalUrl?: string | null;
   title: string;
   contentSnippet?: string | null;
   publishedAt?: string | null;
@@ -133,13 +164,32 @@ type UpsertNewsItemInput = {
   title: string;
   dek?: string | null;
   summary?: string | null;
+  content?: string | null;
   keyPoints?: unknown;
   whyItMatters?: string | null;
   tags?: string[];
+  topics?: string[];
+  entities?: string[];
   coverImageUrl?: string | null;
   ogImageUrl?: string | null;
+  ogImageAlt?: string | null;
   sourceName?: string | null;
   sourceUrl?: string | null;
+  canonicalUrl?: string | null;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  readingTimeMinutes?: number | null;
+  wordCount?: number | null;
+  charCount?: number | null;
+  internalLinks?: unknown;
+  relatedIds?: string[];
+  fingerprint?: string | null;
+  isDuplicate?: boolean;
+  qualityScore?: number | null;
+  primaryTopic?: string | null;
+  location?: string | null;
+  scheduledAt?: string | null;
+  indexable?: boolean;
   status?: "draft" | "published";
   language?: string;
   publishedAt?: string | null;
@@ -198,6 +248,7 @@ function mapNewsRaw(row: Record<string, unknown>): NewsRawRecord {
     sourceName: row.source_name ? String(row.source_name) : null,
     sourceUrl: row.source_url ? String(row.source_url) : null,
     url: String(row.url),
+    canonicalUrl: row.canonical_url ? String(row.canonical_url) : null,
     title: String(row.title),
     contentSnippet: row.content_snippet ? String(row.content_snippet) : null,
     publishedAt: row.published_at ? String(row.published_at) : null,
@@ -214,13 +265,33 @@ function mapNewsItem(row: Record<string, unknown>): NewsItemRecord {
     title: String(row.title),
     dek: row.dek ? String(row.dek) : null,
     summary: row.summary ? String(row.summary) : null,
+    content: row.content ? String(row.content) : null,
     keyPoints: row.key_points,
     whyItMatters: row.why_it_matters ? String(row.why_it_matters) : null,
     tags: Array.isArray(row.tags) ? (row.tags as string[]) : [],
+    topics: Array.isArray(row.topics) ? (row.topics as string[]) : [],
+    entities: Array.isArray(row.entities) ? (row.entities as string[]) : [],
     coverImageUrl: row.cover_image_url ? String(row.cover_image_url) : null,
     ogImageUrl: row.og_image_url ? String(row.og_image_url) : null,
+    ogImageAlt: row.og_image_alt ? String(row.og_image_alt) : null,
     sourceName: row.source_name ? String(row.source_name) : null,
     sourceUrl: row.source_url ? String(row.source_url) : null,
+    canonicalUrl: row.canonical_url ? String(row.canonical_url) : null,
+    metaTitle: row.meta_title ? String(row.meta_title) : null,
+    metaDescription: row.meta_description ? String(row.meta_description) : null,
+    readingTimeMinutes:
+      typeof row.reading_time_minutes === "number" ? Number(row.reading_time_minutes) : row.reading_time_minutes ? Number(row.reading_time_minutes) : null,
+    wordCount: typeof row.word_count === "number" ? Number(row.word_count) : row.word_count ? Number(row.word_count) : null,
+    charCount: typeof row.char_count === "number" ? Number(row.char_count) : row.char_count ? Number(row.char_count) : null,
+    internalLinks: row.internal_links ?? [],
+    relatedIds: Array.isArray(row.related_ids) ? (row.related_ids as string[]) : [],
+    fingerprint: row.fingerprint ? String(row.fingerprint) : null,
+    isDuplicate: Boolean(row.is_duplicate),
+    qualityScore: row.quality_score === null || row.quality_score === undefined ? null : Number(row.quality_score),
+    primaryTopic: row.primary_topic ? String(row.primary_topic) : null,
+    location: row.location ? String(row.location) : null,
+    scheduledAt: row.scheduled_at ? String(row.scheduled_at) : null,
+    indexable: row.indexable === undefined ? true : Boolean(row.indexable),
     status: row.status as NewsItemRecord["status"],
     language: String(row.language),
     publishedAt: row.published_at ? String(row.published_at) : null,
@@ -238,6 +309,17 @@ function mapBlogPost(row: Record<string, unknown>): BlogPostRecord {
     body: String(row.body),
     tags: Array.isArray(row.tags) ? (row.tags as string[]) : [],
     coverImageUrl: row.cover_image_url ? String(row.cover_image_url) : null,
+    ogImageUrl: row.og_image_url ? String(row.og_image_url) : null,
+    ogImageAlt: row.og_image_alt ? String(row.og_image_alt) : null,
+    canonicalUrl: row.canonical_url ? String(row.canonical_url) : null,
+    metaTitle: row.meta_title ? String(row.meta_title) : null,
+    metaDescription: row.meta_description ? String(row.meta_description) : null,
+    readingTimeMinutes:
+      typeof row.reading_time_minutes === "number" ? Number(row.reading_time_minutes) : row.reading_time_minutes ? Number(row.reading_time_minutes) : null,
+    wordCount: typeof row.word_count === "number" ? Number(row.word_count) : row.word_count ? Number(row.word_count) : null,
+    charCount: typeof row.char_count === "number" ? Number(row.char_count) : row.char_count ? Number(row.char_count) : null,
+    primaryTopic: row.primary_topic ? String(row.primary_topic) : null,
+    indexable: row.indexable === undefined ? true : Boolean(row.indexable),
     status: row.status as BlogPostRecord["status"],
     publishedAt: row.published_at ? String(row.published_at) : null,
     createdAt: String(row.created_at),
@@ -314,18 +396,19 @@ async function runClientQuery<T extends Record<string, unknown>>(
 export async function createRawNews(input: CreateRawNewsInput) {
   const result = await query(
     `
-      insert into news_raw (source_id, url, title, content_snippet, published_at, hash)
-      select $1, $2, $3, $4, $5, $6
+      insert into news_raw (source_id, url, canonical_url, title, content_snippet, published_at, hash)
+      select $1, $2, $3, $4, $5, $6, $7
       where not exists (
         select 1
         from news_raw
-        where url = $2 or hash = $6
+        where url = $2 or hash = $7 or ($3 is not null and canonical_url = $3)
       )
       returning *
     `,
     [
       input.sourceId ?? null,
       input.url,
+      input.canonicalUrl ?? null,
       input.title,
       input.contentSnippet ?? null,
       normalizeTimestampInput(input.publishedAt),
@@ -411,6 +494,27 @@ export async function listUnprocessedRawNews(limit = 20) {
   return result.rows.map(mapNewsRaw);
 }
 
+export async function listCandidateRawNews(limit = 20, windowHours = 36) {
+  const result = await query(
+    `
+      select
+        nr.*,
+        s.name as source_name,
+        s.url as source_url
+      from news_raw nr
+      left join sources s on s.id = nr.source_id
+      left join news_items ni on ni.raw_id = nr.id
+      where ni.id is null
+        and nr.fetched_at >= timezone('utc', now()) - make_interval(hours => $2)
+      order by nr.published_at desc nulls last, nr.fetched_at desc
+      limit $1
+    `,
+    [limit, windowHours]
+  );
+
+  return result.rows.map(mapNewsRaw);
+}
+
 export async function getRawNewsById(id: string) {
   const result = await query(
     `
@@ -440,13 +544,32 @@ export async function upsertNewsItem(input: UpsertNewsItemInput) {
     input.title,
     input.dek ?? null,
     input.summary ?? null,
+    input.content ?? null,
     JSON.stringify(input.keyPoints ?? []),
     input.whyItMatters ?? null,
     input.tags ?? [],
+    input.topics ?? [],
+    input.entities ?? [],
     input.coverImageUrl ?? null,
     input.ogImageUrl ?? null,
+    input.ogImageAlt ?? null,
     input.sourceName ?? null,
     input.sourceUrl ?? null,
+    input.canonicalUrl ?? null,
+    input.metaTitle ?? null,
+    input.metaDescription ?? null,
+    input.readingTimeMinutes ?? null,
+    input.wordCount ?? null,
+    input.charCount ?? null,
+    JSON.stringify(input.internalLinks ?? []),
+    input.relatedIds ?? [],
+    input.fingerprint ?? null,
+    input.isDuplicate ?? false,
+    input.qualityScore ?? null,
+    input.primaryTopic ?? null,
+    input.location ?? null,
+    normalizeTimestampInput(input.scheduledAt),
+    input.indexable ?? true,
     input.status ?? "draft",
     input.language ?? "en",
     normalizeTimestampInput(input.publishedAt)
@@ -465,16 +588,35 @@ export async function upsertNewsItem(input: UpsertNewsItemInput) {
             title = $4,
             dek = $5,
             summary = $6,
-            key_points = $7::jsonb,
-            why_it_matters = $8,
-            tags = $9,
-            cover_image_url = $10,
-            og_image_url = $11,
-            source_name = $12,
-            source_url = $13,
-            status = $14,
-            language = $15,
-            published_at = $16
+            content = $7,
+            key_points = $8::jsonb,
+            why_it_matters = $9,
+            tags = $10,
+            topics = $11,
+            entities = $12,
+            cover_image_url = $13,
+            og_image_url = $14,
+            og_image_alt = $15,
+            source_name = $16,
+            source_url = $17,
+            canonical_url = $18,
+            meta_title = $19,
+            meta_description = $20,
+            reading_time_minutes = $21,
+            word_count = $22,
+            char_count = $23,
+            internal_links = $24::jsonb,
+            related_ids = $25,
+            fingerprint = $26,
+            is_duplicate = $27,
+            quality_score = $28,
+            primary_topic = $29,
+            location = $30,
+            scheduled_at = $31,
+            indexable = $32,
+            status = $33,
+            language = $34,
+            published_at = $35
           where id = $1
           returning *
         `,
@@ -491,22 +633,48 @@ export async function upsertNewsItem(input: UpsertNewsItemInput) {
   const result = await query(
     `
       insert into news_items (
-        raw_id, slug, title, dek, summary, key_points, why_it_matters, tags,
-        cover_image_url, og_image_url, source_name, source_url, status, language, published_at
+        raw_id, slug, title, dek, summary, content, key_points, why_it_matters, tags, topics, entities,
+        cover_image_url, og_image_url, og_image_alt, source_name, source_url, canonical_url,
+        meta_title, meta_description, reading_time_minutes, word_count, char_count,
+        internal_links, related_ids, fingerprint, is_duplicate, quality_score, primary_topic,
+        location, scheduled_at, indexable, status, language, published_at
       )
-      values ($1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+      values (
+        $1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9, $10, $11,
+        $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22,
+        $23::jsonb, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35
+      )
       on conflict (slug) do update set
         raw_id = excluded.raw_id,
         title = excluded.title,
         dek = excluded.dek,
         summary = excluded.summary,
+        content = excluded.content,
         key_points = excluded.key_points,
         why_it_matters = excluded.why_it_matters,
         tags = excluded.tags,
+        topics = excluded.topics,
+        entities = excluded.entities,
         cover_image_url = excluded.cover_image_url,
         og_image_url = excluded.og_image_url,
+        og_image_alt = excluded.og_image_alt,
         source_name = excluded.source_name,
         source_url = excluded.source_url,
+        canonical_url = excluded.canonical_url,
+        meta_title = excluded.meta_title,
+        meta_description = excluded.meta_description,
+        reading_time_minutes = excluded.reading_time_minutes,
+        word_count = excluded.word_count,
+        char_count = excluded.char_count,
+        internal_links = excluded.internal_links,
+        related_ids = excluded.related_ids,
+        fingerprint = excluded.fingerprint,
+        is_duplicate = excluded.is_duplicate,
+        quality_score = excluded.quality_score,
+        primary_topic = excluded.primary_topic,
+        location = excluded.location,
+        scheduled_at = excluded.scheduled_at,
+        indexable = excluded.indexable,
         status = excluded.status,
         language = excluded.language,
         published_at = excluded.published_at
@@ -528,6 +696,21 @@ export async function listNews(limit = 20, status: NewsItemRecord["status"] | "a
       limit $2
     `,
     [status, limit]
+  );
+
+  return result.rows.map(mapNewsItem);
+}
+
+export async function listRecentPublishedNews(limit = 200) {
+  const result = await query(
+    `
+      select *
+      from news_items
+      where status = 'published'
+      order by published_at desc nulls last, created_at desc
+      limit $1
+    `,
+    [limit]
   );
 
   return result.rows.map(mapNewsItem);

@@ -102,22 +102,36 @@ function buildImagePrompt(input: {
   tags: string[];
   sourceName: string | null;
 }) {
-  const tagText = input.tags.slice(0, 6).join(", ");
-  const summaryText = input.summary?.replace(/\s+/g, " ").trim();
-  const whyText = input.whyItMatters?.replace(/\s+/g, " ").trim();
+  const sanitizeForImagePrompt = (value: string | null | undefined) =>
+    (value || "")
+      .replace(/\s+/g, " ")
+      .replace(/\b(sexual violence|rape|torture|massacre|gore|blood|execution)\b/gi, "human rights abuse")
+      .trim();
+
+  const tagText = sanitizeForImagePrompt(input.tags.slice(0, 6).join(", "));
+  const summaryText = sanitizeForImagePrompt(input.summary);
+  const whyText = sanitizeForImagePrompt(input.whyItMatters);
+  const titleText = sanitizeForImagePrompt(input.title);
+  const dekText = sanitizeForImagePrompt(input.dek);
+  const sourceText = sanitizeForImagePrompt(input.sourceName);
+
   return [
     "Create a photorealistic editorial cover image for a Ukraine news article.",
-    `Headline context: ${input.title}.`,
-    input.dek ? `Short brief: ${input.dek}.` : null,
+    `Headline context: ${titleText}.`,
+    dekText ? `Short brief: ${dekText}.` : null,
     summaryText ? `Article summary: ${summaryText.slice(0, 320)}.` : null,
     whyText ? `Editorial importance: ${whyText.slice(0, 220)}.` : null,
     tagText ? `Themes: ${tagText}.` : null,
-    input.sourceName ? `Source context: ${input.sourceName}.` : null,
+    sourceText ? `Source context: ${sourceText}.` : null,
     "Show concrete human, infrastructure, or institutional context implied by the article.",
-    "No text overlays, no watermarks, no logos, no flags as the main subject, cinematic natural light, realistic reportage style."
+    "Use symbolic and non-graphic composition. No text overlays, no watermarks, no logos, no explicit violence, cinematic natural light, realistic reportage style."
   ]
     .filter(Boolean)
     .join(" ");
+}
+
+function isModerationFailure(errorMessage: string) {
+  return /content moderated|moderation|safety|policy/i.test(errorMessage);
 }
 
 function getUtcDayStartIso(date = new Date()) {
@@ -181,15 +195,15 @@ export async function runRewriteNewsJob(limitOverride?: number) {
       rawId: raw.id,
       slug,
       title,
-      dek: rewritten.dek,
-      summary: rewritten.summary.join("\n\n"),
-      keyPoints: rewritten.keyPoints,
-      whyItMatters: rewritten.whyItMatters.join("\n\n"),
+      dek: rewritten.lede,
+      summary: [rewritten.lede, rewritten.body].join("\n\n"),
+      keyPoints: rewritten.key_points,
+      whyItMatters: rewritten.why_it_matters,
       tags,
-      sourceName: rewritten.sourceName,
-      sourceUrl: rewritten.sourceUrl,
+      sourceName: raw.sourceName || "Unknown Source",
+      sourceUrl: raw.sourceUrl || raw.url,
       status: "draft",
-      language: rewritten.language,
+      language: "en",
       publishedAt: raw.publishedAt
     });
 
@@ -305,6 +319,7 @@ export async function runGenerateImagesJob(limitOverride?: number) {
     } catch (error) {
       failed += 1;
       const message = error instanceof Error ? error.message : "Unknown Leonardo error";
+      const terminalModerationFailure = isModerationFailure(message);
       errors.push({
         slug: item.slug,
         message
@@ -313,7 +328,7 @@ export async function runGenerateImagesJob(limitOverride?: number) {
         newsItemId: item.id,
         prompt,
         status: "failed",
-        attempts,
+        attempts: terminalModerationFailure ? limits.imageMaxAttempts : attempts,
         lastError: message
       });
     }
@@ -505,15 +520,15 @@ export async function replayRewriteJob(rawId: string) {
     rawId: raw.id,
     slug,
     title,
-    dek: rewritten.dek,
-    summary: rewritten.summary.join("\n\n"),
-    keyPoints: rewritten.keyPoints,
-    whyItMatters: rewritten.whyItMatters.join("\n\n"),
+    dek: rewritten.lede,
+    summary: [rewritten.lede, rewritten.body].join("\n\n"),
+    keyPoints: rewritten.key_points,
+    whyItMatters: rewritten.why_it_matters,
     tags,
-    sourceName: rewritten.sourceName,
-    sourceUrl: rewritten.sourceUrl,
+    sourceName: raw.sourceName || "Unknown Source",
+    sourceUrl: raw.sourceUrl || raw.url,
     status: "draft",
-    language: rewritten.language,
+    language: "en",
     publishedAt: raw.publishedAt
   });
 

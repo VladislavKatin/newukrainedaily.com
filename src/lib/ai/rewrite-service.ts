@@ -1,7 +1,7 @@
 import "server-only";
 import { isUkraineRelevantRaw } from "@/lib/content-relevance";
-import { getRewriteProvider } from "@/lib/ai/provider";
-import { rewriteOutputSchema, type RewriteOutput } from "@/lib/ai/rewrite-schema";
+import { getRewriteProvider, type RewriteInput } from "@/lib/ai/provider";
+import { assertRewriteBodyLength, rewriteOutputSchema, type RewriteOutput } from "@/lib/ai/rewrite-schema";
 import type { NewsRawRecord } from "@/lib/postgres-repository";
 
 function normalizeWhitespace(text: string | null) {
@@ -28,7 +28,22 @@ export function buildRewriteSourceText(raw: NewsRawRecord) {
 
 export function isRewriteCandidate(raw: NewsRawRecord) {
   const snippet = cleanSnippet(raw.contentSnippet);
-  return isUkraineRelevantRaw(raw) && snippet.length >= 80 && countSentences(snippet) >= 1;
+  return isUkraineRelevantRaw(raw) && snippet.length >= 120 && countSentences(snippet) >= 2;
+}
+
+export function buildRewritePrompt(raw: NewsRawRecord, siteContext: string) {
+  return {
+    raw,
+    sourceText: buildRewriteSourceText(raw),
+    sourceName: raw.sourceName || "Unknown Source",
+    sourceUrl: raw.sourceUrl || raw.url,
+    siteContext
+  };
+}
+
+async function attemptRewrite(input: RewriteInput) {
+  const provider = getRewriteProvider();
+  return provider.rewriteNews(input);
 }
 
 export async function rewriteRawNews(raw: NewsRawRecord): Promise<RewriteOutput | null> {
@@ -36,17 +51,25 @@ export async function rewriteRawNews(raw: NewsRawRecord): Promise<RewriteOutput 
     return null;
   }
 
-  const provider = getRewriteProvider();
-  const rewritten = await provider.rewriteNews({
-    raw,
-    sourceText: buildRewriteSourceText(raw),
-    sourceName: raw.sourceName || "Unknown Source",
-    sourceUrl: raw.url
-  });
+  const siteContext =
+    "New Ukraine Daily publishes newsroom-style English articles about Ukraine, diplomacy, security, economy, energy, and humanitarian developments with strong SEO and internal linking.";
+  const input = buildRewritePrompt(raw, siteContext);
 
-  if (!rewritten) {
-    return null;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const rewritten = await attemptRewrite(input);
+
+    if (!rewritten) {
+      continue;
+    }
+
+    const normalized = rewriteOutputSchema.parse(rewritten);
+
+    if (!assertRewriteBodyLength(normalized.body)) {
+      continue;
+    }
+
+    return normalized;
   }
 
-  return rewriteOutputSchema.parse(rewritten);
+  return null;
 }

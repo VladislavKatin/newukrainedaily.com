@@ -1,143 +1,73 @@
 import { z } from "zod";
 
-function splitRichText(value: string) {
-  return value
-    .split(/\n\s*\n+/)
-    .map((part) => part.replace(/\s+/g, " ").trim())
-    .filter(Boolean);
+function normalizeString(value: unknown) {
+  return typeof value === "string" ? value.replace(/\s+/g, " ").trim() : value;
 }
 
-function splitSentences(value: string) {
-  return value
-    .split(/(?<=[.!?])\s+/)
-    .map((part) => part.replace(/\s+/g, " ").trim())
-    .filter(Boolean);
-}
-
-function splitList(value: string) {
-  return value
-    .split(/\r?\n+/)
-    .map((part) => part.replace(/^[-*•\d.)\s]+/, "").replace(/\s+/g, " ").trim())
-    .filter(Boolean);
-}
-
-function clampText(value: string, maxLength: number) {
-  return value.length <= maxLength ? value : `${value.slice(0, maxLength - 3).trim()}...`;
-}
-
-function chunkParagraphs(value: string, maxLength: number) {
-  const sentences = splitSentences(value);
-
-  if (sentences.length === 0) {
-    return [clampText(value.replace(/\s+/g, " ").trim(), maxLength)].filter(Boolean);
-  }
-
-  const chunks: string[] = [];
-  let current = "";
-
-  for (const sentence of sentences) {
-    const candidate = current ? `${current} ${sentence}` : sentence;
-
-    if (candidate.length <= maxLength) {
-      current = candidate;
-      continue;
-    }
-
-    if (current) {
-      chunks.push(clampText(current, maxLength));
-    }
-
-    current = sentence.length > maxLength ? clampText(sentence, maxLength) : sentence;
-  }
-
-  if (current) {
-    chunks.push(clampText(current, maxLength));
-  }
-
-  return chunks.filter(Boolean);
-}
-
-function normalizeParagraphCollection(
-  value: unknown,
-  minItems: number,
-  maxItems: number,
-  maxLength: number
-) {
-  const baseItems = Array.isArray(value)
-    ? value.filter((item): item is string => typeof item === "string")
-    : typeof value === "string"
-      ? splitRichText(value)
-      : [];
-
-  const expanded = baseItems.flatMap((item) => chunkParagraphs(item, maxLength));
-  const normalized = expanded.map((item) => clampText(item, maxLength)).filter(Boolean);
-
-  if (normalized.length >= minItems) {
-    return normalized.slice(0, maxItems);
-  }
-
-  const sourceText = Array.isArray(value)
-    ? value.filter((item): item is string => typeof item === "string").join(" ")
-    : typeof value === "string"
-      ? value
-      : "";
-  const fallback = chunkParagraphs(sourceText, maxLength).slice(0, maxItems);
-
-  return fallback;
-}
-
-function normalizeStringArray(value: unknown, splitter: (value: string) => string[]) {
+function normalizeStringArray(value: unknown, splitter: (input: string) => string[]) {
   if (Array.isArray(value)) {
-    return value;
+    return value
+      .filter((item): item is string => typeof item === "string")
+      .map((item) => item.replace(/\s+/g, " ").trim())
+      .filter(Boolean);
   }
 
   if (typeof value === "string") {
-    return splitter(value);
+    return splitter(value)
+      .map((item) => item.replace(/\s+/g, " ").trim())
+      .filter(Boolean);
   }
 
   return value;
 }
 
-function normalizeListCollection(value: unknown, splitter: (value: string) => string[], maxLength: number) {
-  const normalized = normalizeStringArray(value, splitter);
+function splitBullets(input: string) {
+  return input
+    .split(/\r?\n+/)
+    .map((part) => part.replace(/^[-*•\d.)\s]+/, "").trim())
+    .filter(Boolean);
+}
 
-  if (!Array.isArray(normalized)) {
-    return normalized;
-  }
-
-  return normalized
-    .filter((item): item is string => typeof item === "string")
-    .map((item) => clampText(item.replace(/\s+/g, " ").trim(), maxLength))
+function splitCommaList(input: string) {
+  return input
+    .split(",")
+    .map((part) => part.trim())
     .filter(Boolean);
 }
 
 export const rewriteOutputSchema = z.object({
-  title: z.string().min(10).max(90),
-  dek: z.string().min(10).max(220),
-  summary: z.preprocess(
-    (value) => normalizeParagraphCollection(value, 2, 4, 700),
-    z.array(z.string().min(30).max(700)).min(2).max(4)
-  ),
-  keyPoints: z.preprocess(
-    (value) => normalizeListCollection(value, splitList, 220),
-    z.array(z.string().min(10).max(220)).min(3).max(5)
-  ),
-  whyItMatters: z.preprocess(
-    (value) => normalizeParagraphCollection(value, 1, 2, 500),
-    z.array(z.string().min(30).max(500)).min(1).max(2)
+  title: z.preprocess(normalizeString, z.string().min(20).max(70)),
+  meta_title: z.preprocess(normalizeString, z.string().min(20).max(70)),
+  meta_description: z.preprocess(normalizeString, z.string().min(80).max(170)),
+  lede: z.preprocess(normalizeString, z.string().min(80).max(400)),
+  body: z.preprocess(normalizeString, z.string().min(1500).max(10000)),
+  why_it_matters: z.preprocess(normalizeString, z.string().min(120).max(1000)),
+  key_points: z.preprocess(
+    (value) => normalizeStringArray(value, splitBullets),
+    z.array(z.string().min(10).max(220)).min(3).max(6)
   ),
   tags: z.preprocess(
-    (value) =>
-      normalizeListCollection(
-        value,
-        (input) => input.split(",").map((part) => part.trim()).filter(Boolean),
-        32
-      ),
-    z.array(z.string().min(2).max(32)).min(5).max(10)
+    (value) => normalizeStringArray(value, splitCommaList),
+    z.array(z.string().min(2).max(32)).min(4).max(10)
   ),
-  sourceName: z.string().min(1),
-  sourceUrl: z.string().url(),
-  language: z.literal("en")
+  topics: z.preprocess(
+    (value) => normalizeStringArray(value, splitCommaList),
+    z.array(z.string().min(2).max(32)).min(1).max(6)
+  ),
+  entities: z.preprocess(
+    (value) => normalizeStringArray(value, splitCommaList),
+    z.array(z.string().min(2).max(64)).min(1).max(12)
+  ),
+  primary_topic: z.preprocess(normalizeString, z.string().min(2).max(32)),
+  image_prompt: z.preprocess(normalizeString, z.string().min(30).max(500)),
+  image_alt: z.preprocess(normalizeString, z.string().min(20).max(140)),
+  slug: z.preprocess(normalizeString, z.string().min(5).max(90)),
+  location: z.preprocess(normalizeString, z.string().max(120).optional()).optional()
 });
 
 export type RewriteOutput = z.infer<typeof rewriteOutputSchema>;
+
+export function assertRewriteBodyLength(body: string) {
+  const normalized = body.replace(/\s+/g, " ").trim();
+  return normalized.length >= 1500;
+}

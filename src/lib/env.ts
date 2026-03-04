@@ -41,6 +41,7 @@ const envSchema = z.object({
   PUBLIC_BASE_URL: optionalString(z.string().url()),
   CRON_SECRET: optionalString(z.string().min(1)),
   DATABASE_URL: optionalString(z.string().min(1)),
+  DIRECT_URL: optionalString(z.string().min(1)),
   SUPABASE_DATABASE_URL: optionalString(z.string().min(1)),
   SUPABASE_URL: optionalString(z.string().url()),
   SUPABASE_SERVICE_ROLE_KEY: optionalString(z.string().min(1)),
@@ -48,11 +49,13 @@ const envSchema = z.object({
   SUPABASE_STORAGE_PUBLIC_URL: optionalString(z.string().url()),
   AI_PROVIDER: optionalString(z.string().min(1)),
   AI_API_KEY: optionalString(z.string().min(1)),
+  OPENAI_API_KEY: optionalString(z.string().min(1)),
   LEONARDO_API_KEY: optionalString(z.string().min(1)),
   LEONARDO_WEBHOOK_SECRET: optionalString(z.string().min(1)),
   LOCAL_PREVIEW_CONTENT: optionalBooleanString(),
   DAILY_PUBLISH_LIMIT: optionalPositiveInt(),
   AUTOPOST_DRY_RUN: optionalBooleanString(),
+  AUTPOST_DRY_RUN: optionalBooleanString(),
   FETCH_SOURCES_LIMIT: optionalPositiveInt(),
   FETCH_ITEMS_PER_SOURCE_LIMIT: optionalPositiveInt(),
   REWRITE_BATCH_LIMIT: optionalPositiveInt(),
@@ -98,8 +101,13 @@ export function validateEnv(scope: "public" | "pipeline" = "public") {
       missing.push("DATABASE_URL");
     }
 
-    if (parsedEnv.AI_PROVIDER && parsedEnv.AI_PROVIDER !== "stub" && !parsedEnv.AI_API_KEY) {
-      missing.push("AI_API_KEY");
+    if (
+      parsedEnv.AI_PROVIDER &&
+      parsedEnv.AI_PROVIDER !== "stub" &&
+      !parsedEnv.AI_API_KEY &&
+      !parsedEnv.OPENAI_API_KEY
+    ) {
+      missing.push("OPENAI_API_KEY");
     }
   }
 
@@ -126,7 +134,7 @@ export function requireEnv<Key extends RequiredKey>(key: Key) {
 }
 
 export function getDatabaseUrl() {
-  const databaseUrl = parsedEnv.DATABASE_URL || parsedEnv.SUPABASE_DATABASE_URL;
+  const databaseUrl = parsedEnv.DATABASE_URL || parsedEnv.DIRECT_URL || parsedEnv.SUPABASE_DATABASE_URL;
 
   if (!databaseUrl) {
     throw new Error("Missing required environment variable: DATABASE_URL or SUPABASE_DATABASE_URL");
@@ -136,5 +144,9 @@ export function getDatabaseUrl() {
 }
 
 export function getEnv() {
-  return parsedEnv;
+  return {
+    ...parsedEnv,
+    AI_API_KEY: parsedEnv.AI_API_KEY || parsedEnv.OPENAI_API_KEY,
+    AUTOPOST_DRY_RUN: parsedEnv.AUTOPOST_DRY_RUN ?? parsedEnv.AUTPOST_DRY_RUN
+  };
 }
