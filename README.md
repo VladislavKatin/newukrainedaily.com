@@ -70,7 +70,6 @@ SUPABASE_DATABASE_URL=
 SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
 SUPABASE_STORAGE_BUCKET=
-SUPABASE_STORAGE_PUBLIC_URL=
 AI_PROVIDER=
 AI_API_KEY=
 LEONARDO_API_KEY=
@@ -131,7 +130,6 @@ Required Vercel env for this protected endpoint:
    - `SUPABASE_URL`
    - `SUPABASE_SERVICE_ROLE_KEY`
    - `SUPABASE_STORAGE_BUCKET`
-   - `SUPABASE_STORAGE_PUBLIC_URL`
 4. Run the contents of `supabase/schema.sql`.
 5. Optionally run `supabase/seed.sql`.
 6. Run `supabase/harden_rls.sql` if the database already exists and you want to lock down browser-facing Supabase access without recreating the schema.
@@ -194,6 +192,7 @@ Authorization: Bearer <LEONARDO_WEBHOOK_SECRET>
 ```
 
 - For production durability, use Supabase Storage instead of relying on local filesystem writes.
+- The app now derives the public asset URL directly from Supabase Storage, so a separate `SUPABASE_STORAGE_PUBLIC_URL` variable is no longer required.
 
 ## First production checklist
 

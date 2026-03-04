@@ -51,8 +51,7 @@ function getSupabaseStorageConfig() {
   return {
     url: env.SUPABASE_URL,
     serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY,
-    bucket: env.SUPABASE_STORAGE_BUCKET,
-    publicUrlBase: env.SUPABASE_STORAGE_PUBLIC_URL || null
+    bucket: env.SUPABASE_STORAGE_BUCKET
   };
 }
 
@@ -72,7 +71,7 @@ export async function saveRemoteImage(imageUrl: string, fileStem: string) {
   const fileName = `${fileStem}.${extension}`;
   const supabaseConfig = getSupabaseStorageConfig();
 
-  if (supabaseConfig && supabaseConfig.publicUrlBase) {
+  if (supabaseConfig) {
     const supabase = createClient(supabaseConfig.url, supabaseConfig.serviceRoleKey, {
       auth: {
         persistSession: false,
@@ -92,9 +91,16 @@ export async function saveRemoteImage(imageUrl: string, fileStem: string) {
       throw new Error(`Supabase Storage upload failed: ${upload.error.message}`);
     }
 
+    const publicUrlResult = supabase.storage.from(supabaseConfig.bucket).getPublicUrl(objectPath);
+    const publicUrl = publicUrlResult.data.publicUrl;
+
+    if (!publicUrl) {
+      throw new Error("Supabase Storage did not return a public URL");
+    }
+
     return {
       filePath: objectPath,
-      publicUrl: `${supabaseConfig.publicUrlBase.replace(/\/$/, "")}/${objectPath}`
+      publicUrl
     };
   }
 

@@ -50,8 +50,7 @@ export function cronStatus(route: string) {
       storageConfigured: Boolean(
         env.SUPABASE_URL &&
           env.SUPABASE_SERVICE_ROLE_KEY &&
-          env.SUPABASE_STORAGE_BUCKET &&
-          env.SUPABASE_STORAGE_PUBLIC_URL
+          env.SUPABASE_STORAGE_BUCKET
       )
     },
     validation: {
