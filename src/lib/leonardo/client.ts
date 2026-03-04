@@ -1,5 +1,6 @@
 import "server-only";
 import { getEnv, requireEnv } from "@/lib/env";
+import { extractLeonardoWebhookData } from "@/lib/leonardo/webhook";
 
 const LEONARDO_API_URL = "https://cloud.leonardo.ai/api/rest/v1/generations";
 const DEFAULT_MODEL_ID = "6bef9f1b-29cb-40c7-b9df-32b51c1f67d3";
@@ -73,6 +74,33 @@ export async function createLeonardoGeneration(input: LeonardoCreateRequest) {
 
   return {
     generationId,
+    payload
+  };
+}
+
+export async function getLeonardoGeneration(generationId: string) {
+  const response = await fetch(`${LEONARDO_API_URL}/${generationId}`, {
+    method: "GET",
+    headers: {
+      accept: "application/json",
+      authorization: `Bearer ${requireEnv("LEONARDO_API_KEY")}`
+    },
+    cache: "no-store"
+  });
+
+  if (!response.ok) {
+    const message = await response.text();
+    if (response.status === 429) {
+      throw new Error(`Leonardo rate limit reached: ${message}`);
+    }
+    throw new Error(`Leonardo generation lookup failed: ${response.status} ${message}`);
+  }
+
+  const payload = (await response.json()) as Record<string, unknown>;
+  const parsed = extractLeonardoWebhookData(payload);
+
+  return {
+    ...parsed,
     payload
   };
 }

@@ -2,7 +2,7 @@ import "server-only";
 import { rewriteRawNews } from "@/lib/ai/rewrite-service";
 import { getEnv } from "@/lib/env";
 import { ingestRssSources } from "@/lib/ingestion/rss";
-import { createLeonardoGeneration } from "@/lib/leonardo/client";
+import { createLeonardoGeneration, getLeonardoGeneration } from "@/lib/leonardo/client";
 import { extractLeonardoWebhookData } from "@/lib/leonardo/webhook";
 import {
   countPublishedNewsSince,
@@ -231,6 +231,7 @@ export async function runGenerateImagesJob(limitOverride?: number) {
     limits.imageStaleMinutes
   );
   let requested = 0;
+  let completed = 0;
   let skipped = 0;
   let failed = 0;
   let retried = 0;
@@ -243,10 +244,6 @@ export async function runGenerateImagesJob(limitOverride?: number) {
     }
 
     const previousRequest = await getNewsImageByNewsItemId(item.id);
-    const attempts = (previousRequest?.attempts ?? 0) + 1;
-    if (previousRequest?.status === "requested") {
-      retried += 1;
-    }
     const prompt = buildImagePrompt({
       title: item.title,
       dek: item.dek,
@@ -255,8 +252,43 @@ export async function runGenerateImagesJob(limitOverride?: number) {
       tags: item.tags,
       sourceName: item.sourceName
     });
+    const attempts = (previousRequest?.attempts ?? 0) + 1;
 
     try {
+      if (previousRequest?.status === "requested" && previousRequest.generationId) {
+        retried += 1;
+        const generation = await getLeonardoGeneration(previousRequest.generationId);
+
+        if (generation.status && ["failed", "error"].includes(generation.status.toLowerCase())) {
+          const message = generation.errorMessage || "Leonardo generation failed";
+          failed += 1;
+          errors.push({ slug: item.slug, message });
+          await failNewsImage({
+            generationId: previousRequest.generationId,
+            error: message,
+            webhookPayload: generation.payload
+          });
+          continue;
+        }
+
+        if (generation.imageUrl) {
+          const stored = await saveRemoteImage(generation.imageUrl, item.id);
+          await completeNewsImage({
+            generationId: previousRequest.generationId,
+            remoteImageUrl: generation.imageUrl,
+            localPath: stored.filePath,
+            localImageUrl: stored.publicUrl,
+            webhookPayload: generation.payload
+          });
+          await updateNewsItemAssets(item.id, {
+            coverImageUrl: stored.publicUrl,
+            ogImageUrl: stored.publicUrl
+          });
+          completed += 1;
+          continue;
+        }
+      }
+
       const generation = await createLeonardoGeneration({ prompt });
 
       await upsertNewsImageRequest({
@@ -286,7 +318,16 @@ export async function runGenerateImagesJob(limitOverride?: number) {
     }
   }
 
-  return { ok: true, processed: draftItems.length, requested, retried, skipped, failed, errors };
+  return {
+    ok: true,
+    processed: draftItems.length,
+    requested,
+    completed,
+    retried,
+    skipped,
+    failed,
+    errors
+  };
 }
 
 export async function runPublishJob(limit?: number) {
