@@ -39,6 +39,20 @@ function pickText(value: unknown): string | null {
   return null;
 }
 
+function normalizePublishedAt(value: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  const parsed = new Date(value);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  return parsed.toISOString();
+}
+
 function normalizeItem(item: Record<string, unknown>): ParsedFeedItem | null {
   const title = pickText(item.title) || "Untitled item";
   const url =
@@ -56,11 +70,9 @@ function normalizeItem(item: Record<string, unknown>): ParsedFeedItem | null {
     pickText(item["content:encoded"]) ||
     null;
 
-  const publishedAt =
-    pickText(item.pubDate) ||
-    pickText(item.published) ||
-    pickText(item.updated) ||
-    null;
+  const publishedAt = normalizePublishedAt(
+    pickText(item.pubDate) || pickText(item.published) || pickText(item.updated) || null
+  );
 
   return {
     title,
