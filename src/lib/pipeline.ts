@@ -12,6 +12,7 @@ import { getEnv } from "@/lib/env";
 import { ingestRssSources } from "@/lib/ingestion/rss";
 import { createLeonardoGeneration, getLeonardoGeneration } from "@/lib/leonardo/client";
 import { extractLeonardoWebhookData } from "@/lib/leonardo/webhook";
+import { absoluteUrl, siteConfig } from "@/lib/site";
 import {
   countPublishedNewsSince,
   completeNewsImage,
@@ -421,6 +422,16 @@ export async function runGenerateImagesJob(limitOverride?: number) {
         slug: item.slug,
         message
       });
+      if (terminalModerationFailure) {
+        const fallbackImageUrl = absoluteUrl(siteConfig.defaultOgImage);
+        await updateNewsItemAssets(item.id, {
+          coverImageUrl: fallbackImageUrl,
+          ogImageUrl: fallbackImageUrl,
+          generatedImageUrl: fallbackImageUrl,
+          generatedImageCaption:
+            "Illustration generated with AI (Leonardo) based on the headline"
+        });
+      }
       await upsertNewsImageRequest({
         newsItemId: item.id,
         prompt,
