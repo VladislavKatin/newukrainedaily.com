@@ -15,6 +15,19 @@ type ParsedFeedItem = {
   publishedAt: string | null;
 };
 
+export type RssSourceHealth = {
+  sourceId: string;
+  name: string;
+  url: string;
+  ok: boolean;
+  httpStatus: number | null;
+  totalItems: number;
+  relevantItems: number;
+  invalidItemUrls: number;
+  sampleItemUrl: string | null;
+  error: string | null;
+};
+
 const parser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: "",
@@ -154,6 +167,86 @@ function extractItems(xml: string) {
   return [...rssItems, ...atomItems]
     .map(normalizeItem)
     .filter((item): item is ParsedFeedItem => item !== null);
+}
+
+export async function inspectRssSources(options?: { sourceLimit?: number; itemsPerSourceLimit?: number }) {
+  const sourceLimit = options?.sourceLimit ?? 50;
+  const itemsPerSourceLimit = options?.itemsPerSourceLimit ?? 25;
+  const sources = (await listActiveSources(sourceLimit)).filter((source) => source.type === "rss");
+
+  const details: RssSourceHealth[] = [];
+
+  for (const source of sources) {
+    try {
+      const response = await fetch(source.url, {
+        method: "GET",
+        headers: {
+          "User-Agent": "newukrainedaily.com/0.1"
+        },
+        cache: "no-store",
+        signal: AbortSignal.timeout(15000)
+      });
+
+      if (!response.ok) {
+        details.push({
+          sourceId: source.id,
+          name: source.name,
+          url: source.url,
+          ok: false,
+          httpStatus: response.status,
+          totalItems: 0,
+          relevantItems: 0,
+          invalidItemUrls: 0,
+          sampleItemUrl: null,
+          error: `HTTP ${response.status}`
+        });
+        continue;
+      }
+
+      const xml = await response.text();
+      const allItems = extractItems(xml);
+      const relevant = allItems
+        .filter((item) => sourceLikelyUkraineFocused(source) || isUkraineRelevantFeedItem(item))
+        .slice(0, itemsPerSourceLimit);
+      const invalidItemUrls = relevant.filter((item) => !isHttpUrl(item.url)).length;
+
+      details.push({
+        sourceId: source.id,
+        name: source.name,
+        url: source.url,
+        ok: true,
+        httpStatus: response.status,
+        totalItems: allItems.length,
+        relevantItems: relevant.length,
+        invalidItemUrls,
+        sampleItemUrl: relevant.find((item) => isHttpUrl(item.url))?.url ?? null,
+        error: null
+      });
+    } catch (error) {
+      details.push({
+        sourceId: source.id,
+        name: source.name,
+        url: source.url,
+        ok: false,
+        httpStatus: null,
+        totalItems: 0,
+        relevantItems: 0,
+        invalidItemUrls: 0,
+        sampleItemUrl: null,
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  }
+
+  const summary = {
+    ok: true,
+    checkedSources: details.length,
+    healthySources: details.filter((entry) => entry.ok && entry.relevantItems > 0).length,
+    failingSources: details.filter((entry) => !entry.ok || entry.relevantItems === 0).length,
+    details
+  };
+
+  return summary;
 }
 
 function buildHash(input: ParsedFeedItem) {
