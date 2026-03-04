@@ -9,12 +9,20 @@ declare global {
 function createPool() {
   const connectionString = getDatabaseUrl();
   console.log("DB host check:", connectionString.split("@")[1]?.split("/")[0] ?? "unknown");
+  const isServerless = process.env.VERCEL === "1";
+  const configuredMax = Number(process.env.PG_POOL_MAX ?? "");
+  const maxConnections = Number.isFinite(configuredMax) && configuredMax > 0
+    ? configuredMax
+    : isServerless
+      ? 1
+      : 5;
 
   return new Pool({
     connectionString,
-    max: 5,
+    max: maxConnections,
     connectionTimeoutMillis: 10000,
     idleTimeoutMillis: 30000,
+    allowExitOnIdle: true,
     ssl: { rejectUnauthorized: false }
   });
 }
