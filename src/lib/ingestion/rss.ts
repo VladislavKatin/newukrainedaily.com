@@ -58,6 +58,15 @@ function normalizePublishedAt(value: string | null) {
   return parsed.toISOString();
 }
 
+function isHttpUrl(value: string) {
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 function pickLinkValue(item: Record<string, unknown>) {
   const linkNode = item.link;
 
@@ -192,47 +201,63 @@ export async function ingestRssSources(options?: {
       scannedItems += items.length;
 
       let sourceNewRecords = 0;
+      let sourceItemErrors = 0;
 
       for (const item of items) {
-        const previewImage = await extractMainImage({
-          rssItem: item.raw,
-          articleUrl: item.url,
-          feedUrl: source.url
-        });
+        try {
+          if (!isHttpUrl(item.url)) {
+            sourceItemErrors += 1;
+            console.warn(`[ingestion:item] source=${source.name} skipped invalid url=${item.url}`);
+            continue;
+          }
 
-        const created = await createRawNews({
-          sourceId: source.id,
-          url: item.url,
-          canonicalUrl: item.canonicalUrl,
-          title: item.title,
-          contentSnippet: item.contentSnippet,
-          previewImageUrl: previewImage.url,
-          previewImageMethod: previewImage.methodUsed,
-          previewImageConfidence: previewImage.confidence,
-          previewImageSource: source.name,
-          previewImageCaption: previewImage.url
-            ? `Preview: original image from ${source.name}`
-            : null,
-          publishedAt: item.publishedAt,
-          hash: buildHash(item)
-        });
+          const previewImage = await extractMainImage({
+            rssItem: item.raw,
+            articleUrl: item.url,
+            feedUrl: source.url
+          });
 
-        if (created) {
-          newRecords += 1;
-          sourceNewRecords += 1;
-        }
+          const created = await createRawNews({
+            sourceId: source.id,
+            url: item.url,
+            canonicalUrl: item.canonicalUrl,
+            title: item.title,
+            contentSnippet: item.contentSnippet,
+            previewImageUrl: previewImage.url,
+            previewImageMethod: previewImage.methodUsed,
+            previewImageConfidence: previewImage.confidence,
+            previewImageSource: source.name,
+            previewImageCaption: previewImage.url
+              ? `Preview: original image from ${source.name}`
+              : null,
+            publishedAt: item.publishedAt,
+            hash: buildHash(item)
+          });
 
-        if (previewImage.url) {
-          console.log(
-            `[ingestion:image] source=${source.name} method=${previewImage.methodUsed} confidence=${previewImage.confidence.toFixed(
-              2
-            )} url=${previewImage.url}`
+          if (created) {
+            newRecords += 1;
+            sourceNewRecords += 1;
+          }
+
+          if (previewImage.url) {
+            console.log(
+              `[ingestion:image] source=${source.name} method=${previewImage.methodUsed} confidence=${previewImage.confidence.toFixed(
+                2
+              )} url=${previewImage.url}`
+            );
+          }
+        } catch (error) {
+          sourceItemErrors += 1;
+          console.error(
+            `[ingestion:item] source=${source.name} failed url=${item.url} reason=${
+              error instanceof Error ? error.message : "Unknown error"
+            }`
           );
         }
       }
 
       console.log(
-        `[ingestion] source=${source.name} items=${items.length} new=${sourceNewRecords}`
+        `[ingestion] source=${source.name} items=${items.length} new=${sourceNewRecords} itemErrors=${sourceItemErrors}`
       );
     } catch (error) {
       failedSources += 1;
