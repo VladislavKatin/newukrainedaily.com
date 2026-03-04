@@ -661,7 +661,6 @@ export async function listNewsItemsNeedingImageGeneration(
           or (
             img.status = 'requested'
             and img.attempts < $2
-            and img.updated_at <= timezone('utc', now()) - ($3 * interval '1 minute')
           )
         )
       order by ni.created_at asc

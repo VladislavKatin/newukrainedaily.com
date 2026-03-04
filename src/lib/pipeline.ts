@@ -287,6 +287,8 @@ export async function runGenerateImagesJob(limitOverride?: number) {
           completed += 1;
           continue;
         }
+
+        continue;
       }
 
       const generation = await createLeonardoGeneration({ prompt });
