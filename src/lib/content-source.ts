@@ -93,9 +93,6 @@ function mapBlogPostToContentEntry(blogPost: Awaited<ReturnType<typeof getBlogBy
   };
 }
 
-let databaseAvailabilityPromise: Promise<{ ok: boolean; error: unknown | null }> | null = null;
-let publishedContentAvailabilityPromise: Promise<boolean> | null = null;
-
 function isBuildPhase() {
   return process.env.NEXT_PHASE === "phase-production-build";
 }
@@ -114,26 +111,17 @@ async function getDatabaseAvailability() {
     return { ok: false, error: null };
   }
 
-  if (!databaseAvailabilityPromise) {
-    databaseAvailabilityPromise = query("select 1")
-      .then(() => ({ ok: true, error: null }))
-      .catch((error) => {
-        console.warn("[content] Database unavailable, returning empty content set:", error);
-        return { ok: false, error };
-      });
-  }
-
-  return databaseAvailabilityPromise;
+  return query("select 1")
+    .then(() => ({ ok: true, error: null }))
+    .catch((error) => {
+      console.warn("[content] Database unavailable, returning empty content set:", error);
+      return { ok: false, error };
+    });
 }
 
 async function hasPublishedContent() {
-  if (!publishedContentAvailabilityPromise) {
-    publishedContentAvailabilityPromise = Promise.all([countNews(), countBlog()]).then(
-      ([newsCount, blogCount]) => newsCount + blogCount > 0
-    );
-  }
-
-  return publishedContentAvailabilityPromise;
+  const [newsCount, blogCount] = await Promise.all([countNews(), countBlog()]);
+  return newsCount + blogCount > 0;
 }
 
 function createEmptyContentRepository(): ContentRepository {
