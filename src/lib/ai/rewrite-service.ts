@@ -28,7 +28,7 @@ export function buildRewriteSourceText(raw: NewsRawRecord) {
 
 export function isRewriteCandidate(raw: NewsRawRecord) {
   const snippet = cleanSnippet(raw.contentSnippet);
-  return isUkraineRelevantRaw(raw) && snippet.length >= 120 && countSentences(snippet) >= 2;
+  return isUkraineRelevantRaw(raw) && snippet.length >= 80 && countSentences(snippet) >= 1;
 }
 
 export async function rewriteRawNews(raw: NewsRawRecord): Promise<RewriteOutput | null> {
