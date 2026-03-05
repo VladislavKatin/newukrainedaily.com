@@ -304,11 +304,24 @@ export async function ingestRssSources(options?: {
             continue;
           }
 
-          const previewImage = await extractMainImage({
-            rssItem: item.raw,
-            articleUrl: item.url,
-            feedUrl: source.url
-          });
+          let previewImage: Awaited<ReturnType<typeof extractMainImage>> = {
+            url: null,
+            methodUsed: null,
+            confidence: 0
+          };
+          try {
+            previewImage = await extractMainImage({
+              rssItem: item.raw,
+              articleUrl: item.url,
+              feedUrl: source.url
+            });
+          } catch (imageError) {
+            console.warn(
+              `[ingestion:image] source=${source.name} url=${item.url} preview extraction failed=${
+                imageError instanceof Error ? imageError.message : "Unknown error"
+              }`
+            );
+          }
 
           const created = await createRawNews({
             sourceId: source.id,
