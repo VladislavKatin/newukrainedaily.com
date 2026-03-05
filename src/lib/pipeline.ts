@@ -205,6 +205,7 @@ export async function runRewriteNewsJob(limitOverride?: number) {
     const entities = Array.from(new Set(rewritten.entities)).slice(0, 12);
     const primaryTopic = rewritten.primary_topic || topics[0] || tags[0] || "World";
     const canonicalUrl = normalizeCanonicalUrl(raw.canonicalUrl || raw.url);
+    const sourceUrl = raw.url || raw.sourceUrl || raw.canonicalUrl || null;
     const content = rewritten.body;
     const entryCharCount = charCount(content);
     const entryWordCount = wordCount(content);
@@ -240,7 +241,7 @@ export async function runRewriteNewsJob(limitOverride?: number) {
       generatedImageAlt: rewritten.image_alt,
       generatedImageCaption: null,
       sourceName: raw.sourceName || "Unknown Source",
-      sourceUrl: raw.sourceUrl || raw.url,
+      sourceUrl: sourceUrl || null,
       canonicalUrl,
       metaTitle: rewritten.meta_title,
       metaDescription: rewritten.meta_description,
@@ -283,7 +284,7 @@ export async function runRewriteNewsJob(limitOverride?: number) {
       generatedImagePrompt: rewritten.image_prompt,
       generatedImageAlt: rewritten.image_alt,
       sourceName: raw.sourceName || "Unknown Source",
-      sourceUrl: raw.sourceUrl || raw.url,
+      sourceUrl: sourceUrl || null,
       canonicalUrl,
       metaTitle: rewritten.meta_title,
       metaDescription: rewritten.meta_description,
@@ -515,20 +516,31 @@ export async function runAutopostJob() {
 export async function runGeneratePipeline(count = 1) {
   const normalizedCount = Math.max(1, Math.min(10, Math.floor(count)));
   const limits = getPipelineLimits();
+  const candidateMultiplier = 4;
+  const fetchItemsPerSource = Math.max(
+    limits.fetchItemsPerSourceLimit,
+    normalizedCount * candidateMultiplier
+  );
+  const rewriteBatchSize = Math.max(
+    limits.rewriteBatchLimit,
+    normalizedCount * candidateMultiplier
+  );
 
   console.log(`[generate] starting pipeline count=${normalizedCount}`);
 
   const fetchResult = await markJobLifecycle("fetch", () =>
     runFetchNewsJob({
       sourceLimit: limits.fetchSourcesLimit,
-      itemsPerSourceLimit: normalizedCount
+      itemsPerSourceLimit: fetchItemsPerSource
     })
   );
   console.log(
     `[generate] fetch completed job=${fetchResult.jobId} new=${fetchResult.result.newRecords}`
   );
 
-  const rewriteResult = await markJobLifecycle("rewrite", () => runRewriteNewsJob(normalizedCount));
+  const rewriteResult = await markJobLifecycle("rewrite", () =>
+    runRewriteNewsJob(rewriteBatchSize)
+  );
   console.log(
     `[generate] rewrite completed job=${rewriteResult.jobId} drafts=${rewriteResult.result.createdDrafts}`
   );
@@ -627,6 +639,7 @@ export async function replayRewriteJob(rawId: string) {
   const entities = Array.from(new Set(rewritten.entities)).slice(0, 12);
   const primaryTopic = rewritten.primary_topic || topics[0] || tags[0] || "World";
   const canonicalUrl = normalizeCanonicalUrl(raw.canonicalUrl || raw.url);
+  const sourceUrl = raw.url || raw.sourceUrl || raw.canonicalUrl || null;
   const content = rewritten.body;
   const entryCharCount = charCount(content);
   const entryWordCount = wordCount(content);
@@ -662,7 +675,7 @@ export async function replayRewriteJob(rawId: string) {
     generatedImageAlt: rewritten.image_alt,
     generatedImageCaption: null,
     sourceName: raw.sourceName || "Unknown Source",
-    sourceUrl: raw.sourceUrl || raw.url,
+    sourceUrl: sourceUrl || null,
     canonicalUrl,
     metaTitle: rewritten.meta_title,
     metaDescription: rewritten.meta_description,
@@ -704,7 +717,7 @@ export async function replayRewriteJob(rawId: string) {
     generatedImagePrompt: rewritten.image_prompt,
     generatedImageAlt: rewritten.image_alt,
     sourceName: raw.sourceName || "Unknown Source",
-    sourceUrl: raw.sourceUrl || raw.url,
+    sourceUrl: sourceUrl || null,
     canonicalUrl,
     metaTitle: rewritten.meta_title,
     metaDescription: rewritten.meta_description,
