@@ -52,8 +52,10 @@ function mapNewsItemToContentEntry(newsItem: Awaited<ReturnType<typeof getNewsBy
     .filter(Boolean);
 
   const previewImageUrl = newsItem.previewImageUrl || undefined;
+  const normalizedGenerated = newsItem.generatedImageUrl || undefined;
   const generatedImageUrl =
-    newsItem.generatedImageUrl || newsItem.coverImageUrl || newsItem.ogImageUrl || undefined;
+    normalizedGenerated && normalizedGenerated !== previewImageUrl ? normalizedGenerated : undefined;
+  const fallbackImageUrl = generatedImageUrl || previewImageUrl || newsItem.coverImageUrl || newsItem.ogImageUrl || undefined;
 
   return {
     id: newsItem.id,
@@ -72,7 +74,7 @@ function mapNewsItemToContentEntry(newsItem: Awaited<ReturnType<typeof getNewsBy
         ? [newsItem.summary || newsItem.dek || newsItem.title, newsItem.whyItMatters]
         : [newsItem.summary || newsItem.dek || newsItem.title],
     sourceUrl: newsItem.sourceUrl || undefined,
-    imageUrl: previewImageUrl || generatedImageUrl,
+    imageUrl: fallbackImageUrl,
     imageAlt: newsItem.previewImageCaption || `${newsItem.title} preview image`,
     previewImageUrl,
     previewImageAlt: newsItem.previewImageCaption || `${newsItem.title} preview image`,

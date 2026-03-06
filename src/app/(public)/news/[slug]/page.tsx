@@ -81,7 +81,9 @@ export default async function NewsArticlePage({ params }: Props) {
           {entry.body.map((paragraph, index) => (
             <div key={`${index}-${paragraph.slice(0, 24)}`} className="space-y-6">
               <p>{paragraph}</p>
-              {index === 0 && entry.generatedImageUrl ? (
+              {index === 0 &&
+              entry.generatedImageUrl &&
+              entry.generatedImageUrl !== entry.previewImageUrl ? (
                 <figure className="overflow-hidden rounded-3xl border border-line">
                   <Image
                     src={entry.generatedImageUrl}

@@ -46,7 +46,11 @@ export function buildMetadata({ title, description, path, keywords }: MetadataIn
 
 export function buildArticleMetadata(entry: ContentEntry): Metadata {
   const path = `/${entry.type}/${entry.slug}`;
-  const imageUrl = entry.imageUrl || absoluteUrl(siteConfig.defaultOgImage);
+  const imageUrl =
+    entry.generatedImageUrl ||
+    entry.previewImageUrl ||
+    entry.imageUrl ||
+    absoluteUrl(siteConfig.defaultOgImage);
   const imageAlt = entry.imageAlt || entry.title;
 
   return {
@@ -93,6 +97,12 @@ export function buildArticleMetadata(entry: ContentEntry): Metadata {
 }
 
 export function buildArticleJsonLd(entry: ContentEntry) {
+  const jsonLdImage =
+    entry.generatedImageUrl ||
+    entry.previewImageUrl ||
+    entry.imageUrl ||
+    absoluteUrl(siteConfig.defaultOgImage);
+
   return {
     "@context": "https://schema.org",
     "@type": entry.type === "news" ? "NewsArticle" : "Article",
@@ -114,7 +124,7 @@ export function buildArticleJsonLd(entry: ContentEntry) {
       }
     },
     mainEntityOfPage: absoluteUrl(`/${entry.type}/${entry.slug}`),
-    image: entry.imageUrl ? [entry.imageUrl] : [siteConfig.defaultOgImage],
+    image: [jsonLdImage],
     articleSection: entry.tags[0] || entry.type,
     keywords: entry.tags.join(", ")
   };
