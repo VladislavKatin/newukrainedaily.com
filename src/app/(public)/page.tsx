@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { EntryCard } from "@/components/entry-card";
-import { getAllTags, getEntriesByType, getEntriesByTypePage } from "@/lib/content";
+import { getAllTags, getEntriesByTypePage } from "@/lib/content";
 import { buildMetadata } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
@@ -13,9 +13,8 @@ export const metadata = buildMetadata({
 });
 
 export default async function HomePage() {
-  const [latestNewsPage, reports, topics] = await Promise.all([
+  const [latestNewsPage, topics] = await Promise.all([
     getEntriesByTypePage("news", { limit: 24, offset: 0 }),
-    getEntriesByType("blog"),
     getAllTags()
   ]);
 
@@ -96,10 +95,12 @@ export default async function HomePage() {
           </h2>
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
             {[
-              "Emergency relief campaigns",
-              "Medical aid partners",
-              "Independent journalism support",
-              "Recovery and rebuilding funds"
+              "Emergency relief campaigns and winter aid",
+              "Medical support and rehabilitation programs",
+              "Support for schools, children, and families",
+              "Independent journalism and fact-checking",
+              "Local recovery and rebuilding initiatives",
+              "Legal, psychological, and social assistance"
             ].map((item) => (
               <div key={item} className="rounded-2xl border border-line bg-mist p-4 text-sm text-slate-700">
                 {item}
@@ -108,15 +109,15 @@ export default async function HomePage() {
           </div>
         </div>
         <div className="panel p-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">Topics</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">Topics</p>
           <h2 className="mt-3 text-3xl font-semibold tracking-tight text-ink">Topics</h2>
-          <div className="mt-6 flex flex-wrap gap-3">
+          <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3">
             {topics.length > 0 ? (
-              topics.map((tag) => (
+              topics.slice(0, 12).map((tag) => (
                 <Link
                   key={tag}
                   href={`/topic/${tag}`}
-                  className="rounded-full bg-sky px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-brand hover:text-white"
+                  className="truncate rounded-lg bg-sky px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-brand hover:text-white"
                 >
                   #{tag}
                 </Link>
@@ -127,29 +128,11 @@ export default async function HomePage() {
               </p>
             )}
           </div>
-        </div>
-      </section>
-
-      <section className="mt-16">
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">Reports</p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-ink">
-              Reports and analysis
-            </h2>
-          </div>
-          <Link href="/blog" className="text-sm font-semibold text-brand">
-            View blog
-          </Link>
-        </div>
-        <div className="mt-8 grid gap-6 lg:grid-cols-2">
-          {reports.length > 0 ? (
-            reports.map((entry) => <EntryCard key={entry.slug} entry={entry} />)
-          ) : (
-            <div className="panel p-6 text-sm leading-6 text-slate-600">
-              No published reports are available right now.
-            </div>
-          )}
+          {topics.length > 12 ? (
+            <Link href="/news" className="mt-5 inline-block text-sm font-semibold text-brand">
+              Browse all topics in news archive
+            </Link>
+          ) : null}
         </div>
       </section>
     </div>
