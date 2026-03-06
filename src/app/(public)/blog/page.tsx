@@ -5,8 +5,8 @@ import { getEntriesByTypePage } from "@/lib/content";
 import { buildMetadata } from "@/lib/seo";
 
 const PAGE_SIZE = 12;
-export const dynamic = "force-static";
-export const revalidate = 600;
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 type Props = {
   searchParams?: Promise<{ page?: string }>;

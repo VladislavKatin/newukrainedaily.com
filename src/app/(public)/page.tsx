@@ -3,8 +3,8 @@ import { EntryCard } from "@/components/entry-card";
 import { getAllTags, getEntriesByTypePage } from "@/lib/content";
 import { buildMetadata } from "@/lib/seo";
 
-export const dynamic = "force-static";
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export const metadata = buildMetadata({
   title: "Home",
