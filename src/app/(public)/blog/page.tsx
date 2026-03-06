@@ -42,9 +42,9 @@ export default async function BlogPage({ searchParams }: Props) {
         description="Editorial reports, explainers, and topic-based analysis."
       />
       <div className="container-shell pb-12 sm:pb-16">
-        <div className="grid gap-6">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {entries.length > 0 ? (
-            entries.map((entry) => <EntryCard key={entry.slug} entry={entry} />)
+            entries.map((entry) => <EntryCard key={entry.slug} entry={entry} compact />)
           ) : (
             <div className="panel p-6 text-sm leading-6 text-slate-600">
               No published blog posts are currently available.
