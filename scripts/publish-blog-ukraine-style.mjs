@@ -48,17 +48,87 @@ const POSTS = [
     slug: "from-solidarity-to-results-a-practical-guide-to-helping-ukraine",
     title: "From Solidarity to Results: A Practical Guide to Helping Ukraine",
     tags: ["ukraine-support", "donations", "long-term-support"]
+  },
+  {
+    slug: "how-monthly-donors-support-ukrainian-hospitals-more-effectively",
+    title: "How Monthly Donors Support Ukrainian Hospitals More Effectively",
+    tags: ["medical-support", "donate-ukraine", "healthcare"]
+  },
+  {
+    slug: "supporting-ukrainian-schools-during-long-crisis-periods",
+    title: "Supporting Ukrainian Schools During Long Crisis Periods",
+    tags: ["education", "humanitarian", "ukraine-support"]
+  },
+  {
+    slug: "how-small-businesses-can-help-ukraine-with-practical-actions",
+    title: "How Small Businesses Can Help Ukraine With Practical Actions",
+    tags: ["business-support", "ukraine-support", "civil-society"]
+  },
+  {
+    slug: "rebuilding-local-trust-why-transparent-aid-reporting-matters",
+    title: "Rebuilding Local Trust: Why Transparent Aid Reporting Matters",
+    tags: ["transparency", "recovery", "donate-ukraine"]
+  },
+  {
+    slug: "ukrainian-energy-resilience-what-donors-should-prioritize-first",
+    title: "Ukrainian Energy Resilience: What Donors Should Prioritize First",
+    tags: ["energy-resilience", "infrastructure", "support"]
+  },
+  {
+    slug: "how-communities-keep-helping-ukraine-after-headline-fatigue",
+    title: "How Communities Keep Helping Ukraine After Headline Fatigue",
+    tags: ["community", "civil-society", "long-term-support"]
+  },
+  {
+    slug: "a-practical-checklist-for-safe-donations-to-ukraine",
+    title: "A Practical Checklist for Safe Donations to Ukraine",
+    tags: ["donate-ukraine", "safety", "verification"]
+  },
+  {
+    slug: "why-local-partnerships-in-ukraine-drive-better-aid-outcomes",
+    title: "Why Local Partnerships in Ukraine Drive Better Aid Outcomes",
+    tags: ["local-partners", "humanitarian", "impact"]
+  },
+  {
+    slug: "supporting-ukrainian-families-through-winter-and-displacement",
+    title: "Supporting Ukrainian Families Through Winter and Displacement",
+    tags: ["families", "winter-support", "humanitarian"]
+  },
+  {
+    slug: "how-to-balance-emergency-aid-and-long-term-ukraine-recovery",
+    title: "How to Balance Emergency Aid and Long-Term Ukraine Recovery",
+    tags: ["recovery", "emergency-aid", "strategy"]
+  },
+  {
+    slug: "what-makes-a-ukraine-support-campaign-credible-in-2026",
+    title: "What Makes a Ukraine Support Campaign Credible in 2026",
+    tags: ["credibility", "ukraine-support", "donate-ukraine"]
+  },
+  {
+    slug: "the-role-of-civil-society-in-ukraines-reconstruction-process",
+    title: "The Role of Civil Society in Ukraine's Reconstruction Process",
+    tags: ["civil-society", "reconstruction", "ukraine-support"]
+  },
+  {
+    slug: "how-to-turn-one-time-solidarity-into-consistent-support-for-ukraine",
+    title: "How to Turn One-Time Solidarity Into Consistent Support for Ukraine",
+    tags: ["long-term-support", "donations", "ukraine-support"]
+  },
+  {
+    slug: "editorial-guide-to-understanding-ukraine-support-impact-metrics",
+    title: "Editorial Guide to Understanding Ukraine Support Impact Metrics",
+    tags: ["metrics", "impact", "editorial-analysis"]
   }
 ];
 
 function clamp(text, max) {
   const normalized = String(text || "").replace(/\s+/g, " ").trim();
   if (normalized.length <= max) return normalized;
-  return `${normalized.slice(0, Math.max(1, max - 1)).trim()}…`;
+  return `${normalized.slice(0, Math.max(1, max - 1)).trim()}...`;
 }
 
 function buildBody(title) {
-  const body = [
+  return [
     "## Introduction",
     `${title} reflects a clear reality: practical support matters most when it is sustained, transparent, and connected to specific needs. Public attention often rises during breaking events, but real progress for Ukrainian communities depends on continuity over months, not isolated moments.`,
     "For readers who want to help responsibly, the core challenge is moving from emotion to structure. Structure means setting goals, choosing reliable channels, and reviewing outcomes regularly.",
@@ -83,8 +153,6 @@ function buildBody(title) {
     "Helping Ukraine effectively means combining empathy with method. Pick credible channels, support them consistently, and review outcomes on a schedule. This approach is realistic for individual donors and scalable for organizations.",
     "Sustained, transparent support is how solidarity turns into long-term stability for Ukrainian communities."
   ].join("\n\n");
-
-  return body;
 }
 
 async function createLeonardoGeneration(prompt) {
@@ -110,7 +178,9 @@ async function createLeonardoGeneration(prompt) {
   }
 
   const payload = await response.json();
-  const generationId = payload?.generationId || payload?.sdGenerationJob?.generationId || payload?.sdGenerationJob?.id;
+  const generationId =
+    payload?.generationId || payload?.sdGenerationJob?.generationId || payload?.sdGenerationJob?.id;
+
   if (!generationId) {
     throw new Error("Leonardo generation id missing");
   }
@@ -120,6 +190,7 @@ async function createLeonardoGeneration(prompt) {
 function extractImageUrl(payload) {
   const root = payload?.generations_by_pk || payload?.sdGenerationJob || payload;
   const images = root?.generated_images || root?.images || [];
+
   for (const image of images) {
     const candidate =
       image?.url || image?.generated_image?.url || image?.generatedImageUrl || image?.imageUrl;
@@ -127,6 +198,7 @@ function extractImageUrl(payload) {
       return candidate;
     }
   }
+
   return null;
 }
 
@@ -139,22 +211,26 @@ async function waitForLeonardoImage(generationId) {
         authorization: `Bearer ${LEONARDO_API_KEY}`
       }
     });
+
     if (!response.ok) {
       throw new Error(`Leonardo lookup failed: ${response.status} ${await response.text()}`);
     }
+
     const payload = await response.json();
     const imageUrl = extractImageUrl(payload);
     if (imageUrl) {
       return imageUrl;
     }
+
     await new Promise((resolve) => setTimeout(resolve, 3500));
   }
+
   throw new Error("Leonardo generation timeout");
 }
 
 async function generateCover(title) {
   const prompt = [
-    `Minimal editorial illustration inspired by Ukrainian gratitude and resilience.`,
+    "Minimal editorial illustration inspired by Ukrainian gratitude and resilience.",
     `Scene based on headline: "${title}".`,
     "Warm human-centered composition, Ukrainian blue and yellow accents, civic solidarity mood.",
     "Clean magazine style, no text, no logos, high detail, natural lighting, 16:9."
