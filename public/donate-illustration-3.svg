@@ -1,0 +1,15 @@
+<svg width="1200" height="675" viewBox="0 0 1200 675" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="675" rx="24" fill="#F2F9F6"/>
+  <rect x="120" y="96" width="960" height="480" rx="30" fill="white" stroke="#D1E5DC" stroke-width="2"/>
+  <rect x="190" y="174" width="820" height="70" rx="18" fill="#EAF6F0"/>
+  <rect x="230" y="198" width="300" height="22" rx="11" fill="#CFE8DB"/>
+  <rect x="190" y="276" width="240" height="230" rx="20" fill="#EDF8F3"/>
+  <rect x="460" y="276" width="240" height="230" rx="20" fill="#EDF8F3"/>
+  <rect x="730" y="276" width="240" height="230" rx="20" fill="#EDF8F3"/>
+  <rect x="240" y="330" width="140" height="18" rx="9" fill="#C9E5D7"/>
+  <rect x="510" y="330" width="140" height="18" rx="9" fill="#C9E5D7"/>
+  <rect x="780" y="330" width="140" height="18" rx="9" fill="#C9E5D7"/>
+  <path d="M260 430L300 390L340 430L380 370" stroke="#4B9A7A" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M530 430L570 390L610 430L650 370" stroke="#4B9A7A" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M800 430L840 390L880 430L920 370" stroke="#4B9A7A" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
