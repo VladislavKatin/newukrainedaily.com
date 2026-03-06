@@ -1,0 +1,35 @@
+name: Finalize Leonardo Images
+
+on:
+  schedule:
+    - cron: "*/20 * * * *"
+  workflow_dispatch:
+
+jobs:
+  finalize-images:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Finalize pending image generations
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "$CRON_SECRET" ]; then
+            echo "Missing CRON_SECRET secret"
+            exit 1
+          fi
+
+          BASE_URL="https://www.newukrainedaily.com"
+
+          curl --fail-with-body --show-error --silent \
+            -X POST "$BASE_URL/api/cron/generate-images" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -H "Content-Type: application/json" \
+            --data '{}'
+
+          curl --fail-with-body --show-error --silent \
+            -X POST "$BASE_URL/api/cron/publish" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -H "Content-Type: application/json" \
+            --data '{}'
