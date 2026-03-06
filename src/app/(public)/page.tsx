@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { EntryCard } from "@/components/entry-card";
-import { getAllTags, getEntriesByType } from "@/lib/content";
+import { getAllTags, getEntriesByType, getEntriesByTypePage } from "@/lib/content";
 import { buildMetadata } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
@@ -13,11 +13,19 @@ export const metadata = buildMetadata({
 });
 
 export default async function HomePage() {
-  const [latestNews, reports, topics] = await Promise.all([
-    getEntriesByType("news"),
+  const [latestNewsPage, reports, topics] = await Promise.all([
+    getEntriesByTypePage("news", { limit: 24, offset: 0 }),
     getEntriesByType("blog"),
     getAllTags()
   ]);
+
+  const freshWindowMs = 14 * 24 * 60 * 60 * 1000;
+  const now = Date.now();
+  const freshNews = latestNewsPage.entries.filter(
+    (entry) => now - new Date(entry.publishedAt).getTime() <= freshWindowMs
+  );
+  const latestNews = (freshNews.length > 0 ? freshNews : latestNewsPage.entries).slice(0, 6);
+  const latestNewsUpdatedAt = latestNews[0]?.publishedAt ?? null;
 
   return (
     <div className="container-shell py-12 sm:py-16">
@@ -55,14 +63,19 @@ export default async function HomePage() {
               Latest News
             </p>
             <h2 className="mt-3 text-3xl font-semibold tracking-tight text-ink">
-              Latest updates
+              New updates (max 6)
             </h2>
+            {latestNewsUpdatedAt ? (
+              <p className="mt-2 text-sm text-slate-500">
+                Last update: {new Date(latestNewsUpdatedAt).toLocaleString("en-US")}
+              </p>
+            ) : null}
           </div>
           <Link href="/news" className="text-sm font-semibold text-brand">
             View all
           </Link>
         </div>
-        <div className="mt-8 grid gap-6 lg:grid-cols-2">
+        <div className="mt-8 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           {latestNews.length > 0 ? (
             latestNews.map((entry) => <EntryCard key={entry.slug} entry={entry} />)
           ) : (
