@@ -38,7 +38,7 @@ export default function DonatePage() {
 
           <figure className="my-8 max-w-xl overflow-hidden rounded-2xl border border-line md:ml-auto">
             <Image
-              src="/donate-illustration-1.svg"
+              src="/donate-leonardo-1.jpg"
               alt="Minimal editorial illustration about structured donation planning"
               width={1200}
               height={675}
@@ -69,7 +69,7 @@ export default function DonatePage() {
 
           <figure className="my-9 max-w-lg overflow-hidden rounded-2xl border border-line md:-ml-4">
             <Image
-              src="/donate-illustration-2.svg"
+              src="/donate-leonardo-2.jpg"
               alt="Minimal editorial illustration about balancing emergency and long-term support"
               width={1200}
               height={675}
@@ -107,7 +107,7 @@ export default function DonatePage() {
 
           <figure className="my-9 max-w-2xl overflow-hidden rounded-2xl border border-line md:ml-10">
             <Image
-              src="/donate-illustration-3.svg"
+              src="/donate-leonardo-3.jpg"
               alt="Minimal editorial illustration about practical donor workflow and verification"
               width={1200}
               height={675}
