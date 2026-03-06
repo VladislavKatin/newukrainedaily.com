@@ -9,6 +9,8 @@ import { buildArticleMetadata } from "@/lib/seo";
 type Props = {
   params: Promise<{ slug: string }>;
 };
+export const dynamic = "force-static";
+export const revalidate = 900;
 
 export async function generateStaticParams() {
   const entries = await getEntriesByType("blog");
@@ -66,6 +68,7 @@ export default async function BlogArticlePage({ params }: Props) {
               alt={entry.imageAlt || entry.title}
               width={1200}
               height={675}
+              sizes="(max-width: 768px) 100vw, 768px"
               className="h-auto w-full object-cover"
               priority
             />

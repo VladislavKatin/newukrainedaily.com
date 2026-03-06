@@ -33,6 +33,11 @@ export function EntryCard({ entry, compact = false }: EntryCardProps) {
             alt={previewAlt}
             width={1200}
             height={675}
+            sizes={
+              compact
+                ? "(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                : "(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 400px"
+            }
             className={`w-full object-cover transition duration-300 hover:scale-[1.02] ${
               compact ? "h-full" : "h-32 sm:h-36"
             }`}

@@ -10,8 +10,8 @@ type Props = {
   params: Promise<{ slug: string }>;
 };
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+export const dynamic = "force-static";
+export const revalidate = 600;
 
 export async function generateStaticParams() {
   const entries = await getEntriesByType("news");
@@ -69,6 +69,7 @@ export default async function NewsArticlePage({ params }: Props) {
               alt={entry.previewImageAlt || entry.title}
               width={1200}
               height={675}
+              sizes="(max-width: 768px) 100vw, 768px"
               className="h-auto w-full object-cover"
               priority
             />
@@ -90,6 +91,7 @@ export default async function NewsArticlePage({ params }: Props) {
                     alt={entry.generatedImageAlt || entry.title}
                     width={1200}
                     height={675}
+                    sizes="(max-width: 768px) 100vw, 768px"
                     className="h-auto w-full object-cover"
                   />
                   {entry.generatedImageCaption ? (
