@@ -38,12 +38,114 @@ import {
 import { slugify } from "@/lib/slug";
 import { saveRemoteImage } from "@/lib/storage";
 
+const SOURCE_PRIORITY: Record<string, number> = {
+  "ukrinform en": 12,
+  "ukrinform ua": 12,
+  "ukrainska pravda en": 11,
+  "ukrainska pravda en news": 11,
+  "ukrainska pravda ua": 11,
+  "interfax ukraine": 10,
+  "rbc ukraine": 9,
+  "radio svoboda": 8,
+  "tsn ukraine": 7,
+  "nv ukraine": 7,
+  obozrevatel: 5,
+  "european pravda ua": 5
+};
+
+const PREFERRED_TOPICS = new Set([
+  "ukraine",
+  "security",
+  "diplomacy",
+  "humanitarian",
+  "energy",
+  "economy",
+  "russia",
+  "us",
+  "eu",
+  "nato"
+]);
+
+const NOISY_CONTENT_MARKERS = [
+  "airport safety",
+  "global challenges",
+  "gulf region",
+  "healing",
+  "cultural identity",
+  "ukrainians abroad"
+];
+
 function sleep(milliseconds: number) {
   if (milliseconds <= 0) {
     return Promise.resolve();
   }
 
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+function normalizeToken(value: string | null | undefined) {
+  return (value || "").replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+function getSourcePriority(sourceName: string | null | undefined) {
+  return SOURCE_PRIORITY[normalizeToken(sourceName)] ?? 0;
+}
+
+function scoreRawCandidate(raw: {
+  sourceName?: string | null;
+  title: string;
+  contentSnippet?: string | null;
+  publishedAt?: string | null;
+}) {
+  const sourceScore = getSourcePriority(raw.sourceName);
+  const text = normalizeToken([raw.title, raw.contentSnippet || ""].join(" "));
+  let topicalBonus = 0;
+
+  if (/\bukraine\b|\bukrainian\b|україн|украин/i.test(text)) {
+    topicalBonus += 3;
+  }
+
+  if (/\bdrone\b|\bmissile\b|\bstrike\b|\battack\b|\bfrontline\b|\bceasefire\b|\btalks\b|дрон|ракет|обстр/i.test(text)) {
+    topicalBonus += 2;
+  }
+
+  if (/\bhumanitarian\b|\baid\b|\benergy\b|\breconstruction\b|\beconomy\b|\bdisplaced\b|допомог|відновлен|енергет/i.test(text)) {
+    topicalBonus += 1;
+  }
+
+  const freshnessPenalty = raw.publishedAt ? 0 : -1;
+  return sourceScore + topicalBonus + freshnessPenalty;
+}
+
+function isPublishEligible(item: {
+  title: string;
+  summary: string | null;
+  whyItMatters: string | null;
+  sourceName: string | null;
+  tags: string[];
+  topics: string[];
+  primaryTopic: string | null;
+}) {
+  const normalizedTopic = normalizeToken(item.primaryTopic);
+  const normalizedTags = item.tags.map(normalizeToken);
+  const normalizedTopics = item.topics.map(normalizeToken);
+  const normalizedText = normalizeToken(
+    [item.title, item.summary || "", item.whyItMatters || "", ...item.tags, ...item.topics].join(" ")
+  );
+
+  if (NOISY_CONTENT_MARKERS.some((marker) => normalizedText.includes(marker))) {
+    return false;
+  }
+
+  if (getSourcePriority(item.sourceName) >= 7) {
+    return true;
+  }
+
+  if (PREFERRED_TOPICS.has(normalizedTopic)) {
+    return true;
+  }
+
+  return [...normalizedTags, ...normalizedTopics].some((token) => PREFERRED_TOPICS.has(token));
 }
 
 function getPipelineLimits() {
@@ -181,7 +283,9 @@ export async function runFetchNewsJob(options?: {
 export async function runRewriteNewsJob(limitOverride?: number) {
   const limits = getPipelineLimits();
   const rewriteLimit = limitOverride ?? limits.rewriteBatchLimit;
-  const pendingRaws = await listCandidateRawNews(Math.max(rewriteLimit * 6, rewriteLimit), 48);
+  const pendingRaws = (await listCandidateRawNews(Math.max(rewriteLimit * 6, rewriteLimit), 48)).sort(
+    (left, right) => scoreRawCandidate(right) - scoreRawCandidate(left)
+  );
   const publishedPool = await listRecentPublishedNews(200);
 
   let createdDrafts = 0;
@@ -481,7 +585,9 @@ export async function runPublishJob(limit?: number) {
     };
   }
 
-  const readyItems = await listPublishReadyNews(availableSlots);
+  const readyItems = (await listPublishReadyNews(Math.max(availableSlots * 3, availableSlots))).filter(
+    isPublishEligible
+  ).slice(0, availableSlots);
   let published = 0;
   let skipped = 0;
 
