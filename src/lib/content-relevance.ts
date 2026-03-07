@@ -34,7 +34,18 @@ const UKRAINE_FOCUSED_DOMAINS = [
   "www.president.gov.ua",
   "www.mod.gov.ua",
   "www.mfa.gov.ua",
-  "www.kmu.gov.ua"
+  "www.kmu.gov.ua",
+  "pravda.com.ua",
+  "epravda.com.ua",
+  "ukrinform.net",
+  "ukrinform.ua",
+  "suspilne.media",
+  "rbc.ua",
+  "interfax.com.ua",
+  "radiosvoboda.org",
+  "nv.ua",
+  "obozrevatel.com",
+  "tsn.ua"
 ];
 
 function matchesUkrainePattern(value: string) {
