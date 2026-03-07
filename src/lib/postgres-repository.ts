@@ -966,7 +966,7 @@ export async function listPublishReadyNews(limit = 20) {
         and coalesce(nullif(trim(summary), ''), null) is not null
         and coalesce(nullif(trim(dek), ''), null) is not null
         and coalesce(nullif(trim(why_it_matters), ''), null) is not null
-        and char_length(trim(summary)) >= 180
+        and char_length(trim(summary)) >= 140
         and char_length(trim(why_it_matters)) >= 80
         and coalesce(nullif(trim(source_name), ''), null) is not null
         and coalesce(nullif(trim(source_url), ''), null) is not null
