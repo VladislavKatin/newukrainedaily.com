@@ -27,7 +27,30 @@ const PRIMARY_UKRAINE_PATTERNS = [
   /\bukrainian forces\b/i,
   /\bukrainian military\b/i,
   /\bukrainian government\b/i,
-  /\bukrainian president\b/i
+  /\bukrainian president\b/i,
+  /україн/i,
+  /украин/i,
+  /київ/i,
+  /киев/i,
+  /харків/i,
+  /харьков/i,
+  /одес/i,
+  /дніпр/i,
+  /днепр/i,
+  /донецьк/i,
+  /донецк/i,
+  /луган/i,
+  /крим/i,
+  /запоріж/i,
+  /запорож/i,
+  /херсон/i,
+  /миколаїв/i,
+  /николаев/i,
+  /сум(и|ы)/i,
+  /переселен/i,
+  /впо\b/i,
+  /зелень?ськ/i,
+  /зеленск/i
 ];
 
 const SECONDARY_CONTEXT_PATTERNS = [
@@ -52,6 +75,21 @@ const SECONDARY_CONTEXT_PATTERNS = [
   /\brecovery\b/i,
   /\bhumanitarian\b/i,
   /\benergy grid\b/i
+  ,
+  /дрон/i,
+  /ракет/i,
+  /обстріл/i,
+  /обстрел/i,
+  /переговор/i,
+  /допомог/i,
+  /відновлен/i,
+  /восстановлен/i,
+  /енергет/i,
+  /кремл/i,
+  /росі/i,
+  /росси/i,
+  /путін/i,
+  /путин/i
 ];
 
 const EXCLUDED_PATTERNS = [
@@ -81,6 +119,31 @@ const EXCLUDED_PATTERNS = [
   /\brunes?\b/i,
   /\bcelebrity\b/i,
   /\bshowbiz\b/i
+  ,
+  /\bmuay thai\b/i,
+  /\bwomen'?s day\b/i,
+  /\b8 march\b/i,
+  /\b8 bereznya\b/i,
+  /\bden ukrainskoi zhinki\b/i,
+  /спорт/i,
+  /футбол/i,
+  /теніс/i,
+  /теннис/i,
+  /матч/i,
+  /турнір/i,
+  /турнир/i,
+  /чемпіонат/i,
+  /чемпионат/i,
+  /гороскоп/i,
+  /астрол/i,
+  /дієт/i,
+  /диет/i,
+  /здоров.?я/i,
+  /здоров/i,
+  /приготуван/i,
+  /путешеств/i,
+  /подорож/i,
+  /8 березня/i
 ];
 
 const UKRAINE_FOCUSED_DOMAINS = [
