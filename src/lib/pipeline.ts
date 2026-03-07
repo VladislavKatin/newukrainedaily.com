@@ -188,14 +188,14 @@ export async function runRewriteNewsJob(limitOverride?: number) {
   let topicsUpdated = 0;
   let jobsQueued = 0;
   let skipped = 0;
-  let processed = 0;
+  let scanned = 0;
 
   for (const raw of pendingRaws) {
-    if (processed >= rewriteLimit) {
+    if (createdDrafts >= rewriteLimit) {
       break;
     }
 
-    processed += 1;
+    scanned += 1;
     const rewritten = await rewriteRawNews(raw);
 
     if (!rewritten) {
@@ -331,7 +331,7 @@ export async function runRewriteNewsJob(limitOverride?: number) {
 
   return {
     ok: true,
-    processed,
+    processed: scanned,
     createdDrafts,
     topicsUpdated,
     jobsQueued,
