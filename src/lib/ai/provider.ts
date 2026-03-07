@@ -22,6 +22,59 @@ function clampText(value: string, max: number) {
   return value.length <= max ? value : `${value.slice(0, max - 3).trim()}...`;
 }
 
+function normalizeText(value: unknown) {
+  return typeof value === "string" ? value.replace(/\s+/g, " ").trim() : "";
+}
+
+function normalizeStringList(value: unknown, maxItems: number, maxLength: number) {
+  const items = Array.isArray(value)
+    ? value
+    : typeof value === "string"
+      ? value.split(/,|\r?\n+/)
+      : [];
+
+  return Array.from(
+    new Set(
+      items
+        .map((item) => normalizeText(item))
+        .filter(Boolean)
+        .map((item) => clampText(item, maxLength))
+    )
+  ).slice(0, maxItems);
+}
+
+function sanitizeRewriteOutput(value: unknown) {
+  const record = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+  const title = clampText(normalizeText(record.title), 70);
+  const metaTitle = clampText(normalizeText(record.meta_title || record.title), 70);
+  const metaDescription = clampText(normalizeText(record.meta_description), 170);
+  const lede = clampText(normalizeText(record.lede), 400);
+  const whyItMatters = clampText(normalizeText(record.why_it_matters), 1000);
+  const imagePrompt = clampText(normalizeText(record.image_prompt), 500);
+  const imageAlt = clampText(normalizeText(record.image_alt), 140);
+  const slug = clampText(normalizeText(record.slug), 90);
+  const location = clampText(normalizeText(record.location), 120);
+
+  return {
+    ...record,
+    title,
+    meta_title: metaTitle,
+    meta_description: metaDescription,
+    lede,
+    body: normalizeText(record.body),
+    why_it_matters: whyItMatters,
+    key_points: normalizeStringList(record.key_points, 6, 220),
+    tags: normalizeStringList(record.tags, 10, 32),
+    topics: normalizeStringList(record.topics, 6, 32),
+    entities: normalizeStringList(record.entities, 12, 64),
+    primary_topic: clampText(normalizeText(record.primary_topic), 32),
+    image_prompt: imagePrompt,
+    image_alt: imageAlt,
+    slug,
+    location: location || undefined
+  };
+}
+
 function splitSentences(value: string) {
   return value
     .split(/(?<=[.!?])\s+/)
@@ -170,8 +223,8 @@ class OpenAiRewriteProvider implements RewriteProvider {
       return null;
     }
 
-    const parsed = JSON.parse(content) as RewriteOutput;
-    return rewriteOutputSchema.parse(parsed);
+    const parsed = JSON.parse(content);
+    return rewriteOutputSchema.parse(sanitizeRewriteOutput(parsed));
   }
 }
 
