@@ -440,11 +440,11 @@ export async function createRawNews(input: CreateRawNewsInput) {
         preview_image_url, preview_image_method, preview_image_confidence, preview_image_source, preview_image_caption,
         published_at, hash
       )
-      select $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
+      select $1::uuid, $2::text, $3::text, $4::text, $5::text, $6::text, $7::text, $8::numeric, $9::text, $10::text, $11::timestamptz, $12::text
       where not exists (
         select 1
         from news_raw
-        where url = $2 or hash = $12 or ($3 is not null and canonical_url = $3)
+        where url = $2::text or hash = $12::text or ($3::text is not null and canonical_url = $3::text)
       )
       returning *
     `,
