@@ -23,11 +23,11 @@ import {
   getNewsImageByNewsItemId,
   getNewsBySlug,
   getNewsByTitle,
+  listCandidateRawNews,
   listRecentPublishedNews,
   listNewsItemsNeedingImageGeneration,
   listPendingJobs,
   listPublishReadyNews,
-  listUnprocessedRawNews,
   publishNewsItem,
   upsertNewsImageRequest,
   updateJob,
@@ -180,15 +180,22 @@ export async function runFetchNewsJob(options?: {
 
 export async function runRewriteNewsJob(limitOverride?: number) {
   const limits = getPipelineLimits();
-  const pendingRaws = await listUnprocessedRawNews(limitOverride ?? limits.rewriteBatchLimit);
+  const rewriteLimit = limitOverride ?? limits.rewriteBatchLimit;
+  const pendingRaws = await listCandidateRawNews(Math.max(rewriteLimit * 6, rewriteLimit), 48);
   const publishedPool = await listRecentPublishedNews(200);
 
   let createdDrafts = 0;
   let topicsUpdated = 0;
   let jobsQueued = 0;
   let skipped = 0;
+  let processed = 0;
 
   for (const raw of pendingRaws) {
+    if (processed >= rewriteLimit) {
+      break;
+    }
+
+    processed += 1;
     const rewritten = await rewriteRawNews(raw);
 
     if (!rewritten) {
@@ -324,7 +331,7 @@ export async function runRewriteNewsJob(limitOverride?: number) {
 
   return {
     ok: true,
-    processed: pendingRaws.length,
+    processed,
     createdDrafts,
     topicsUpdated,
     jobsQueued,
