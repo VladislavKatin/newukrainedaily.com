@@ -159,7 +159,7 @@ export function isUkraineRelevantText(value: string | null | undefined) {
 }
 
 export function isUkraineRelevantRaw(raw: Pick<NewsRawRecord, "title" | "contentSnippet" | "url" | "sourceName">) {
-  const combinedText = [raw.title, raw.contentSnippet, raw.url, raw.sourceName]
+  const combinedText = [raw.title, raw.contentSnippet, raw.url]
     .map((value) => normalize(decodeHtmlEntities(value || "")))
     .filter(Boolean)
     .join(" ");

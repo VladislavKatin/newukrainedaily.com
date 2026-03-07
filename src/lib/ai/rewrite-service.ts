@@ -104,10 +104,11 @@ export async function buildRewriteSourceText(raw: NewsRawRecord) {
 export function isRewriteCandidate(raw: NewsRawRecord, sourceText: string) {
   const snippet = cleanSnippet(raw.contentSnippet);
   const normalizedSource = normalizeWhitespace(sourceText);
+  const relevanceSeed = normalizeWhitespace([raw.title, raw.contentSnippet || "", normalizedSource].join(" "));
   const sourceHasEnoughSignal = normalizedSource.length >= 220 && countSentences(normalizedSource) >= 2;
   const snippetHasEnoughSignal = snippet.length >= 120 && countSentences(snippet) >= 2;
 
-  return isUkraineRelevantRaw(raw) && (snippetHasEnoughSignal || sourceHasEnoughSignal);
+  return isUkraineRelevantRaw({ ...raw, contentSnippet: relevanceSeed }) && (snippetHasEnoughSignal || sourceHasEnoughSignal);
 }
 
 export function buildRewritePrompt(raw: NewsRawRecord, siteContext: string) {
