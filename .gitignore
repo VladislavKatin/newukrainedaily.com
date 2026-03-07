@@ -19,3 +19,4 @@ pnpm-debug.log*
 .vercel
 .env.vercel
 .env.vercel.*
+scripts/backups/

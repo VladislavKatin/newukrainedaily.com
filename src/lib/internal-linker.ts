@@ -10,14 +10,14 @@ export type InternalLink = {
 };
 
 const ARTICLE_ANCHOR_TEMPLATES = [
-  "related coverage",
-  "earlier reporting",
-  "latest reporting",
-  "recent updates",
-  "previous coverage"
+  "read the related report",
+  "see the earlier report",
+  "see the latest update",
+  "read more coverage",
+  "see the previous report"
 ];
 
-const TOPIC_ANCHOR_TEMPLATES = ["more on this topic", "topic hub", "latest topic coverage"];
+const TOPIC_ANCHOR_TEMPLATES = ["more on this topic", "browse the topic page", "latest topic coverage"];
 
 function normalize(value: string | null | undefined) {
   return (value || "").replace(/\s+/g, " ").trim().toLowerCase();

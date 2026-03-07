@@ -113,7 +113,7 @@ function mapBlogPostToContentEntry(blogPost: Awaited<ReturnType<typeof getBlogBy
       .map((chunk) => chunk.trim())
       .filter(Boolean),
     imageUrl: blogPost.coverImageUrl || undefined,
-    imageAlt: `${blogPost.title} cover image`,
+    imageAlt: blogPost.ogImageAlt || `${blogPost.title} cover image`,
     status: blogPost.status,
     featured: false
   };
