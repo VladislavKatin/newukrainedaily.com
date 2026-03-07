@@ -18,7 +18,7 @@ export async function generateMetadata({ searchParams }: Props) {
 
   return buildMetadata({
     title: currentPage > 1 ? `Blog - Page ${currentPage}` : "Blog",
-    description: "Published blog archive with reports, explainers, and editorial posts.",
+    description: "Published blog archive with explainers, editorial analysis, and practical support coverage related to Ukraine.",
     path: currentPage > 1 ? `/blog?page=${currentPage}` : "/blog",
     keywords: ["Ukraine blog", "reports", "editorial analysis"]
   });
@@ -38,8 +38,8 @@ export default async function BlogPage({ searchParams }: Props) {
     <>
       <PageShell
         eyebrow="Blog"
-        title="Reports and analysis"
-        description="Editorial reports, explainers, and topic-based analysis."
+        title="Analysis and explainers"
+        description="Longer-form editorial posts on support, reconstruction, resilience, and the policy questions shaping Ukraine's future."
       />
       <div className="container-shell pb-12 sm:pb-16">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

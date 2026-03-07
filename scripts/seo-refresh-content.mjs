@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import process from "node:process";
 import pg from "pg";
 import { loadLocalEnv } from "./load-local-env.mjs";
@@ -5,6 +7,35 @@ import { loadLocalEnv } from "./load-local-env.mjs";
 const { Pool } = pg;
 
 loadLocalEnv(process.cwd());
+
+for (const fileName of [".env.vercel.prod"]) {
+  const filePath = path.join(process.cwd(), fileName);
+  if (!fs.existsSync(filePath)) {
+    continue;
+  }
+
+  const content = fs.readFileSync(filePath, "utf8");
+  for (const line of content.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) {
+      continue;
+    }
+
+    const separatorIndex = trimmed.indexOf("=");
+    if (separatorIndex === -1) {
+      continue;
+    }
+
+    const key = trimmed.slice(0, separatorIndex).trim();
+    const value = trimmed
+      .slice(separatorIndex + 1)
+      .trim()
+      .replace(/^"(.*)"$/, "$1")
+      .replace(/^'(.*)'$/, "$1");
+
+    process.env[key] = value;
+  }
+}
 
 const databaseUrl = process.env.DATABASE_URL || process.env.SUPABASE_DATABASE_URL;
 if (!databaseUrl) {

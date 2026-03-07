@@ -9,7 +9,7 @@ export const revalidate = 0;
 export const metadata = buildMetadata({
   title: "Home",
   description:
-    "Latest Ukraine news, topic archives, support resources, and reports from New Ukraine Daily.",
+    "Latest Ukraine news, practical support guidance, and topic pages tracking diplomacy, aid, security, and recovery.",
   path: "/"
 });
 
@@ -34,11 +34,12 @@ export default async function HomePage() {
           newukrainedaily.com
         </p>
         <h1 className="mt-4 max-w-3xl text-4xl font-semibold tracking-tight text-ink sm:text-6xl">
-          Daily Ukraine coverage, support resources, and topic-based reporting.
+          Daily reporting on Ukraine, with clear context and practical support guidance.
         </h1>
         <p className="mt-6 max-w-3xl text-base leading-8 text-slate-600">
-          New Ukraine Daily brings together verified updates, topical archives, support pathways,
-          and editorial reporting in one lightweight publication.
+          New Ukraine Daily combines breaking developments, issue-by-issue topic pages, and
+          useful guides on how to support Ukraine without losing sight of facts, context, or
+          accountability.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
@@ -94,6 +95,10 @@ export default async function HomePage() {
           <h2 className="mt-3 text-3xl font-semibold tracking-tight text-ink">
             Ways to help
           </h2>
+          <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600">
+            Support is most useful when it is specific, transparent, and steady. These are the
+            areas where readers, donors, and partner organizations can make a practical difference.
+          </p>
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
             {[
               "Emergency relief campaigns and winter aid",
@@ -111,7 +116,11 @@ export default async function HomePage() {
         </div>
         <div className="panel p-8">
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">Topics</p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-ink">Topics</h2>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-ink">Browse by topic</h2>
+          <p className="mt-4 text-sm leading-7 text-slate-600">
+            Follow recurring themes across the site, including frontline developments, diplomacy,
+            humanitarian support, reconstruction, and energy security.
+          </p>
           <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3">
             {topics.length > 0 ? (
               topics.slice(0, 12).map((tag) => (
