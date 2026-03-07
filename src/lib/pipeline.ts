@@ -464,9 +464,14 @@ export async function runGenerateImagesJob(limitOverride?: number) {
 
 export async function runPublishJob(limit?: number) {
   const limits = getPipelineLimits();
-  const publishLimit = Math.min(limit ?? getEnv().DAILY_PUBLISH_LIMIT ?? 10, limits.publishBatchLimit);
+  const dailyLimit = getEnv().DAILY_PUBLISH_LIMIT ?? 10;
+  const requestedCount = limit ?? dailyLimit;
   const publishedToday = await countPublishedNewsSince(getUtcDayStartIso());
-  const availableSlots = Math.max(publishLimit - publishedToday, 0);
+  const remainingDailySlots = Math.max(dailyLimit - publishedToday, 0);
+  const availableSlots = Math.max(
+    Math.min(requestedCount, limits.publishBatchLimit, remainingDailySlots),
+    0
+  );
 
   if (availableSlots === 0) {
     return {
@@ -474,7 +479,7 @@ export async function runPublishJob(limit?: number) {
       processed: 0,
       published: 0,
       publishedToday,
-      availableSlots,
+      availableSlots: remainingDailySlots,
       message: "Daily publish limit reached."
     };
   }
@@ -500,7 +505,7 @@ export async function runPublishJob(limit?: number) {
     published,
     skipped,
     publishedToday,
-    availableSlots
+    availableSlots: remainingDailySlots
   };
 }
 
