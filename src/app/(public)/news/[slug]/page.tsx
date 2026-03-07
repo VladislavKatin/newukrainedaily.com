@@ -50,20 +50,22 @@ export default async function NewsArticlePage({ params }: Props) {
     .slice(0, 3);
 
   return (
-    <section className="container-shell py-12 sm:py-16">
+    <section className="container-shell py-8 sm:py-16">
       <ArticleJsonLd entry={entry} />
-      <article className="panel mx-auto max-w-3xl p-8 sm:p-12">
+      <article className="panel mx-auto max-w-3xl p-5 sm:p-12">
         <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">
           News
         </p>
-        <h1 className="mt-4 text-4xl font-semibold tracking-tight text-ink">{entry.title}</h1>
-        <p className="mt-5 text-lg leading-8 text-slate-600">{entry.description}</p>
-        <div className="mt-6 flex flex-wrap gap-4 text-sm text-slate-500">
+        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-ink sm:mt-4 sm:text-4xl">
+          {entry.title}
+        </h1>
+        <p className="lede-copy mt-4 sm:mt-5">{entry.description}</p>
+        <div className="meta-row mt-5 sm:mt-6">
           <span>{entry.author}</span>
           <time dateTime={entry.publishedAt}>{new Date(entry.publishedAt).toLocaleDateString("en-US")}</time>
         </div>
         {entry.previewImageUrl ? (
-          <div className="mt-8 overflow-hidden rounded-3xl border border-line">
+          <div className="mt-6 overflow-hidden rounded-3xl border border-line sm:mt-8">
             <Image
               src={entry.previewImageUrl}
               alt={entry.previewImageAlt || entry.title}
@@ -78,9 +80,9 @@ export default async function NewsArticlePage({ params }: Props) {
         {entry.previewImageCaption ? (
           <p className="mt-3 text-xs text-slate-500">{entry.previewImageCaption}</p>
         ) : null}
-        <div className="mt-8 space-y-6 text-base leading-8 text-slate-700">
+        <div className="reading-copy mt-7 space-y-5 sm:mt-8 sm:space-y-6">
           {entry.body.map((paragraph, index) => (
-            <div key={`${index}-${paragraph.slice(0, 24)}`} className="space-y-6">
+            <div key={`${index}-${paragraph.slice(0, 24)}`} className="space-y-5 sm:space-y-6">
               <p>{paragraph}</p>
               {index === 0 &&
               entry.generatedImageUrl &&
@@ -95,7 +97,7 @@ export default async function NewsArticlePage({ params }: Props) {
                     className="h-auto w-full object-cover"
                   />
                   {entry.generatedImageCaption ? (
-                    <figcaption className="border-t border-line bg-mist px-4 py-3 text-xs text-slate-600">
+                    <figcaption className="border-t border-line bg-mist px-4 py-3 text-xs leading-5 text-slate-600">
                       {entry.generatedImageCaption}
                     </figcaption>
                   ) : null}
@@ -105,7 +107,7 @@ export default async function NewsArticlePage({ params }: Props) {
           ))}
         </div>
         {entry.sourceUrl ? (
-          <p className="mt-8 text-sm text-slate-500">
+          <p className="mt-7 text-sm leading-6 text-slate-500 sm:mt-8">
             Source:{" "}
             <a href={entry.sourceUrl} className="font-medium text-brand underline underline-offset-4">
               {entry.author}

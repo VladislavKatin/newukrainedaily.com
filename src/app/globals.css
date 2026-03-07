@@ -37,5 +37,62 @@ a {
   .panel {
     @apply rounded-3xl border border-line/80 bg-white/90 shadow-soft backdrop-blur;
   }
+
+  .reading-copy {
+    @apply text-[15px] leading-7 text-slate-700 sm:text-base sm:leading-8;
+  }
+
+  .reading-copy p {
+    @apply m-0;
+  }
+
+  .reading-copy h2 {
+    @apply mt-8 text-[1.35rem] font-semibold leading-tight tracking-tight text-ink sm:mt-10 sm:text-[1.6rem];
+  }
+
+  .reading-copy h3 {
+    @apply mt-6 text-lg font-semibold leading-tight text-ink sm:text-xl;
+  }
+
+  .reading-copy a {
+    @apply font-medium text-brand underline decoration-brand/40 underline-offset-4 transition hover:decoration-brand;
+  }
+
+  .reading-copy ul {
+    @apply my-4 space-y-2 pl-5;
+  }
+
+  .reading-copy li {
+    @apply leading-7;
+  }
+
+  .lede-copy {
+    @apply text-[16px] leading-7 text-slate-600 sm:text-lg sm:leading-8;
+  }
+
+  .meta-row {
+    @apply flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-500;
+  }
 }
 
+@media (max-width: 640px) {
+  .panel {
+    border-radius: 1.25rem;
+  }
+
+  .reading-copy {
+    font-size: 0.975rem;
+    line-height: 1.75rem;
+  }
+
+  .reading-copy h2 {
+    margin-top: 1.75rem;
+    font-size: 1.25rem;
+    line-height: 1.5rem;
+  }
+
+  .lede-copy {
+    font-size: 1rem;
+    line-height: 1.65rem;
+  }
+}

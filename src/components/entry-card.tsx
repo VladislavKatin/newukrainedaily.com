@@ -20,7 +20,7 @@ export function EntryCard({ entry, compact = false }: EntryCardProps) {
   const previewAlt = entry.previewImageAlt || entry.imageAlt || entry.title;
 
   return (
-    <article className={`panel overflow-hidden ${compact ? "p-4 sm:p-5" : "p-6"}`}>
+    <article className={`panel overflow-hidden ${compact ? "p-4 sm:p-5" : "p-5 sm:p-6"}`}>
       {previewUrl ? (
         <Link
           href={`/${entry.type}/${entry.slug}`}
@@ -39,7 +39,7 @@ export function EntryCard({ entry, compact = false }: EntryCardProps) {
                 : "(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 400px"
             }
             className={`w-full object-cover transition duration-300 hover:scale-[1.02] ${
-              compact ? "h-full" : "h-32 sm:h-36"
+              compact ? "h-full" : "h-28 sm:h-36"
             }`}
           />
         </Link>
@@ -48,10 +48,18 @@ export function EntryCard({ entry, compact = false }: EntryCardProps) {
         <span>{entry.type}</span>
         <time dateTime={entry.publishedAt}>{formatDate(entry.publishedAt)}</time>
       </div>
-      <h2 className={`mt-3 font-semibold tracking-tight text-ink ${compact ? "text-lg sm:text-xl" : "text-xl sm:text-2xl"}`}>
+      <h2
+        className={`mt-3 font-semibold tracking-tight text-ink ${
+          compact ? "text-base leading-6 sm:text-xl sm:leading-7" : "text-lg leading-7 sm:text-2xl"
+        }`}
+      >
         {entry.title}
       </h2>
-      <p className={`mt-2 text-sm text-slate-600 ${compact ? "line-clamp-3 leading-5" : "line-clamp-4 leading-6"}`}>
+      <p
+        className={`mt-2 text-sm text-slate-600 ${
+          compact ? "line-clamp-3 leading-[1.35rem]" : "line-clamp-4 leading-6"
+        }`}
+      >
         {entry.excerpt}
       </p>
       <div className={`mt-3 flex flex-wrap gap-2 ${compact ? "hidden sm:flex" : ""}`}>

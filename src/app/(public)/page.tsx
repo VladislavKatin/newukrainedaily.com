@@ -34,20 +34,20 @@ export default async function HomePage() {
     .slice(0, 12);
 
   return (
-    <div className="container-shell py-12 sm:py-16">
-      <section className="panel p-8 sm:p-12">
+    <div className="container-shell py-8 sm:py-16">
+      <section className="panel p-5 sm:p-12">
         <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">
           newukrainedaily.com
         </p>
-        <h1 className="mt-4 max-w-3xl text-4xl font-semibold tracking-tight text-ink sm:text-6xl">
+        <h1 className="mt-4 max-w-3xl text-3xl font-semibold tracking-tight text-ink sm:text-6xl">
           Daily reporting on Ukraine, with clear context and practical support guidance.
         </h1>
-        <p className="mt-6 max-w-3xl text-base leading-8 text-slate-600">
+        <p className="mt-5 max-w-3xl text-[15px] leading-7 text-slate-600 sm:text-base sm:leading-8">
           New Ukraine Daily combines breaking developments, issue-by-issue topic pages, and
           useful guides on how to support Ukraine without losing sight of facts, context, or
           accountability.
         </p>
-        <div className="mt-8 flex flex-wrap gap-3">
+        <div className="mt-6 flex flex-wrap gap-3 sm:mt-8">
           <Link
             href="/news"
             className="rounded-full bg-ink px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand"
@@ -63,13 +63,13 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="mt-16">
-        <div className="flex items-end justify-between gap-4">
+      <section className="mt-12 sm:mt-16">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">
               Latest News
             </p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-ink">
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ink sm:mt-3 sm:text-3xl">
               New updates (max 6)
             </h2>
             {latestNewsUpdatedAt ? (
@@ -82,7 +82,7 @@ export default async function HomePage() {
             View all
           </Link>
         </div>
-        <div className="mt-8 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3 sm:mt-8 sm:gap-6">
           {latestNews.length > 0 ? (
             latestNews.map((entry) => <EntryCard key={entry.slug} entry={entry} />)
           ) : (
@@ -93,19 +93,19 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="mt-16 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-        <div className="panel p-8">
+      <section className="mt-12 grid gap-4 sm:mt-16 sm:gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="panel p-5 sm:p-8">
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">
             Support Ukraine
           </p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-ink">
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ink sm:mt-3 sm:text-3xl">
             Ways to help
           </h2>
           <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600">
             Support is most useful when it is specific, transparent, and steady. These are the
             areas where readers, donors, and partner organizations can make a practical difference.
           </p>
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          <div className="mt-5 grid gap-3 sm:mt-6 sm:gap-4 sm:grid-cols-2">
             {[
               "Emergency relief campaigns and winter aid",
               "Medical support and rehabilitation programs",
@@ -114,20 +114,22 @@ export default async function HomePage() {
               "Local recovery and rebuilding initiatives",
               "Legal, psychological, and social assistance"
             ].map((item) => (
-              <div key={item} className="rounded-2xl border border-line bg-mist p-4 text-sm text-slate-700">
+              <div key={item} className="rounded-2xl border border-line bg-mist p-3.5 text-sm text-slate-700 sm:p-4">
                 {item}
               </div>
             ))}
           </div>
         </div>
-        <div className="panel p-8">
+        <div className="panel p-5 sm:p-8">
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">Topics</p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-ink">Browse by topic</h2>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ink sm:mt-3 sm:text-3xl">
+            Browse by topic
+          </h2>
           <p className="mt-4 text-sm leading-7 text-slate-600">
             Follow recurring themes across the site, including frontline developments, diplomacy,
             humanitarian support, reconstruction, and energy security.
           </p>
-          <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3">
+          <div className="mt-5 grid grid-cols-2 gap-2 sm:mt-6 sm:grid-cols-3">
             {topics.length > 0 ? (
               curatedTopics.map((tag) => (
                 <Link

@@ -3,7 +3,7 @@ import Link from "next/link";
 export function SiteFooter() {
   return (
     <footer className="border-t border-line/70 bg-white/80">
-      <div className="container-shell grid gap-8 py-10 md:grid-cols-3">
+      <div className="container-shell grid gap-6 py-8 sm:py-10 md:grid-cols-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">About</p>
           <p className="mt-3 text-sm leading-6 text-slate-600">
