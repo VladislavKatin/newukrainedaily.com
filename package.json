@@ -16,6 +16,7 @@
     "content:backfill-blog": "node scripts/backfill-blog-from-news.mjs",
     "content:rewrite-existing": "node scripts/rewrite-existing-content.mjs",
     "content:refresh-topics": "node scripts/refresh-topic-descriptions.mjs",
+    "content:refine-top-news": "node scripts/refine-top-news.mjs",
     "seo:refresh": "node scripts/seo-refresh-content.mjs",
     "smoke:cron": "node scripts/smoke-cron.mjs",
     "push:main": "powershell -ExecutionPolicy Bypass -File .\\scripts\\push-main.ps1",
