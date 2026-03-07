@@ -2,8 +2,13 @@ import "server-only";
 import { z } from "zod";
 
 function normalizeOptionalString(value: unknown) {
-  if (typeof value === "string" && value.trim() === "") {
-    return undefined;
+  if (typeof value === "string") {
+    const normalized = value.trim();
+    if (normalized === "") {
+      return undefined;
+    }
+
+    return normalized;
   }
 
   return value;

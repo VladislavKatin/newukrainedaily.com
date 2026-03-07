@@ -100,9 +100,10 @@ async function backup() {
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
   const backupPath = path.join(backupDir, `taxonomy-backup-${stamp}.json`);
 
-  const [topics, news] = await Promise.all([
+  const [topics, news, blog] = await Promise.all([
     pool.query(`select * from topics order by tag asc`),
-    pool.query(`select id, slug, tags, topics, primary_topic from news_items order by created_at desc`)
+    pool.query(`select id, slug, tags, topics, primary_topic from news_items order by created_at desc`),
+    pool.query(`select id, slug, tags, primary_topic from blog_posts order by created_at desc`)
   ]);
 
   fs.writeFileSync(
@@ -111,7 +112,8 @@ async function backup() {
       {
         createdAt: new Date().toISOString(),
         topics: topics.rows,
-        newsItems: news.rows
+        newsItems: news.rows,
+        blogPosts: blog.rows
       },
       null,
       2
@@ -152,12 +154,45 @@ async function normalizeNewsItems() {
   return updated;
 }
 
+async function normalizeBlogPosts() {
+  const { rows } = await pool.query(`
+    select id, slug, tags, primary_topic
+    from blog_posts
+  `);
+
+  let updated = 0;
+
+  for (const row of rows) {
+    const nextTags = dedupe((row.tags || []).map(normalizeTag));
+    const nextPrimary = normalizeTag(row.primary_topic) || nextTags[0] || "world";
+
+    await pool.query(
+      `
+        update blog_posts
+        set tags = $2::text[],
+            primary_topic = $3,
+            updated_at = timezone('utc', now())
+        where id = $1
+      `,
+      [row.id, nextTags, nextPrimary]
+    );
+
+    updated += 1;
+  }
+
+  return updated;
+}
+
 async function rebuildTopics() {
   await pool.query(`delete from topics`);
 
   const { rows } = await pool.query(`
     select distinct unnest(tags) as tag
     from news_items
+    where status = 'published'
+    union
+    select distinct unnest(tags) as tag
+    from blog_posts
     where status = 'published'
   `);
 
@@ -196,9 +231,10 @@ async function main() {
   try {
     const backupPath = await backup();
     const updatedNews = await normalizeNewsItems();
+    const updatedBlogs = await normalizeBlogPosts();
     const topicCount = await rebuildTopics();
     console.log(
-      `[normalize-taxonomy] backup=${backupPath} updatedNews=${updatedNews} rebuiltTopics=${topicCount}`
+      `[normalize-taxonomy] backup=${backupPath} updatedNews=${updatedNews} updatedBlogs=${updatedBlogs} rebuiltTopics=${topicCount}`
     );
   } finally {
     await pool.end();
