@@ -1,12 +1,11 @@
 import "server-only";
 import type { NewsRawRecord, SourceRecord } from "@/lib/postgres-repository";
 
-const UKRAINE_PATTERNS = [
+const PRIMARY_UKRAINE_PATTERNS = [
   /\bukraine\b/i,
   /\bukrainian\b/i,
-  /\bkyiv region\b/i,
   /\bkyiv\b/i,
-  /\bkyiv's\b/i,
+  /\bkyiv region\b/i,
   /\bzelenskyy\b/i,
   /\bzelensky\b/i,
   /\bodesa\b/i,
@@ -17,63 +16,53 @@ const UKRAINE_PATTERNS = [
   /\bcrimea\b/i,
   /\bzaporizhzhia\b/i,
   /\bkherson\b/i,
-  /\bfrontline\b/i,
+  /\bdnipropetrovsk\b/i,
+  /\bmykolaiv\b/i,
+  /\bsumy\b/i,
+  /\binternally displaced\b/i,
+  /\bidp\b/i,
+  /\boccupied territories\b/i,
+  /\boccupied\b/i,
+  /\bukrenergo\b/i,
+  /\bukrainian forces\b/i,
+  /\bukrainian military\b/i,
+  /\bukrainian government\b/i,
+  /\bukrainian president\b/i
+];
+
+const SECONDARY_CONTEXT_PATTERNS = [
   /\bdrone\b/i,
   /\bmissile\b/i,
-  /\benergy grid\b/i,
-  /\baid\b/i,
-  /\bdiplomacy\b/i,
+  /\bstrike\b/i,
+  /\battack\b/i,
   /\bceasefire\b/i,
+  /\bnegotiation\b/i,
+  /\btalks\b/i,
+  /\bdiplomacy\b/i,
   /\bkremlin\b/i,
   /\brussia\b/i,
   /\brussian\b/i,
   /\bmoscow\b/i,
   /\bputin\b/i,
-  /\bkharkiv region\b/i,
-  /\bkherson region\b/i,
-  /\bdnipropetrovsk\b/i,
-  /\boccupied\b/i,
-  /\boccupied territories\b/i,
+  /\bsanctions\b/i,
+  /\bmilitary aid\b/i,
   /\bair defense\b/i,
-  /укра(ї|и)н/i,
-  /украин/i,
-  /ки(ї|е)в/i,
-  /харків/i,
-  /харьков/i,
-  /одес/i,
-  /дніпр/i,
-  /днепр/i,
-  /херсон/i,
-  /запоріж/i,
-  /запорож/i,
-  /доне(ць|ц)к/i,
-  /луган/i,
-  /крим/i,
-  /рос(і|и)я/i,
-  /россий/i,
-  /рф\b/i,
-  /кремл/i,
-  /путін/i,
-  /путин/i,
-  /зеленськ/i,
-  /зеленск/i,
-  /безпілот/i,
-  /бпла/i,
-  /дрон/i,
-  /ракет/i,
-  /обстр(і|е)л/i,
-  /переговор/i,
-  /допомог/i,
-  /відновлен/i,
-  /енергет/i,
-  /впо\b/i,
-  /переселен/i
+  /\bfrontline\b/i,
+  /\breconstruction\b/i,
+  /\brecovery\b/i,
+  /\bhumanitarian\b/i,
+  /\benergy grid\b/i
 ];
 
 const EXCLUDED_PATTERNS = [
   /\bsport\b/i,
   /\bsports\b/i,
   /\bfootball\b/i,
+  /\btennis\b/i,
+  /\bmatch\b/i,
+  /\btournament\b/i,
+  /\bleague\b/i,
+  /\bchampionship\b/i,
   /\bbiathlon\b/i,
   /\bcup\b/i,
   /\bhoroscope\b/i,
@@ -81,26 +70,35 @@ const EXCLUDED_PATTERNS = [
   /\bdiet\b/i,
   /\bhealth tips\b/i,
   /\brecipe\b/i,
+  /\bcooking\b/i,
   /\btravel\b/i,
   /\bsafest city\b/i,
   /\blongevity\b/i,
   /\bchildren for longevity\b/i,
   /\bpotato\b/i,
   /\bcardiologists\b/i,
-  /спорт/i,
-  /біатлон/i,
-  /футбол/i,
-  /гороскоп/i,
-  /астрол/i,
-  /дієт/i,
-  /картопл/i,
-  /довголіт/i,
-  /здоров.?я/i,
-  /приготуван/i,
-  /подорож/i,
-  /місто в іспанії/i,
-  /судоку/i,
-  /руніч/i
+  /\bsudoku\b/i,
+  /\brunes?\b/i,
+  /\bcelebrity\b/i,
+  /\bshowbiz\b/i
+];
+
+const UKRAINE_FOCUSED_DOMAINS = [
+  "president.gov.ua",
+  "mod.gov.ua",
+  "mfa.gov.ua",
+  "cabinet.gov.ua",
+  "pravda.com.ua",
+  "epravda.com.ua",
+  "ukrinform.net",
+  "ukrinform.ua",
+  "suspilne.media",
+  "rbc.ua",
+  "interfax.com.ua",
+  "radiosvoboda.org",
+  "nv.ua",
+  "obozrevatel.com",
+  "tsn.ua"
 ];
 
 function normalize(value: string | null | undefined) {
@@ -123,48 +121,46 @@ function normalizeUrlLike(value: string | null | undefined) {
   return (value || "").replace(/\s+/g, "").trim().toLowerCase();
 }
 
-const UKRAINE_FOCUSED_DOMAINS = [
-  "president.gov.ua",
-  "mod.gov.ua",
-  "mfa.gov.ua",
-  "cabinet.gov.ua",
-  "www.president.gov.ua",
-  "www.mod.gov.ua",
-  "www.mfa.gov.ua",
-  "www.kmu.gov.ua",
-  "pravda.com.ua",
-  "epravda.com.ua",
-  "ukrinform.net",
-  "ukrinform.ua",
-  "suspilne.media",
-  "rbc.ua",
-  "interfax.com.ua",
-  "radiosvoboda.org",
-  "nv.ua",
-  "obozrevatel.com",
-  "tsn.ua"
-];
+function matchesPrimarySignal(value: string) {
+  return PRIMARY_UKRAINE_PATTERNS.some((pattern) => pattern.test(value));
+}
 
-function matchesUkrainePattern(value: string) {
-  return UKRAINE_PATTERNS.some((pattern) => pattern.test(value));
+function countSecondarySignals(value: string) {
+  return SECONDARY_CONTEXT_PATTERNS.reduce(
+    (count, pattern) => count + (pattern.test(value) ? 1 : 0),
+    0
+  );
 }
 
 function matchesExcludedPattern(value: string) {
   return EXCLUDED_PATTERNS.some((pattern) => pattern.test(value));
 }
 
-export function isUkraineRelevantText(value: string | null | undefined) {
-  const text = normalize(decodeHtmlEntities(value || ""));
-  return text.length > 0 && !matchesExcludedPattern(text) && matchesUkrainePattern(text);
+function isUkraineRelevantNormalizedText(value: string) {
+  if (!value || matchesExcludedPattern(value)) {
+    return false;
+  }
+
+  if (matchesPrimarySignal(value)) {
+    return true;
+  }
+
+  return countSecondarySignals(value) >= 2 && /\bukrain/i.test(value);
 }
 
-export function isUkraineRelevantRaw(raw: Pick<NewsRawRecord, "title" | "contentSnippet" | "url" | "sourceName">) {
+export function isUkraineRelevantText(value: string | null | undefined) {
+  return isUkraineRelevantNormalizedText(normalize(decodeHtmlEntities(value || "")));
+}
+
+export function isUkraineRelevantRaw(
+  raw: Pick<NewsRawRecord, "title" | "contentSnippet" | "url" | "sourceName">
+) {
   const combinedText = [raw.title, raw.contentSnippet, raw.url]
     .map((value) => normalize(decodeHtmlEntities(value || "")))
     .filter(Boolean)
     .join(" ");
 
-  return combinedText.length > 0 && !matchesExcludedPattern(combinedText) && matchesUkrainePattern(combinedText);
+  return isUkraineRelevantNormalizedText(combinedText);
 }
 
 export function isUkraineRelevantFeedItem(item: {
@@ -172,7 +168,12 @@ export function isUkraineRelevantFeedItem(item: {
   contentSnippet: string | null;
   url: string;
 }) {
-  return [item.title, item.contentSnippet, item.url].some((value) => isUkraineRelevantText(value));
+  const combinedText = [item.title, item.contentSnippet, item.url]
+    .map((value) => normalize(decodeHtmlEntities(value || "")))
+    .filter(Boolean)
+    .join(" ");
+
+  return isUkraineRelevantNormalizedText(combinedText);
 }
 
 export function sourceLikelyUkraineFocused(source: Pick<SourceRecord, "name" | "url">) {

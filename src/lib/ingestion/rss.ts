@@ -1,7 +1,7 @@
 import "server-only";
 import crypto from "node:crypto";
 import { XMLParser } from "fast-xml-parser";
-import { isUkraineRelevantFeedItem, sourceLikelyUkraineFocused } from "@/lib/content-relevance";
+import { isUkraineRelevantFeedItem } from "@/lib/content-relevance";
 import { extractMainImage } from "@/lib/ingestion/main-image";
 import { normalizeCanonicalUrl } from "@/lib/news-normalization";
 import { createRawNews, listActiveSources } from "@/lib/postgres-repository";
@@ -205,9 +205,7 @@ export async function inspectRssSources(options?: { sourceLimit?: number; itemsP
 
       const xml = await response.text();
       const allItems = extractItems(xml);
-      const relevant = allItems
-        .filter((item) => sourceLikelyUkraineFocused(source) || isUkraineRelevantFeedItem(item))
-        .slice(0, itemsPerSourceLimit);
+      const relevant = allItems.filter((item) => isUkraineRelevantFeedItem(item)).slice(0, itemsPerSourceLimit);
       const invalidItemUrls = relevant.filter((item) => !isHttpUrl(item.url)).length;
 
       details.push({
@@ -291,7 +289,7 @@ export async function ingestRssSources(options?: {
 
       const xml = await response.text();
       const items = extractItems(xml)
-        .filter((item) => sourceLikelyUkraineFocused(source) || isUkraineRelevantFeedItem(item))
+        .filter((item) => isUkraineRelevantFeedItem(item))
         .slice(0, itemsPerSourceLimit);
       scannedItems += items.length;
 
