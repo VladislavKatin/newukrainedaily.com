@@ -269,6 +269,8 @@ export async function ingestRssSources(options?: {
   let scannedItems = 0;
   let newRecords = 0;
   let failedSources = 0;
+  let itemErrors = 0;
+  const sampleErrors: string[] = [];
 
   for (const source of sources) {
     try {
@@ -300,6 +302,7 @@ export async function ingestRssSources(options?: {
         try {
           if (!isHttpUrl(item.url)) {
             sourceItemErrors += 1;
+            itemErrors += 1;
             console.warn(`[ingestion:item] source=${source.name} skipped invalid url=${item.url}`);
             continue;
           }
@@ -354,6 +357,12 @@ export async function ingestRssSources(options?: {
           }
         } catch (error) {
           sourceItemErrors += 1;
+          itemErrors += 1;
+          if (sampleErrors.length < 10) {
+            sampleErrors.push(
+              `${source.name}: ${error instanceof Error ? error.message : "Unknown error"}`
+            );
+          }
           console.error(
             `[ingestion:item] source=${source.name} failed url=${item.url} reason=${
               error instanceof Error ? error.message : "Unknown error"
@@ -384,6 +393,8 @@ export async function ingestRssSources(options?: {
     sources: sources.length,
     scannedItems,
     newRecords,
-    failedSources
+    failedSources,
+    itemErrors,
+    sampleErrors
   };
 }
