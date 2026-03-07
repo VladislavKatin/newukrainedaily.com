@@ -46,12 +46,18 @@ export function buildMetadata({ title, description, path, keywords }: MetadataIn
 
 export function buildArticleMetadata(entry: ContentEntry): Metadata {
   const path = `/${entry.type}/${entry.slug}`;
+  const hasGeneratedImage = Boolean(entry.generatedImageUrl);
+  const hasPreviewImage = Boolean(entry.previewImageUrl);
   const imageUrl =
     entry.generatedImageUrl ||
     entry.previewImageUrl ||
     entry.imageUrl ||
     absoluteUrl(siteConfig.defaultOgImage);
-  const imageAlt = entry.imageAlt || entry.title;
+  const imageAlt = hasGeneratedImage
+    ? entry.generatedImageAlt || entry.imageAlt || entry.title
+    : hasPreviewImage
+      ? entry.previewImageAlt || entry.imageAlt || entry.title
+      : entry.imageAlt || entry.title;
 
   return {
     title: entry.title,
@@ -97,11 +103,18 @@ export function buildArticleMetadata(entry: ContentEntry): Metadata {
 }
 
 export function buildArticleJsonLd(entry: ContentEntry) {
+  const hasGeneratedImage = Boolean(entry.generatedImageUrl);
+  const hasPreviewImage = Boolean(entry.previewImageUrl);
   const jsonLdImage =
     entry.generatedImageUrl ||
     entry.previewImageUrl ||
     entry.imageUrl ||
     absoluteUrl(siteConfig.defaultOgImage);
+  const jsonLdImageAlt = hasGeneratedImage
+    ? entry.generatedImageAlt || entry.imageAlt || entry.title
+    : hasPreviewImage
+      ? entry.previewImageAlt || entry.imageAlt || entry.title
+      : entry.imageAlt || entry.title;
 
   return {
     "@context": "https://schema.org",
@@ -124,7 +137,13 @@ export function buildArticleJsonLd(entry: ContentEntry) {
       }
     },
     mainEntityOfPage: absoluteUrl(`/${entry.type}/${entry.slug}`),
-    image: [jsonLdImage],
+    image: [
+      {
+        "@type": "ImageObject",
+        url: jsonLdImage,
+        caption: jsonLdImageAlt
+      }
+    ],
     articleSection: entry.tags[0] || entry.type,
     keywords: entry.tags.join(", ")
   };
