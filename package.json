@@ -18,6 +18,7 @@
     "content:refresh-topics": "node scripts/refresh-topic-descriptions.mjs",
     "content:normalize-taxonomy": "node scripts/normalize-taxonomy.mjs",
     "content:refine-top-news": "node scripts/refine-top-news.mjs",
+    "content:refine-blog": "node scripts/refine-blog-posts.mjs",
     "seo:refresh": "node scripts/seo-refresh-content.mjs",
     "smoke:cron": "node scripts/smoke-cron.mjs",
     "push:main": "powershell -ExecutionPolicy Bypass -File .\\scripts\\push-main.ps1",
