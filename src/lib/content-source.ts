@@ -43,6 +43,14 @@ function sortEntries(entries: ContentEntry[]) {
   );
 }
 
+function uniqueTags(tags: string[]) {
+  return Array.from(new Set(tags.map((tag) => String(tag).trim()).filter(Boolean)));
+}
+
+function pickDisplayTags(tags: string[]) {
+  return uniqueTags(tags).slice(0, 3);
+}
+
 function mapNewsItemToContentEntry(newsItem: Awaited<ReturnType<typeof getNewsBySlug>> extends infer T
   ? NonNullable<T>
   : never): ContentEntry {
@@ -63,11 +71,11 @@ function mapNewsItemToContentEntry(newsItem: Awaited<ReturnType<typeof getNewsBy
     slug: newsItem.slug,
     title: newsItem.title,
     description: newsItem.dek || newsItem.summary || newsItem.title,
-    excerpt: newsItem.summary || newsItem.dek || newsItem.title,
+    excerpt: newsItem.dek || newsItem.summary || newsItem.title,
     publishedAt: newsItem.publishedAt || newsItem.createdAt,
     updatedAt: newsItem.updatedAt,
     author: newsItem.sourceName || "Editorial Desk",
-    tags: newsItem.tags,
+    tags: pickDisplayTags(newsItem.tags),
     body: bodyParagraphs.length > 0
       ? bodyParagraphs
       : newsItem.whyItMatters
@@ -107,7 +115,7 @@ function mapBlogPostToContentEntry(blogPost: Awaited<ReturnType<typeof getBlogBy
     publishedAt: blogPost.publishedAt || blogPost.createdAt,
     updatedAt: blogPost.updatedAt,
     author: "Editorial Desk",
-    tags: blogPost.tags,
+    tags: pickDisplayTags(blogPost.tags),
     body: blogPost.body
       .split(/\n{2,}/)
       .map((chunk) => chunk.trim())

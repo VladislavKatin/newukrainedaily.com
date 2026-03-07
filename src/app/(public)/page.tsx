@@ -2,6 +2,7 @@ import Link from "next/link";
 import { EntryCard } from "@/components/entry-card";
 import { getAllTags, getEntriesByTypePage } from "@/lib/content";
 import { buildMetadata } from "@/lib/seo";
+import { SUPPORTED_TOPICS, topicSlugFromLabel } from "@/lib/topic-taxonomy";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -26,6 +27,11 @@ export default async function HomePage() {
   );
   const latestNews = (freshNews.length > 0 ? freshNews : latestNewsPage.entries).slice(0, 6);
   const latestNewsUpdatedAt = latestNews[0]?.publishedAt ?? null;
+  const topicIndex = new Map(topics.map((tag) => [tag.toLowerCase(), tag]));
+  const curatedTopics = SUPPORTED_TOPICS.map((topic) => topicIndex.get(topic.toLowerCase()))
+    .filter((tag): tag is string => Boolean(tag))
+    .filter((tag, index, array) => array.findIndex((item) => item.toLowerCase() === tag.toLowerCase()) === index)
+    .slice(0, 12);
 
   return (
     <div className="container-shell py-12 sm:py-16">
@@ -123,10 +129,10 @@ export default async function HomePage() {
           </p>
           <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3">
             {topics.length > 0 ? (
-              topics.slice(0, 12).map((tag) => (
+              curatedTopics.map((tag) => (
                 <Link
                   key={tag}
-                  href={`/topic/${tag}`}
+                  href={`/topic/${topicSlugFromLabel(tag)}`}
                   className="truncate rounded-lg bg-sky px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-brand hover:text-white"
                 >
                   #{tag}
