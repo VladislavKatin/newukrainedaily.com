@@ -93,6 +93,10 @@ function countChars(value) {
   return normalizeText(value).length;
 }
 
+function countCharsNoSpaces(value) {
+  return normalizeText(value).replace(/\s+/g, "").length;
+}
+
 function readingTimeMinutes(value) {
   return Math.max(1, Math.ceil(countWords(value) / 220));
 }
@@ -259,9 +263,9 @@ async function main() {
           improved.og_image_alt,
           readingTimeMinutes(improved.body),
           countWords(improved.body),
-          countChars(improved.body)
-        ]
-      );
+          countCharsNoSpaces(improved.body)
+      ]
+    );
 
       updated += 1;
       console.log(`[refine-blog-posts] updated ${updated}/${rows.length} slug=${row.slug}`);

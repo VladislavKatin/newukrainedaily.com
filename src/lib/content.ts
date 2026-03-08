@@ -3,7 +3,7 @@ import { unstable_cache } from "next/cache";
 import type { ContentEntry, EntryType } from "@/lib/content-types";
 import { getContentRepository } from "@/lib/content-source";
 
-const CONTENT_CACHE_VERSION = "2026-03-08-v2";
+const CONTENT_CACHE_VERSION = "2026-03-08-v3";
 
 const getAllEntriesCached = unstable_cache(
   async () => {
