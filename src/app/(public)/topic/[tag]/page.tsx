@@ -2,21 +2,17 @@ import type { Metadata } from "next";
 import { EntryCard } from "@/components/entry-card";
 import { PaginationNav } from "@/components/pagination-nav";
 import { PageShell } from "@/components/page-shell";
-import { getAllTags, getEntriesByTagPage, getTopic } from "@/lib/content";
+import { getEntriesByTagPage, getTopic } from "@/lib/content";
 import { buildMetadata } from "@/lib/seo";
 import { absoluteUrl, siteConfig } from "@/lib/site";
 
 const PAGE_SIZE = 12;
+export const revalidate = 300;
 
 type Props = {
   params: Promise<{ tag: string }>;
   searchParams?: Promise<{ page?: string }>;
 };
-
-export async function generateStaticParams() {
-  const tags = await getAllTags();
-  return tags.map((tag) => ({ tag }));
-}
 
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { tag } = await params;

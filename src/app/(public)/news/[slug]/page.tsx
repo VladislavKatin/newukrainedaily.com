@@ -3,7 +3,7 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { ArticleJsonLd } from "@/components/article-json-ld";
 import { RelatedEntries } from "@/components/related-entries";
-import { getEntriesByTag, getEntriesByType, getEntry } from "@/lib/content";
+import { getEntriesByTag, getEntry } from "@/lib/content";
 import { buildArticleMetadata } from "@/lib/seo";
 
 type Props = {
@@ -11,11 +11,6 @@ type Props = {
 };
 
 export const revalidate = 300;
-
-export async function generateStaticParams() {
-  const entries = await getEntriesByType("news");
-  return entries.map((entry) => ({ slug: entry.slug }));
-}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
