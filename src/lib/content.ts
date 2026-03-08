@@ -3,12 +3,14 @@ import { unstable_cache } from "next/cache";
 import type { ContentEntry, EntryType } from "@/lib/content-types";
 import { getContentRepository } from "@/lib/content-source";
 
+const CONTENT_CACHE_VERSION = "2026-03-08-v2";
+
 const getAllEntriesCached = unstable_cache(
   async () => {
     const repository = await getContentRepository();
     return repository.getAllEntries();
   },
-  ["content-all-entries"],
+  [CONTENT_CACHE_VERSION, "content-all-entries"],
   { revalidate: 300 }
 );
 
@@ -17,7 +19,7 @@ const getEntriesByTypeCached = unstable_cache(
     const repository = await getContentRepository();
     return repository.getEntriesByType(type);
   },
-  ["content-type"],
+  [CONTENT_CACHE_VERSION, "content-type"],
   { revalidate: 300 }
 );
 
@@ -26,7 +28,7 @@ const getEntriesByTypePageCached = unstable_cache(
     const repository = await getContentRepository();
     return repository.getEntriesByTypePage(type, { limit, offset });
   },
-  ["content-type-page"],
+  [CONTENT_CACHE_VERSION, "content-type-page"],
   { revalidate: 300 }
 );
 
@@ -35,7 +37,7 @@ const getEntryCached = unstable_cache(
     const repository = await getContentRepository();
     return repository.getEntry(type, slug);
   },
-  ["content-entry"],
+  [CONTENT_CACHE_VERSION, "content-entry"],
   { revalidate: 300 }
 );
 
@@ -44,7 +46,7 @@ const getAllTagsCached = unstable_cache(
     const repository = await getContentRepository();
     return repository.getAllTags();
   },
-  ["content-all-tags"],
+  [CONTENT_CACHE_VERSION, "content-all-tags"],
   { revalidate: 300 }
 );
 
@@ -53,7 +55,7 @@ const getEntriesByTagCached = unstable_cache(
     const repository = await getContentRepository();
     return repository.getEntriesByTag(tag);
   },
-  ["content-tag"],
+  [CONTENT_CACHE_VERSION, "content-tag"],
   { revalidate: 300 }
 );
 
@@ -62,7 +64,7 @@ const getEntriesByTagPageCached = unstable_cache(
     const repository = await getContentRepository();
     return repository.getEntriesByTagPage(tag, { limit, offset });
   },
-  ["content-tag-page"],
+  [CONTENT_CACHE_VERSION, "content-tag-page"],
   { revalidate: 300 }
 );
 
@@ -71,7 +73,7 @@ const getTopicCached = unstable_cache(
     const repository = await getContentRepository();
     return repository.getTopic(tag);
   },
-  ["content-topic"],
+  [CONTENT_CACHE_VERSION, "content-topic"],
   { revalidate: 300 }
 );
 

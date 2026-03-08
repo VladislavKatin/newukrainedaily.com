@@ -7,7 +7,7 @@ import { loadLocalEnv } from "./load-local-env.mjs";
 const { Pool } = pg;
 const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
 const DEFAULT_MODEL = "gpt-4o-mini";
-const TOP_LIMIT = 10;
+const TOP_LIMIT = Math.max(1, Number.parseInt(String(process.env.REFINE_LIMIT || "20"), 10) || 20);
 const targetSlugs = String(process.env.TARGET_SLUGS || "")
   .split(",")
   .map((item) => item.trim())
@@ -94,6 +94,10 @@ function countChars(value) {
   return normalizeText(value).length;
 }
 
+function countCharsNoSpaces(value) {
+  return normalizeText(value).replace(/\s+/g, "").length;
+}
+
 function readingTimeMinutes(value) {
   return Math.max(1, Math.ceil(countWords(value) / 220));
 }
@@ -136,7 +140,7 @@ function buildPrompt(row) {
     "The article is already published. Improve it so it reads like a carefully edited newsroom piece for international readers.",
     "Preserve the factual meaning. Do not invent or add unsupported facts.",
     "Focus on stronger openings, cleaner transitions, shorter paragraphs, and a more natural editorial rhythm.",
-    "Make the change visible in the first screenful of the article: rewrite the dek, summary, and first two body paragraphs so they feel noticeably sharper and more human.",
+    "Make the change visually obvious in the first screenful of the article: rewrite the dek, summary, and first two body paragraphs so they feel noticeably sharper, more direct, and more human.",
     "Remove robotic wording, generic framing, obvious AI phrasing, and repetitive structure.",
     "If there is a weak date, claim, or phrasing, make it safer and cleaner without changing the meaning.",
     "Treat the provided published_at value as factual context. Do not change the year, month, or day unless the current article fields already contain a confirmed correction.",
@@ -150,8 +154,8 @@ function buildPrompt(row) {
     "- title <= 70 chars",
     "- dek should be strong, direct, and readable",
     "- summary should feel like a strong article preview, not a duplicate of the title",
-    "- first paragraph should open with the central fact, not background throat-clearing",
-    "- second paragraph should add the most important context or consequence",
+    "- first paragraph should open with the central fact in a more decisive newsroom tone, not background throat-clearing",
+    "- second paragraph should add the most important context or consequence and should not repeat the first paragraph",
     "- content should use short and medium paragraphs with one main idea per paragraph",
     "- why_it_matters should be specific and useful",
     "- key_points 3-5 concise bullets",
@@ -327,7 +331,7 @@ async function main() {
           JSON.stringify(links),
           readingTimeMinutes(improved.content),
           countWords(improved.content),
-          countChars(improved.content)
+        countCharsNoSpaces(improved.content)
         ]
       );
 
