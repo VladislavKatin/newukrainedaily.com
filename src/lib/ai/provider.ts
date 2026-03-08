@@ -22,6 +22,10 @@ function clampText(value: string, max: number) {
   return value.length <= max ? value : `${value.slice(0, max - 3).trim()}...`;
 }
 
+function countCharactersWithoutSpaces(value: string) {
+  return normalizeText(value).replace(/\s+/g, "").length;
+}
+
 function normalizeText(value: unknown) {
   return typeof value === "string" ? value.replace(/\s+/g, " ").trim() : "";
 }
@@ -96,7 +100,7 @@ function buildStubRewrite(input: RewriteInput): RewriteOutput | null {
     .join("\n\n")
     .repeat(2);
 
-  if (body.replace(/\s+/g, " ").trim().length < 1500) {
+  if (countCharactersWithoutSpaces(body) < 1500) {
     return null;
   }
 
@@ -149,7 +153,7 @@ function buildOpenAiPrompt(input: RewriteInput) {
     "- meta_title <= 70 chars",
     "- meta_description 80-170 chars",
     "- lede 1-2 sentences, strong and direct",
-    "- body 6-10 short or medium paragraphs and at least 1500 characters",
+    "- body 6-10 short or medium paragraphs and at least 1500 characters without spaces",
     "- why_it_matters 2-3 sentences",
     "- key_points 3-6 items",
     "- tags/topics/entities concise and relevant",

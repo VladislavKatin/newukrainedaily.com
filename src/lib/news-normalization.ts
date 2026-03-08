@@ -72,6 +72,10 @@ export function charCount(text: string) {
   return normalizeWhitespace(text).length;
 }
 
+export function charCountWithoutSpaces(text: string) {
+  return normalizeWhitespace(text).replace(/\s+/g, "").length;
+}
+
 export function readingTimeMinutes(text: string) {
   return Math.max(1, Math.ceil(wordCount(text) / 220));
 }

@@ -67,7 +67,10 @@ export const rewriteOutputSchema = z.object({
 
 export type RewriteOutput = z.infer<typeof rewriteOutputSchema>;
 
+export function countCharactersWithoutSpaces(body: string) {
+  return body.replace(/\s+/g, "").trim().length;
+}
+
 export function assertRewriteBodyLength(body: string) {
-  const normalized = body.replace(/\s+/g, " ").trim();
-  return normalized.length >= 1500;
+  return countCharactersWithoutSpaces(body) >= 1500;
 }

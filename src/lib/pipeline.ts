@@ -3,7 +3,7 @@ import { rewriteRawNews } from "@/lib/ai/rewrite-service";
 import { buildInternalLinks } from "@/lib/internal-linker";
 import {
   buildNewsFingerprint,
-  charCount,
+  charCountWithoutSpaces,
   normalizeCanonicalUrl,
   readingTimeMinutes,
   wordCount
@@ -318,7 +318,7 @@ export async function runRewriteNewsJob(limitOverride?: number) {
     const canonicalUrl = normalizeCanonicalUrl(raw.canonicalUrl || raw.url);
     const sourceUrl = raw.url || raw.sourceUrl || raw.canonicalUrl || null;
     const content = rewritten.body;
-    const entryCharCount = charCount(content);
+    const entryCharCount = charCountWithoutSpaces(content);
     const entryWordCount = wordCount(content);
     const entryReadingTime = readingTimeMinutes(content);
     const fingerprint = buildNewsFingerprint({
@@ -756,7 +756,7 @@ export async function replayRewriteJob(rawId: string) {
   const canonicalUrl = normalizeCanonicalUrl(raw.canonicalUrl || raw.url);
   const sourceUrl = raw.url || raw.sourceUrl || raw.canonicalUrl || null;
   const content = rewritten.body;
-  const entryCharCount = charCount(content);
+  const entryCharCount = charCountWithoutSpaces(content);
   const entryWordCount = wordCount(content);
   const entryReadingTime = readingTimeMinutes(content);
   const fingerprint = buildNewsFingerprint({

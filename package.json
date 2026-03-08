@@ -19,6 +19,7 @@
     "content:normalize-taxonomy": "node scripts/normalize-taxonomy.mjs",
     "content:refine-top-news": "node scripts/refine-top-news.mjs",
     "content:refine-blog": "node scripts/refine-blog-posts.mjs",
+    "content:fix-short-published": "node scripts/fix-short-published-content.mjs",
     "content:cleanup-published-news": "node scripts/cleanup-published-news.mjs",
     "seo:refresh": "node scripts/seo-refresh-content.mjs",
     "smoke:cron": "node scripts/smoke-cron.mjs",

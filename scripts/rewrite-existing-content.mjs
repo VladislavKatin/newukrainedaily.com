@@ -89,6 +89,10 @@ function countChars(value) {
   return normalizeText(value).length;
 }
 
+function countCharsNoSpaces(value) {
+  return normalizeText(value).replace(/\s+/g, "").length;
+}
+
 function readingTimeMinutes(value) {
   return Math.max(1, Math.ceil(countWords(value) / 220));
 }
@@ -165,6 +169,7 @@ function buildNewsPrompt(row) {
     "- key_points 3-5 concise bullets",
     "- meta_title <= 70 chars",
     "- meta_description 90-160 chars",
+    "- content must remain at least 1500 characters without spaces",
     "- og_image_alt should be specific, natural, and not generic",
     "",
     "Do not use these phrases unless absolutely necessary:",
@@ -214,6 +219,7 @@ function buildBlogPrompt(row) {
     "- body should keep markdown headings if useful, but feel human-edited and concise",
     "- meta_title <= 70 chars",
     "- meta_description 90-160 chars",
+    "- body should remain at least 1800 characters without spaces when possible",
     "- og_image_alt should be natural and descriptive",
     "",
     "Current article fields:",
@@ -404,7 +410,7 @@ async function rewriteNews(newsRows) {
         JSON.stringify(internalLinks),
         readingTimeMinutes(improved.content),
         countWords(improved.content),
-        countChars(improved.content)
+        countCharsNoSpaces(improved.content)
       ]
     );
     updated += 1;
@@ -443,7 +449,7 @@ async function rewriteBlog(blogRows) {
         improved.og_image_alt,
         readingTimeMinutes(improved.body),
         countWords(improved.body),
-        countChars(improved.body)
+        countCharsNoSpaces(improved.body)
       ]
     );
     updated += 1;

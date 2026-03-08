@@ -10,8 +10,7 @@ type Props = {
   params: Promise<{ slug: string }>;
 };
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+export const revalidate = 300;
 
 export async function generateStaticParams() {
   const entries = await getEntriesByType("news");
