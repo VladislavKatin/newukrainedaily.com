@@ -85,10 +85,6 @@ function countWords(value) {
   return normalized ? normalized.split(/\s+/).length : 0;
 }
 
-function countChars(value) {
-  return normalizeText(value).length;
-}
-
 function countCharsNoSpaces(value) {
   return normalizeText(value).replace(/\s+/g, "").length;
 }
