@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { ArticleJsonLd } from "@/components/article-json-ld";
+import { ArticleBody } from "@/components/article-body";
 import { RelatedEntries } from "@/components/related-entries";
 import { getEntriesByTag, getEntry } from "@/lib/content";
 import { buildArticleMetadata } from "@/lib/seo";
@@ -74,32 +75,30 @@ export default async function NewsArticlePage({ params }: Props) {
         {entry.previewImageCaption ? (
           <p className="mt-3 text-xs text-slate-500">{entry.previewImageCaption}</p>
         ) : null}
-        <div className="reading-copy mt-7 space-y-5 sm:mt-8 sm:space-y-6">
-          {entry.body.map((paragraph, index) => (
-            <div key={`${index}-${paragraph.slice(0, 24)}`} className="space-y-5 sm:space-y-6">
-              <p>{paragraph}</p>
-              {index === 0 &&
-              entry.generatedImageUrl &&
-              entry.generatedImageUrl !== entry.previewImageUrl ? (
-                <figure className="overflow-hidden rounded-3xl border border-line">
-                  <Image
-                    src={entry.generatedImageUrl}
-                    alt={entry.generatedImageAlt || entry.title}
-                    width={1200}
-                    height={675}
-                    sizes="(max-width: 768px) 100vw, 768px"
-                    className="h-auto w-full object-cover"
-                  />
-                  {entry.generatedImageCaption ? (
-                    <figcaption className="border-t border-line bg-mist px-4 py-3 text-xs leading-5 text-slate-600">
-                      {entry.generatedImageCaption}
-                    </figcaption>
-                  ) : null}
-                </figure>
-              ) : null}
-            </div>
-          ))}
-        </div>
+        <ArticleBody
+          paragraphs={entry.body}
+          showGeneratedImageAfterIndex={0}
+          generatedImage={
+            entry.generatedImageUrl &&
+            entry.generatedImageUrl !== entry.previewImageUrl ? (
+              <figure className="overflow-hidden rounded-3xl border border-line">
+                <Image
+                  src={entry.generatedImageUrl}
+                  alt={entry.generatedImageAlt || entry.title}
+                  width={1200}
+                  height={675}
+                  sizes="(max-width: 768px) 100vw, 768px"
+                  className="h-auto w-full object-cover"
+                />
+                {entry.generatedImageCaption ? (
+                  <figcaption className="border-t border-line bg-mist px-4 py-3 text-xs leading-5 text-slate-600">
+                    {entry.generatedImageCaption}
+                  </figcaption>
+                ) : null}
+              </figure>
+            ) : null
+          }
+        />
         {entry.sourceAttribution || entry.author ? (
           <p className="mt-7 text-sm leading-6 text-slate-500 sm:mt-8">
             {entry.sourceAttribution || "Source:"}{" "}

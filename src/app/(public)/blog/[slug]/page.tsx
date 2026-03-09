@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { ArticleJsonLd } from "@/components/article-json-ld";
+import { ArticleBody } from "@/components/article-body";
 import { RelatedEntries } from "@/components/related-entries";
 import { getEntriesByTag, getEntry } from "@/lib/content";
 import { buildArticleMetadata } from "@/lib/seo";
@@ -73,11 +74,7 @@ export default async function BlogArticlePage({ params }: Props) {
         {entry.previewImageCaption ? (
           <p className="mt-3 text-xs text-slate-500">{entry.previewImageCaption}</p>
         ) : null}
-        <div className="reading-copy mt-7 space-y-5 sm:mt-8 sm:space-y-6">
-          {entry.body.map((paragraph) => (
-            <p key={paragraph}>{paragraph}</p>
-          ))}
-        </div>
+        <ArticleBody paragraphs={entry.body} />
         <RelatedEntries title="Related Posts" entries={related} />
       </article>
     </section>

@@ -99,29 +99,40 @@ function readingTimeMinutes(value) {
 
 function buildPrompt(row) {
   return [
-    "You are a senior editor polishing a published blog article for an English-language Ukraine support site.",
-    "The article should feel human-edited, direct, useful, and calm.",
-    "Do not invent new facts or numbers.",
-    "Keep the core meaning, but make the opening more engaging and less generic.",
-    "Remove abstract filler, repetitive structure, and generic explainer tone.",
-    "Make the first two paragraphs and the excerpt noticeably stronger so readers feel an immediate editorial improvement.",
+    "You are a senior editor rewriting a published blog article for an English-language Ukraine support site.",
+    "Write in calm, human editorial English for readers in the US, UK, Canada, and the EU.",
+    "The result should read like a polished newsroom explainer, not SEO copywriting and not marketing copy.",
+    "Do not invent facts, statistics, or claims beyond the article's existing meaning.",
+    "Keep the core meaning, but rebuild weak structure and remove robotic or promotional phrasing.",
+    "Avoid hooks like 'Discover', 'Learn how', 'Transforming lives', 'Essential guide', 'lifeline', and similar generic SEO formulas.",
     "Use short and medium paragraphs with a clear rhythm suitable for mobile reading.",
+    "Use useful section headings that improve scanability.",
     "Return strict JSON only.",
     "",
     "Output keys:",
     "title, excerpt, body, meta_title, meta_description, og_image_alt",
     "",
     "Constraints:",
-    "- title <= 70 chars",
-    "- excerpt must be a direct, readable 1-2 sentence summary",
-    "- body should keep markdown headings if helpful",
+    "- title <= 70 chars and should sound factual, natural, and specific",
+    "- excerpt must be a direct, readable 1-2 sentence summary with no hype language",
+    "- body must use markdown H2 headings with this kind of structure when it fits the topic: Intro, Why This Matters, Practical Context, What Readers Should Watch",
     "- opening should be concrete and useful, not generic throat-clearing",
-    "- meta_title <= 70 chars",
-    "- meta_description 90-160 chars",
+    "- meta_title <= 70 chars and should not be truncated or stuffed",
+    "- meta_description 110-160 chars, specific and natural",
     "- og_image_alt should be descriptive and natural",
     "",
+    "Style rules:",
+    "- no generic conclusions",
+    "- no promotional donor language",
+    "- no vague filler",
+    "- one main idea per paragraph",
+    "- headings should help readers scan the page",
+    "- do not write 'this article', 'this guide', 'this piece', or 'this post' in the opening",
+    "- do not write in a sales or campaign tone",
+    "- do not use second-person persuasion unless it is necessary for clarity",
+    "",
     "Avoid phrases like:",
-    "it is worth noting, in addition, moreover, this reflects a clear reality, in today's rapidly changing world",
+    "discover, learn how, transforming lives, lifeline, essential guide, this article discusses, this article outlines, this guide explains, it is worth noting, in addition, moreover, this reflects a clear reality, in today's rapidly changing world",
     "",
     "Current blog fields:",
     JSON.stringify(
@@ -188,11 +199,20 @@ function ensurePayload(payload, row) {
     throw new Error(`Invalid blog refinement payload for ${row.slug}`);
   }
 
+  const normalizeMetaTitle = (value) =>
+    clamp(
+      normalizeText(value)
+        .replace(/\|\s*NewUkraineD?$/i, "")
+        .replace(/\|\s*New Ukraine Daily$/i, "")
+        .trim() || title,
+      70
+    );
+
   return {
     title,
     excerpt,
     body,
-    meta_title: clamp(payload.meta_title || row.meta_title || title, 70),
+    meta_title: normalizeMetaTitle(payload.meta_title || row.meta_title || title),
     meta_description: clamp(payload.meta_description || row.meta_description || excerpt, 160),
     og_image_alt: clamp(payload.og_image_alt || row.og_image_alt || `${title} editorial illustration`, 140)
   };
