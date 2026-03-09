@@ -378,7 +378,8 @@ async function main() {
 
         if (generationStatus.imageUrl) {
           remoteImageUrl = generationStatus.imageUrl;
-          const stored = await saveGeneratedImage(generationStatus.imageUrl, row.id);
+          const uniqueStem = `${row.id}-${generation.generationId.slice(0, 8)}`;
+          const stored = await saveGeneratedImage(generationStatus.imageUrl, uniqueStem);
           storedPublicUrl = stored.publicUrl;
 
           await pool.query(

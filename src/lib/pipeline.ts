@@ -475,7 +475,8 @@ export async function runGenerateImagesJob(limitOverride?: number) {
         }
 
         if (generation.imageUrl) {
-          const stored = await saveRemoteImage(generation.imageUrl, item.id);
+          const uniqueStem = `${item.id}-${previousRequest.generationId.slice(0, 8)}`;
+          const stored = await saveRemoteImage(generation.imageUrl, uniqueStem);
           await completeNewsImage({
             generationId: previousRequest.generationId,
             remoteImageUrl: generation.imageUrl,
@@ -885,7 +886,8 @@ export async function handleLeonardoWebhook(payload: Record<string, unknown>) {
     return { ok: false, status: "failed", generationId: parsed.generationId };
   }
 
-  const stored = await saveRemoteImage(parsed.imageUrl, imageRecord.newsItemId);
+  const uniqueStem = `${imageRecord.newsItemId}-${parsed.generationId.slice(0, 8)}`;
+  const stored = await saveRemoteImage(parsed.imageUrl, uniqueStem);
 
   await completeNewsImage({
     generationId: parsed.generationId,
