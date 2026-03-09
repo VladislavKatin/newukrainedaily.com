@@ -1,5 +1,6 @@
 import "server-only";
 import { query } from "@/lib/db";
+import { buildImageCaption } from "@/lib/article-normalization";
 import { extractMainImage } from "@/lib/ingestion/main-image";
 import { listNews } from "@/lib/postgres-repository";
 import { absoluteUrl, siteConfig } from "@/lib/site";
@@ -22,7 +23,7 @@ export async function backfillNewsImagesAndSeo(limit = 200) {
       normalizeUrl(item.generatedImageAlt) || item.ogImageAlt || `${item.title} generated illustration`;
     const generatedImageCaption =
       normalizeUrl(item.generatedImageCaption) ||
-      "Illustration generated with AI (Leonardo) based on the headline";
+      buildImageCaption("generated", item.sourceName);
     let ogImageUrl = normalizeUrl(item.ogImageUrl);
     let coverImageUrl = normalizeUrl(item.coverImageUrl);
 
@@ -33,7 +34,7 @@ export async function backfillNewsImagesAndSeo(limit = 200) {
       });
       previewImageUrl = normalizeUrl(extracted.url);
       if (previewImageUrl && !previewImageCaption) {
-        previewImageCaption = `Preview: original image from ${previewImageSource || "Source"}`;
+        previewImageCaption = buildImageCaption("preview", previewImageSource || "Source");
       }
     }
 
@@ -45,7 +46,7 @@ export async function backfillNewsImagesAndSeo(limit = 200) {
     ogImageUrl = ogImageUrl || cardFallback;
 
     if (previewImageUrl && !previewImageCaption) {
-      previewImageCaption = `Preview: original image from ${previewImageSource || "Source"}`;
+      previewImageCaption = buildImageCaption("preview", previewImageSource || "Source");
     }
 
     await query(

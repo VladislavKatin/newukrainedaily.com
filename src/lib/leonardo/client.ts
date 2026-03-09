@@ -51,8 +51,7 @@ export async function createLeonardoGeneration(input: LeonardoCreateRequest) {
       modelId: DEFAULT_MODEL_ID,
       width: 1536,
       height: 1024,
-      num_images: 1,
-      presetStyle: "CINEMATIC"
+      num_images: 1
     }),
     cache: "no-store"
   });

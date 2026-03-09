@@ -2,6 +2,7 @@ import "server-only";
 import { rewriteRawNews } from "@/lib/ai/rewrite-service";
 import { sanitizeArticleForPublishing } from "@/lib/article-normalization";
 import { buildInternalLinks } from "@/lib/internal-linker";
+import { buildNewsImagePromptPackage } from "@/lib/image-prompt";
 import {
   buildNewsFingerprint,
   charCountWithoutSpaces,
@@ -205,42 +206,6 @@ async function buildUniqueTitle(baseTitle: string) {
   }
 
   return `${baseTitle.slice(0, 70).trim()} ${Date.now()}`.slice(0, 90);
-}
-
-function buildImagePrompt(input: {
-  title: string;
-  lead: string | null;
-  body: string | null;
-  whyItMatters: string | null;
-  tags: string[];
-  sourceName: string | null;
-}) {
-  const sanitizeForImagePrompt = (value: string | null | undefined) =>
-    (value || "")
-      .replace(/\s+/g, " ")
-      .replace(/\b(sexual violence|rape|torture|massacre|gore|blood|execution)\b/gi, "human rights abuse")
-      .trim();
-
-  const tagText = sanitizeForImagePrompt(input.tags.slice(0, 6).join(", "));
-  const leadText = sanitizeForImagePrompt(input.lead);
-  const bodyText = sanitizeForImagePrompt(input.body);
-  const whyText = sanitizeForImagePrompt(input.whyItMatters);
-  const titleText = sanitizeForImagePrompt(input.title);
-  const sourceText = sanitizeForImagePrompt(input.sourceName);
-
-  return [
-    "Create a realistic editorial illustration for a serious Ukraine news report.",
-    `Headline context: ${titleText}.`,
-    leadText ? `Lead facts: ${leadText.slice(0, 280)}.` : null,
-    bodyText ? `Reported details: ${bodyText.slice(0, 420)}.` : null,
-    whyText ? `Editorial importance: ${whyText.slice(0, 220)}.` : null,
-    tagText ? `Themes: ${tagText}.` : null,
-    sourceText ? `Source context: ${sourceText}.` : null,
-    "Show concrete infrastructure, city, civic, institutional, or defensive context supported by the report.",
-    "Use muted colors, serious newsroom tone, realistic editorial illustration, not documentary photography, no text overlays, no watermarks, no logos, no gore, no sensational fire unless clearly supported by the report."
-  ]
-    .filter(Boolean)
-    .join(" ");
 }
 
 function isModerationFailure(errorMessage: string) {
@@ -480,14 +445,16 @@ export async function runGenerateImagesJob(limitOverride?: number) {
     }
 
     const previousRequest = await getNewsImageByNewsItemId(item.id);
-    const prompt = buildImagePrompt({
+    const imagePackage = buildNewsImagePromptPackage({
       title: item.title,
       lead: item.dek,
       body: item.content,
       whyItMatters: item.whyItMatters,
       tags: item.tags,
-      sourceName: item.sourceName
+      sourceName: item.sourceName,
+      location: item.location
     });
+    const prompt = imagePackage.prompt;
     const attempts = (previousRequest?.attempts ?? 0) + 1;
 
     try {
@@ -522,7 +489,7 @@ export async function runGenerateImagesJob(limitOverride?: number) {
             generatedImageUrl: stored.publicUrl,
             generatedImageCaption:
               item.generatedImageCaption ||
-              "AI illustration based on reported details. Not a documentary image."
+              imagePackage.caption
           });
           completed += 1;
           continue;
@@ -557,8 +524,7 @@ export async function runGenerateImagesJob(limitOverride?: number) {
           coverImageUrl: fallbackImageUrl,
           ogImageUrl: fallbackImageUrl,
           generatedImageUrl: fallbackImageUrl,
-          generatedImageCaption:
-            "AI illustration based on reported details. Not a documentary image."
+          generatedImageCaption: imagePackage.caption
         });
       }
       await upsertNewsImageRequest({
@@ -933,7 +899,7 @@ export async function handleLeonardoWebhook(payload: Record<string, unknown>) {
     coverImageUrl: stored.publicUrl,
     ogImageUrl: stored.publicUrl,
     generatedImageUrl: stored.publicUrl,
-    generatedImageCaption: "AI illustration based on reported details. Not a documentary image."
+    generatedImageCaption: "Illustration for this report. Created by the editorial desk using AI."
   });
 
   await enqueueJob({

@@ -23,6 +23,7 @@
     "content:fix-short-published": "node scripts/fix-short-published-content.mjs",
     "content:cleanup-published-news": "node scripts/cleanup-published-news.mjs",
     "content:repair": "node --import tsx scripts/repair-articles.ts",
+    "content:regenerate-last-news-images": "node --import tsx scripts/regenerate-last-news-images.ts",
     "seo:refresh": "node scripts/seo-refresh-content.mjs",
     "smoke:cron": "node scripts/smoke-cron.mjs",
     "push:main": "powershell -ExecutionPolicy Bypass -File .\\scripts\\push-main.ps1",
