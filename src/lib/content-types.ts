@@ -7,11 +7,13 @@ export type ContentEntry = {
   title: string;
   description: string;
   excerpt: string;
+  lead?: string;
   publishedAt: string;
   updatedAt?: string;
   author: string;
   tags: string[];
   body: string[];
+  sourceAttribution?: string;
   sourceUrl?: string;
   imageUrl?: string;
   imageAlt?: string;

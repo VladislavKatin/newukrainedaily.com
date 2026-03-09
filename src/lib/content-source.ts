@@ -1,5 +1,8 @@
 import "server-only";
 import type { ContentEntry } from "@/lib/content-types";
+import {
+  sanitizeArticleForPublishing
+} from "@/lib/article-normalization";
 import { getDatabaseUrl, getEnv } from "@/lib/env";
 import { query } from "@/lib/db";
 import {
@@ -54,49 +57,45 @@ function pickDisplayTags(tags: string[]) {
 function mapNewsItemToContentEntry(newsItem: Awaited<ReturnType<typeof getNewsBySlug>> extends infer T
   ? NonNullable<T>
   : never): ContentEntry {
-  const bodyParagraphs = (newsItem.content || newsItem.summary || newsItem.dek || newsItem.title)
-    .split(/\n{2,}/)
-    .map((chunk) => chunk.trim())
-    .filter(Boolean);
-
-  const previewImageUrl = newsItem.previewImageUrl || undefined;
-  const normalizedGenerated = newsItem.generatedImageUrl || undefined;
-  const generatedImageUrl =
-    normalizedGenerated && normalizedGenerated !== previewImageUrl ? normalizedGenerated : undefined;
-  const fallbackImageUrl = generatedImageUrl || previewImageUrl || newsItem.coverImageUrl || newsItem.ogImageUrl || undefined;
+  const sanitized = sanitizeArticleForPublishing({
+    type: "news",
+    title: newsItem.title,
+    summary: newsItem.summary || newsItem.dek,
+    content: newsItem.content || newsItem.summary || newsItem.dek,
+    whyItMatters: newsItem.whyItMatters,
+    sourceName: newsItem.sourceName,
+    sourceUrl: newsItem.sourceUrl,
+    previewImageUrl: newsItem.previewImageUrl,
+    previewImageCaption: newsItem.previewImageCaption,
+    previewImageAlt: newsItem.ogImageAlt,
+    generatedImageUrl: newsItem.generatedImageUrl,
+    generatedImageCaption: newsItem.generatedImageCaption,
+    generatedImageAlt: newsItem.generatedImageAlt
+  });
 
   return {
     id: newsItem.id,
     type: "news",
     slug: newsItem.slug,
-    title: newsItem.title,
-    description: newsItem.dek || newsItem.summary || newsItem.title,
-    excerpt: newsItem.dek || newsItem.summary || newsItem.title,
+    title: sanitized.title,
+    description: sanitized.lead,
+    excerpt: sanitized.excerpt,
+    lead: sanitized.lead,
     publishedAt: newsItem.publishedAt || newsItem.createdAt,
     updatedAt: newsItem.updatedAt,
     author: newsItem.sourceName || "Editorial Desk",
     tags: pickDisplayTags(newsItem.tags),
-    body: bodyParagraphs.length > 0
-      ? bodyParagraphs
-      : newsItem.whyItMatters
-        ? [newsItem.summary || newsItem.dek || newsItem.title, newsItem.whyItMatters]
-        : [newsItem.summary || newsItem.dek || newsItem.title],
+    body: sanitized.bodyParagraphs,
+    sourceAttribution: sanitized.sourceAttribution || undefined,
     sourceUrl: newsItem.sourceUrl || undefined,
-    imageUrl: fallbackImageUrl,
-    imageAlt: newsItem.previewImageCaption || `${newsItem.title} preview image`,
-    previewImageUrl,
-    previewImageAlt: newsItem.previewImageCaption || `${newsItem.title} preview image`,
-    previewImageCaption:
-      newsItem.previewImageCaption ||
-      (previewImageUrl
-        ? `Preview: original image from ${newsItem.sourceName || "Source"}`
-        : undefined),
-    generatedImageUrl,
-    generatedImageAlt:
-      newsItem.generatedImageAlt || newsItem.ogImageAlt || `${newsItem.title} generated illustration`,
-    generatedImageCaption:
-      newsItem.generatedImageCaption ||
-      "Illustration generated with AI (Leonardo) based on the headline",
+    imageUrl: sanitized.primaryImageUrl,
+    imageAlt: sanitized.primaryImageAlt,
+    previewImageUrl: sanitized.previewImageUrl,
+    previewImageAlt: sanitized.previewImageAlt,
+    previewImageCaption: sanitized.previewImageCaption,
+    generatedImageUrl: sanitized.generatedImageUrl,
+    generatedImageAlt: sanitized.generatedImageAlt,
+    generatedImageCaption: sanitized.generatedImageCaption,
     status: newsItem.status,
     featured: false
   };
@@ -105,23 +104,33 @@ function mapNewsItemToContentEntry(newsItem: Awaited<ReturnType<typeof getNewsBy
 function mapBlogPostToContentEntry(blogPost: Awaited<ReturnType<typeof getBlogBySlug>> extends infer T
   ? NonNullable<T>
   : never): ContentEntry {
+  const sanitized = sanitizeArticleForPublishing({
+    type: "blog",
+    title: blogPost.title,
+    excerpt: blogPost.excerpt,
+    body: blogPost.body,
+    previewImageUrl: blogPost.coverImageUrl,
+    previewImageAlt: blogPost.ogImageAlt
+  });
+
   return {
     id: blogPost.id,
     type: "blog",
     slug: blogPost.slug,
-    title: blogPost.title,
-    description: blogPost.excerpt || blogPost.title,
-    excerpt: blogPost.excerpt || blogPost.title,
+    title: sanitized.title,
+    description: sanitized.lead,
+    excerpt: sanitized.excerpt,
+    lead: sanitized.lead,
     publishedAt: blogPost.publishedAt || blogPost.createdAt,
     updatedAt: blogPost.updatedAt,
     author: "Editorial Desk",
     tags: pickDisplayTags(blogPost.tags),
-    body: blogPost.body
-      .split(/\n{2,}/)
-      .map((chunk) => chunk.trim())
-      .filter(Boolean),
-    imageUrl: blogPost.coverImageUrl || undefined,
-    imageAlt: blogPost.ogImageAlt || `${blogPost.title} cover image`,
+    body: sanitized.bodyParagraphs,
+    imageUrl: sanitized.primaryImageUrl,
+    imageAlt: sanitized.primaryImageAlt,
+    previewImageUrl: sanitized.previewImageUrl,
+    previewImageAlt: sanitized.previewImageAlt,
+    previewImageCaption: sanitized.previewImageCaption,
     status: blogPost.status,
     featured: false
   };

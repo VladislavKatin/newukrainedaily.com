@@ -1,5 +1,6 @@
 import "server-only";
 import { rewriteRawNews } from "@/lib/ai/rewrite-service";
+import { sanitizeArticleForPublishing } from "@/lib/article-normalization";
 import { buildInternalLinks } from "@/lib/internal-linker";
 import {
   buildNewsFingerprint,
@@ -208,8 +209,8 @@ async function buildUniqueTitle(baseTitle: string) {
 
 function buildImagePrompt(input: {
   title: string;
-  dek: string | null;
-  summary: string | null;
+  lead: string | null;
+  body: string | null;
   whyItMatters: string | null;
   tags: string[];
   sourceName: string | null;
@@ -221,22 +222,22 @@ function buildImagePrompt(input: {
       .trim();
 
   const tagText = sanitizeForImagePrompt(input.tags.slice(0, 6).join(", "));
-  const summaryText = sanitizeForImagePrompt(input.summary);
+  const leadText = sanitizeForImagePrompt(input.lead);
+  const bodyText = sanitizeForImagePrompt(input.body);
   const whyText = sanitizeForImagePrompt(input.whyItMatters);
   const titleText = sanitizeForImagePrompt(input.title);
-  const dekText = sanitizeForImagePrompt(input.dek);
   const sourceText = sanitizeForImagePrompt(input.sourceName);
 
   return [
-    "Create a photorealistic editorial cover image for a Ukraine news article.",
+    "Create a realistic editorial illustration for a serious Ukraine news report.",
     `Headline context: ${titleText}.`,
-    dekText ? `Short brief: ${dekText}.` : null,
-    summaryText ? `Article summary: ${summaryText.slice(0, 320)}.` : null,
+    leadText ? `Lead facts: ${leadText.slice(0, 280)}.` : null,
+    bodyText ? `Reported details: ${bodyText.slice(0, 420)}.` : null,
     whyText ? `Editorial importance: ${whyText.slice(0, 220)}.` : null,
     tagText ? `Themes: ${tagText}.` : null,
     sourceText ? `Source context: ${sourceText}.` : null,
-    "Show concrete human, infrastructure, or institutional context implied by the article.",
-    "Use symbolic and non-graphic composition. No text overlays, no watermarks, no logos, no explicit violence, cinematic natural light, realistic reportage style."
+    "Show concrete infrastructure, city, civic, institutional, or defensive context supported by the report.",
+    "Use muted colors, serious newsroom tone, realistic editorial illustration, not documentary photography, no text overlays, no watermarks, no logos, no gore, no sensational fire unless clearly supported by the report."
   ]
     .filter(Boolean)
     .join(" ");
@@ -318,11 +319,26 @@ export async function runRewriteNewsJob(limitOverride?: number) {
     const canonicalUrl = normalizeCanonicalUrl(raw.canonicalUrl || raw.url);
     const sourceUrl = raw.url || raw.sourceUrl || raw.canonicalUrl || null;
     const content = rewritten.body;
-    const entryCharCount = charCountWithoutSpaces(content);
-    const entryWordCount = wordCount(content);
-    const entryReadingTime = readingTimeMinutes(content);
-    const fingerprint = buildNewsFingerprint({
+    const sanitized = sanitizeArticleForPublishing({
+      type: "news",
       title,
+      summary: rewritten.lede,
+      content,
+      whyItMatters: rewritten.why_it_matters,
+      sourceName: raw.sourceName || "Unknown Source",
+      sourceUrl: sourceUrl || null,
+      previewImageUrl: raw.previewImageUrl ?? null,
+      previewImageCaption: raw.previewImageCaption ?? null,
+      previewImageAlt: rewritten.image_alt,
+      generatedImageCaption: null,
+      generatedImageAlt: rewritten.image_alt
+    });
+    const sanitizedContent = sanitized.body;
+    const entryCharCount = charCountWithoutSpaces(sanitizedContent);
+    const entryWordCount = wordCount(sanitizedContent);
+    const entryReadingTime = readingTimeMinutes(sanitizedContent);
+    const fingerprint = buildNewsFingerprint({
+      title: sanitized.title,
       sourceName: raw.sourceName,
       canonicalUrl,
       publishedAt: raw.publishedAt
@@ -332,10 +348,10 @@ export async function runRewriteNewsJob(limitOverride?: number) {
       id: `draft:${slug}`,
       rawId: raw.id,
       slug,
-      title,
-      dek: rewritten.lede,
-      summary: rewritten.body,
-      content,
+      title: sanitized.title,
+      dek: sanitized.lead,
+      summary: sanitized.excerpt,
+      content: sanitizedContent,
       keyPoints: rewritten.key_points,
       whyItMatters: rewritten.why_it_matters,
       tags,
@@ -343,19 +359,19 @@ export async function runRewriteNewsJob(limitOverride?: number) {
       entities,
       coverImageUrl: null,
       ogImageUrl: null,
-      ogImageAlt: rewritten.image_alt,
-      previewImageUrl: raw.previewImageUrl ?? null,
+      ogImageAlt: sanitized.previewImageAlt || rewritten.image_alt,
+      previewImageUrl: sanitized.previewImageUrl ?? null,
       previewImageSource: raw.previewImageSource ?? null,
-      previewImageCaption: raw.previewImageCaption ?? null,
+      previewImageCaption: sanitized.previewImageCaption ?? null,
       generatedImagePrompt: rewritten.image_prompt,
       generatedImageUrl: null,
-      generatedImageAlt: rewritten.image_alt,
-      generatedImageCaption: null,
+      generatedImageAlt: sanitized.generatedImageAlt || rewritten.image_alt,
+      generatedImageCaption: sanitized.generatedImageCaption ?? null,
       sourceName: raw.sourceName || "Unknown Source",
       sourceUrl: sourceUrl || null,
       canonicalUrl,
       metaTitle: rewritten.meta_title,
-      metaDescription: rewritten.meta_description,
+      metaDescription: sanitized.metaDescription,
       readingTimeMinutes: entryReadingTime,
       wordCount: entryWordCount,
       charCount: entryCharCount,
@@ -380,25 +396,26 @@ export async function runRewriteNewsJob(limitOverride?: number) {
     await upsertNewsItem({
       rawId: raw.id,
       slug,
-      title,
-      dek: rewritten.lede,
-      summary: rewritten.lede,
-      content,
+      title: sanitized.title,
+      dek: sanitized.lead,
+      summary: sanitized.excerpt,
+      content: sanitizedContent,
       keyPoints: rewritten.key_points,
       whyItMatters: rewritten.why_it_matters,
       tags,
       topics,
       entities,
-      previewImageUrl: raw.previewImageUrl ?? null,
+      previewImageUrl: sanitized.previewImageUrl ?? null,
       previewImageSource: raw.previewImageSource ?? null,
-      previewImageCaption: raw.previewImageCaption ?? null,
+      previewImageCaption: sanitized.previewImageCaption ?? null,
       generatedImagePrompt: rewritten.image_prompt,
-      generatedImageAlt: rewritten.image_alt,
+      generatedImageAlt: sanitized.generatedImageAlt || rewritten.image_alt,
+      generatedImageCaption: sanitized.generatedImageCaption ?? null,
       sourceName: raw.sourceName || "Unknown Source",
       sourceUrl: sourceUrl || null,
       canonicalUrl,
       metaTitle: rewritten.meta_title,
-      metaDescription: rewritten.meta_description,
+      metaDescription: sanitized.metaDescription,
       readingTimeMinutes: entryReadingTime,
       wordCount: entryWordCount,
       charCount: entryCharCount,
@@ -465,8 +482,8 @@ export async function runGenerateImagesJob(limitOverride?: number) {
     const previousRequest = await getNewsImageByNewsItemId(item.id);
     const prompt = buildImagePrompt({
       title: item.title,
-      dek: item.dek,
-      summary: item.summary,
+      lead: item.dek,
+      body: item.content,
       whyItMatters: item.whyItMatters,
       tags: item.tags,
       sourceName: item.sourceName
@@ -505,7 +522,7 @@ export async function runGenerateImagesJob(limitOverride?: number) {
             generatedImageUrl: stored.publicUrl,
             generatedImageCaption:
               item.generatedImageCaption ||
-              "Illustration generated with AI (Leonardo) based on the headline"
+              "AI illustration based on reported details. Not a documentary image."
           });
           completed += 1;
           continue;
@@ -541,7 +558,7 @@ export async function runGenerateImagesJob(limitOverride?: number) {
           ogImageUrl: fallbackImageUrl,
           generatedImageUrl: fallbackImageUrl,
           generatedImageCaption:
-            "Illustration generated with AI (Leonardo) based on the headline"
+            "AI illustration based on reported details. Not a documentary image."
         });
       }
       await upsertNewsImageRequest({
@@ -756,11 +773,26 @@ export async function replayRewriteJob(rawId: string) {
   const canonicalUrl = normalizeCanonicalUrl(raw.canonicalUrl || raw.url);
   const sourceUrl = raw.url || raw.sourceUrl || raw.canonicalUrl || null;
   const content = rewritten.body;
-  const entryCharCount = charCountWithoutSpaces(content);
-  const entryWordCount = wordCount(content);
-  const entryReadingTime = readingTimeMinutes(content);
-  const fingerprint = buildNewsFingerprint({
+  const sanitized = sanitizeArticleForPublishing({
+    type: "news",
     title,
+    summary: rewritten.lede,
+    content,
+    whyItMatters: rewritten.why_it_matters,
+    sourceName: raw.sourceName || "Unknown Source",
+    sourceUrl: sourceUrl || null,
+    previewImageUrl: raw.previewImageUrl ?? null,
+    previewImageCaption: raw.previewImageCaption ?? null,
+    previewImageAlt: rewritten.image_alt,
+    generatedImageCaption: null,
+    generatedImageAlt: rewritten.image_alt
+  });
+  const sanitizedContent = sanitized.body;
+  const entryCharCount = charCountWithoutSpaces(sanitizedContent);
+  const entryWordCount = wordCount(sanitizedContent);
+  const entryReadingTime = readingTimeMinutes(sanitizedContent);
+  const fingerprint = buildNewsFingerprint({
+    title: sanitized.title,
     sourceName: raw.sourceName,
     canonicalUrl,
     publishedAt: raw.publishedAt
@@ -770,10 +802,10 @@ export async function replayRewriteJob(rawId: string) {
     id: `draft:${slug}`,
     rawId: raw.id,
     slug,
-    title,
-    dek: rewritten.lede,
-    summary: rewritten.body,
-    content,
+    title: sanitized.title,
+    dek: sanitized.lead,
+    summary: sanitized.excerpt,
+    content: sanitizedContent,
     keyPoints: rewritten.key_points,
     whyItMatters: rewritten.why_it_matters,
     tags,
@@ -781,19 +813,19 @@ export async function replayRewriteJob(rawId: string) {
     entities,
     coverImageUrl: null,
     ogImageUrl: null,
-    ogImageAlt: rewritten.image_alt,
-    previewImageUrl: raw.previewImageUrl ?? null,
+    ogImageAlt: sanitized.previewImageAlt || rewritten.image_alt,
+    previewImageUrl: sanitized.previewImageUrl ?? null,
     previewImageSource: raw.previewImageSource ?? null,
-    previewImageCaption: raw.previewImageCaption ?? null,
+    previewImageCaption: sanitized.previewImageCaption ?? null,
     generatedImagePrompt: rewritten.image_prompt,
     generatedImageUrl: null,
-    generatedImageAlt: rewritten.image_alt,
-    generatedImageCaption: null,
+    generatedImageAlt: sanitized.generatedImageAlt || rewritten.image_alt,
+    generatedImageCaption: sanitized.generatedImageCaption ?? null,
     sourceName: raw.sourceName || "Unknown Source",
     sourceUrl: sourceUrl || null,
     canonicalUrl,
     metaTitle: rewritten.meta_title,
-    metaDescription: rewritten.meta_description,
+    metaDescription: sanitized.metaDescription,
     readingTimeMinutes: entryReadingTime,
     wordCount: entryWordCount,
     charCount: entryCharCount,
@@ -817,25 +849,26 @@ export async function replayRewriteJob(rawId: string) {
   const draft = await upsertNewsItem({
     rawId: raw.id,
     slug,
-    title,
-    dek: rewritten.lede,
-    summary: rewritten.lede,
-    content,
+    title: sanitized.title,
+    dek: sanitized.lead,
+    summary: sanitized.excerpt,
+    content: sanitizedContent,
     keyPoints: rewritten.key_points,
     whyItMatters: rewritten.why_it_matters,
     tags,
     topics,
     entities,
-    previewImageUrl: raw.previewImageUrl ?? null,
+    previewImageUrl: sanitized.previewImageUrl ?? null,
     previewImageSource: raw.previewImageSource ?? null,
-    previewImageCaption: raw.previewImageCaption ?? null,
+    previewImageCaption: sanitized.previewImageCaption ?? null,
     generatedImagePrompt: rewritten.image_prompt,
-    generatedImageAlt: rewritten.image_alt,
+    generatedImageAlt: sanitized.generatedImageAlt || rewritten.image_alt,
+    generatedImageCaption: sanitized.generatedImageCaption ?? null,
     sourceName: raw.sourceName || "Unknown Source",
     sourceUrl: sourceUrl || null,
     canonicalUrl,
     metaTitle: rewritten.meta_title,
-    metaDescription: rewritten.meta_description,
+    metaDescription: sanitized.metaDescription,
     readingTimeMinutes: entryReadingTime,
     wordCount: entryWordCount,
     charCount: entryCharCount,
@@ -900,7 +933,7 @@ export async function handleLeonardoWebhook(payload: Record<string, unknown>) {
     coverImageUrl: stored.publicUrl,
     ogImageUrl: stored.publicUrl,
     generatedImageUrl: stored.publicUrl,
-    generatedImageCaption: "Illustration generated with AI (Leonardo) based on the headline"
+    generatedImageCaption: "AI illustration based on reported details. Not a documentary image."
   });
 
   await enqueueJob({

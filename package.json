@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
+    "test:content": "node scripts/run-content-tests.mjs",
     "format": "prettier --write .",
     "verify:stack": "node scripts/verify-stack.mjs",
     "db:apply": "node scripts/apply-sql.mjs supabase/schema.sql supabase/seed.sql",
@@ -21,6 +22,7 @@
     "content:refine-blog": "node scripts/refine-blog-posts.mjs",
     "content:fix-short-published": "node scripts/fix-short-published-content.mjs",
     "content:cleanup-published-news": "node scripts/cleanup-published-news.mjs",
+    "content:repair": "node --import tsx scripts/repair-articles.ts",
     "seo:refresh": "node scripts/seo-refresh-content.mjs",
     "smoke:cron": "node scripts/smoke-cron.mjs",
     "push:main": "powershell -ExecutionPolicy Bypass -File .\\scripts\\push-main.ps1",
@@ -49,6 +51,7 @@
     "postcss": "8.5.3",
     "prettier": "3.5.3",
     "tailwindcss": "3.4.17",
+    "tsx": "^4.21.0",
     "typescript": "5.8.2"
   }
 }

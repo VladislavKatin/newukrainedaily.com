@@ -52,7 +52,7 @@ export default async function BlogArticlePage({ params }: Props) {
         <h1 className="mt-3 text-3xl font-semibold tracking-tight text-ink sm:mt-4 sm:text-4xl">
           {entry.title}
         </h1>
-        <p className="lede-copy mt-4 sm:mt-5">{entry.description}</p>
+        <p className="lede-copy mt-4 sm:mt-5">{entry.lead || entry.description}</p>
         <div className="meta-row mt-5 sm:mt-6">
           <span>{entry.author}</span>
           <time dateTime={entry.publishedAt}>{new Date(entry.publishedAt).toLocaleDateString("en-US")}</time>
@@ -69,6 +69,9 @@ export default async function BlogArticlePage({ params }: Props) {
               priority
             />
           </div>
+        ) : null}
+        {entry.previewImageCaption ? (
+          <p className="mt-3 text-xs text-slate-500">{entry.previewImageCaption}</p>
         ) : null}
         <div className="reading-copy mt-7 space-y-5 sm:mt-8 sm:space-y-6">
           {entry.body.map((paragraph) => (

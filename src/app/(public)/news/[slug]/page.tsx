@@ -53,7 +53,7 @@ export default async function NewsArticlePage({ params }: Props) {
         <h1 className="mt-3 text-3xl font-semibold tracking-tight text-ink sm:mt-4 sm:text-4xl">
           {entry.title}
         </h1>
-        <p className="lede-copy mt-4 sm:mt-5">{entry.description}</p>
+        <p className="lede-copy mt-4 sm:mt-5">{entry.lead || entry.description}</p>
         <div className="meta-row mt-5 sm:mt-6">
           <span>{entry.author}</span>
           <time dateTime={entry.publishedAt}>{new Date(entry.publishedAt).toLocaleDateString("en-US")}</time>
@@ -102,7 +102,7 @@ export default async function NewsArticlePage({ params }: Props) {
         </div>
         {entry.sourceUrl ? (
           <p className="mt-7 text-sm leading-6 text-slate-500 sm:mt-8">
-            Source:{" "}
+            {entry.sourceAttribution || "Source:"}{" "}
             <a href={entry.sourceUrl} className="font-medium text-brand underline underline-offset-4">
               {entry.author}
             </a>
