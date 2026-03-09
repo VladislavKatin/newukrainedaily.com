@@ -144,12 +144,9 @@ export default function DonatePage() {
           </div>
           <p className="mt-4 text-base font-semibold text-ink">
             PayPal / Contact Email:{" "}
-            <a
-              href="mailto:vladkatintam@gmail.com"
-              className="text-brand underline underline-offset-4"
-            >
+            <span className="text-ink">
               vladkatintam@gmail.com
-            </a>
+            </span>
           </p>
           <p className="mt-6 text-sm leading-7 text-slate-600">
             Editorial note: this guide is designed for clarity and donor discipline. The strongest results come

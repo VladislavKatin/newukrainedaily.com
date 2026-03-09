@@ -33,12 +33,9 @@ export default function ContactPage() {
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand">
                 Email
               </p>
-              <a
-                href="mailto:vladkatintam@gmail.com"
-                className="mt-3 inline-block break-all text-lg font-semibold text-ink underline underline-offset-4"
-              >
+              <p className="mt-3 break-all text-lg font-semibold text-ink">
                 vladkatintam@gmail.com
-              </a>
+              </p>
               <p className="mt-4 text-sm leading-7 text-slate-600">
                 For the fastest review, include a clear subject line and the URL of the page you are referencing.
               </p>

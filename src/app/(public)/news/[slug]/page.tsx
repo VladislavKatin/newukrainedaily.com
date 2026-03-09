@@ -100,12 +100,12 @@ export default async function NewsArticlePage({ params }: Props) {
             </div>
           ))}
         </div>
-        {entry.sourceUrl ? (
+        {entry.sourceAttribution || entry.author ? (
           <p className="mt-7 text-sm leading-6 text-slate-500 sm:mt-8">
             {entry.sourceAttribution || "Source:"}{" "}
-            <a href={entry.sourceUrl} className="font-medium text-brand underline underline-offset-4">
+            <span className="font-medium text-ink">
               {entry.author}
-            </a>
+            </span>
           </p>
         ) : null}
         <RelatedEntries title="Related News" entries={related} />
