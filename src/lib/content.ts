@@ -32,15 +32,6 @@ const getEntriesByTypePageCached = unstable_cache(
   { revalidate: 300 }
 );
 
-const getEntryCached = unstable_cache(
-  async (type: EntryType, slug: string) => {
-    const repository = await getContentRepository();
-    return repository.getEntry(type, slug);
-  },
-  [CONTENT_CACHE_VERSION, "content-entry"],
-  { revalidate: 300 }
-);
-
 const getAllTagsCached = unstable_cache(
   async () => {
     const repository = await getContentRepository();
@@ -93,7 +84,8 @@ export async function getEntriesByTypePage(
 }
 
 export async function getEntry(type: EntryType, slug: string) {
-  return getEntryCached(type, slug);
+  const repository = await getContentRepository();
+  return repository.getEntry(type, slug);
 }
 
 export async function getAllTags() {
