@@ -120,6 +120,32 @@ function dedupeParagraphs(paragraphs: string[]) {
   return result;
 }
 
+function splitContentBlocks(value: string) {
+  const normalized = normalizeWhitespace(value);
+  const rawBlocks = normalized
+    .split(/\n{2,}|(?=^#{1,3}\s+)/m)
+    .map((block) => block.trim())
+    .filter(Boolean);
+
+  const blocks: string[] = [];
+
+  for (const block of rawBlocks) {
+    const headingMatch = block.match(/^(#{1,3}\s+[^\n]+)\n+([\s\S]+)$/);
+
+    if (headingMatch) {
+      blocks.push(headingMatch[1].trim());
+      if (headingMatch[2].trim()) {
+        blocks.push(headingMatch[2].trim());
+      }
+      continue;
+    }
+
+    blocks.push(block);
+  }
+
+  return blocks;
+}
+
 function sanitizeCaptionSource(sourceName?: string | null) {
   return normalizeWhitespace(sourceName) || siteConfig.publisherName;
 }
@@ -138,18 +164,29 @@ function sentenceLooksUseful(sentence: string) {
 }
 
 export function cleanAIFiller(text: string) {
-  let result = normalizeWhitespace(text);
+  const blocks = splitContentBlocks(text);
 
-  for (const pattern of FORBIDDEN_FILLER_PATTERNS) {
-    result = result.replace(pattern, " ");
-  }
+  const cleanedBlocks = blocks
+    .map((block) => {
+      if (/^#{1,3}\s+/.test(block)) {
+        return block;
+      }
 
-  const cleanedSentences = splitSentences(result).filter(sentenceLooksUseful);
-  if (cleanedSentences.length === 0) {
-    return normalizeWhitespace(text);
-  }
+      let result = block;
+      for (const pattern of FORBIDDEN_FILLER_PATTERNS) {
+        result = result.replace(pattern, " ");
+      }
 
-  return cleanedSentences.join(" ");
+      const cleanedSentences = splitSentences(result).filter(sentenceLooksUseful);
+      if (cleanedSentences.length === 0) {
+        return normalizeWhitespace(block);
+      }
+
+      return cleanedSentences.join(" ");
+    })
+    .filter(Boolean);
+
+  return cleanedBlocks.join("\n\n");
 }
 
 export function normalizeTitle(title: string, fallbackTitle?: string | null) {
@@ -163,8 +200,7 @@ export function normalizeTitle(title: string, fallbackTitle?: string | null) {
 
 export function splitIntoEditorialParagraphs(text: string) {
   const normalized = cleanAIFiller(text);
-  const rawParagraphs = normalized
-    .split(/\n{2,}/)
+  const rawParagraphs = splitContentBlocks(normalized)
     .map((paragraph) => normalizeWhitespace(paragraph))
     .filter(Boolean);
 
