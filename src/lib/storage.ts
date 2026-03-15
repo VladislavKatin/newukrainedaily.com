@@ -1,6 +1,6 @@
-import "server-only";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { createClient } from "@supabase/supabase-js";
 import { getEnv } from "@/lib/env";
 import { getBaseUrl } from "@/lib/site";
@@ -14,6 +14,10 @@ function extensionFromContentType(contentType: string | null) {
   if (contentType.includes("webp")) return "webp";
   if (contentType.includes("jpeg") || contentType.includes("jpg")) return "jpg";
   return "jpg";
+}
+
+function trimTrailingSlash(value: string) {
+  return value.replace(/\/+$/, "");
 }
 
 export async function saveRemoteImageToLocalPublic(imageUrl: string, fileStem: string) {
@@ -38,6 +42,24 @@ export async function saveRemoteImageToLocalPublic(imageUrl: string, fileStem: s
   return {
     filePath,
     publicUrl: `${getBaseUrl()}/generated/${fileName}`
+  };
+}
+
+function getR2StorageConfig() {
+  const env = getEnv();
+
+  if (!env.R2_ACCOUNT_ID || !env.R2_ACCESS_KEY_ID || !env.R2_SECRET_ACCESS_KEY || !env.R2_BUCKET) {
+    return null;
+  }
+
+  return {
+    accountId: env.R2_ACCOUNT_ID,
+    accessKeyId: env.R2_ACCESS_KEY_ID,
+    secretAccessKey: env.R2_SECRET_ACCESS_KEY,
+    bucket: env.R2_BUCKET,
+    endpoint:
+      env.R2_S3_ENDPOINT || `https://${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+    publicBaseUrl: env.R2_PUBLIC_BASE_URL ? trimTrailingSlash(env.R2_PUBLIC_BASE_URL) : null
   };
 }
 
@@ -69,6 +91,39 @@ export async function saveRemoteImage(imageUrl: string, fileStem: string) {
   const contentType = response.headers.get("content-type");
   const extension = extensionFromContentType(contentType);
   const fileName = `${fileStem}.${extension}`;
+  const objectPath = `generated/${fileName}`;
+  const r2Config = getR2StorageConfig();
+
+  if (r2Config) {
+    const client = new S3Client({
+      region: "auto",
+      endpoint: r2Config.endpoint,
+      credentials: {
+        accessKeyId: r2Config.accessKeyId,
+        secretAccessKey: r2Config.secretAccessKey
+      }
+    });
+
+    await client.send(
+      new PutObjectCommand({
+        Bucket: r2Config.bucket,
+        Key: objectPath,
+        Body: buffer,
+        ContentType: contentType || "image/jpeg",
+        CacheControl: "public, max-age=31536000, immutable"
+      })
+    );
+
+    if (!r2Config.publicBaseUrl) {
+      throw new Error("R2 upload succeeded, but R2_PUBLIC_BASE_URL is missing.");
+    }
+
+    return {
+      filePath: objectPath,
+      publicUrl: `${r2Config.publicBaseUrl}/${objectPath}`
+    };
+  }
+
   const supabaseConfig = getSupabaseStorageConfig();
 
   if (supabaseConfig) {
@@ -79,7 +134,6 @@ export async function saveRemoteImage(imageUrl: string, fileStem: string) {
       }
     });
 
-    const objectPath = `generated/${fileName}`;
     const upload = await supabase.storage
       .from(supabaseConfig.bucket)
       .upload(objectPath, buffer, {

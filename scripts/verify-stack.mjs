@@ -1,5 +1,6 @@
 import process from "node:process";
 import { createClient } from "@supabase/supabase-js";
+import { S3Client, ListObjectsV2Command } from "@aws-sdk/client-s3";
 import pg from "pg";
 import { loadLocalEnv } from "./load-local-env.mjs";
 
@@ -29,7 +30,8 @@ async function verifyDatabase() {
     connectionString,
     max: 1,
     connectionTimeoutMillis: 3000,
-    idleTimeoutMillis: 3000
+    idleTimeoutMillis: 3000,
+    ssl: { rejectUnauthorized: false }
   });
 
   try {
@@ -74,8 +76,44 @@ async function verifySupabaseStorage() {
     }
 
     console.log(`ok: bucket reachable (${bucket}), sample objects=${data?.length ?? 0}`);
-    const publicUrl = supabase.storage.from(bucket).getPublicUrl("generated/health-check.txt");
-    console.log(`public url sample: ${publicUrl.data.publicUrl}`);
+    return true;
+  } catch (error) {
+    console.log(`error: ${error.message}`);
+    return false;
+  }
+}
+
+async function verifyR2Storage() {
+  const accountId = readEnv("R2_ACCOUNT_ID");
+  const accessKeyId = readEnv("R2_ACCESS_KEY_ID");
+  const secretAccessKey = readEnv("R2_SECRET_ACCESS_KEY");
+  const bucket = readEnv("R2_BUCKET");
+  const endpoint = readEnv("R2_S3_ENDPOINT") || (accountId ? `https://${accountId}.r2.cloudflarestorage.com` : null);
+  const publicBaseUrl = readEnv("R2_PUBLIC_BASE_URL");
+
+  printSection("cloudflare-r2");
+
+  if (!accountId || !accessKeyId || !secretAccessKey || !bucket || !endpoint || !publicBaseUrl) {
+    console.log("skip: set R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET, R2_PUBLIC_BASE_URL");
+    return false;
+  }
+
+  try {
+    const client = new S3Client({
+      region: "auto",
+      endpoint,
+      credentials: { accessKeyId, secretAccessKey }
+    });
+
+    const result = await client.send(
+      new ListObjectsV2Command({
+        Bucket: bucket,
+        MaxKeys: 1
+      })
+    );
+
+    console.log(`ok: bucket reachable (${bucket}), sample objects=${result.Contents?.length ?? 0}`);
+    console.log(`public url base: ${publicBaseUrl}`);
     return true;
   } catch (error) {
     console.log(`error: ${error.message}`);
@@ -97,9 +135,6 @@ function verifyLeonardoConfig() {
 
   console.log("ok: required Leonardo env vars are present");
   console.log(`webhook url: ${publicBaseUrl.replace(/\/$/, "")}/api/webhooks/leonardo`);
-  console.log(
-    "note: callback delivery must be configured on the Leonardo production API key."
-  );
   return true;
 }
 
@@ -124,6 +159,7 @@ async function main() {
   results.push(verifyLeonardoConfig());
   results.push(await verifyDatabase());
   results.push(await verifySupabaseStorage());
+  results.push(await verifyR2Storage());
 
   const okCount = results.filter(Boolean).length;
   console.log(`\nsummary: ${okCount}/${results.length} checks passed`);

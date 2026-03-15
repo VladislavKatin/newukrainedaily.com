@@ -1,4 +1,3 @@
-import "server-only";
 import { z } from "zod";
 
 function normalizeOptionalString(value: unknown) {
@@ -54,6 +53,12 @@ const envSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: optionalString(z.string().min(1)),
   SUPABASE_STORAGE_BUCKET: optionalString(z.string().min(1)),
   SUPABASE_STORAGE_PUBLIC_URL: optionalString(z.string().url()),
+  R2_ACCOUNT_ID: optionalString(z.string().min(1)),
+  R2_ACCESS_KEY_ID: optionalString(z.string().min(1)),
+  R2_SECRET_ACCESS_KEY: optionalString(z.string().min(1)),
+  R2_BUCKET: optionalString(z.string().min(1)),
+  R2_PUBLIC_BASE_URL: optionalString(z.string().url()),
+  R2_S3_ENDPOINT: optionalString(z.string().url()),
   AI_PROVIDER: optionalString(z.string().min(1)),
   AI_API_KEY: optionalString(z.string().min(1)),
   OPENAI_API_KEY: optionalString(z.string().min(1)),

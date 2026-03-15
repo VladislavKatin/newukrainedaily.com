@@ -29,15 +29,19 @@
     "push:main": "powershell -ExecutionPolicy Bypass -File .\\scripts\\push-main.ps1",
     "autopush": "node scripts/autopush.mjs",
     "local:start": "powershell -ExecutionPolicy Bypass -File .\\scripts\\start-local-site.ps1",
-    "local:stop": "powershell -ExecutionPolicy Bypass -File .\\scripts\\stop-local-site.ps1"
+    "local:stop": "powershell -ExecutionPolicy Bypass -File .\\scripts\\stop-local-site.ps1",
+    "content:migrate-generated-images-r2": "node --import tsx scripts/migrate-generated-images-to-r2.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1009.0",
+    "@aws-sdk/s3-request-presigner": "^3.1009.0",
     "@supabase/supabase-js": "2.50.0",
     "fast-xml-parser": "^4.5.4",
     "next": "^15.5.12",
     "pg": "8.14.1",
     "react": "19.0.0",
     "react-dom": "19.0.0",
+    "server-only": "^0.0.1",
     "zod": "3.24.2"
   },
   "devDependencies": {

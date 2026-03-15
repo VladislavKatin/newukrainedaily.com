@@ -2,7 +2,6 @@ import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import pg from "pg";
-import { createClient } from "@supabase/supabase-js";
 
 const { Pool } = pg;
 const LEONARDO_API_URL = "https://cloud.leonardo.ai/api/rest/v1/generations";
@@ -187,59 +186,6 @@ async function getLeonardoGeneration(generationId: string, apiKey: string) {
   return extractLeonardoResult(payload);
 }
 
-async function saveGeneratedImage(imageUrl: string, fileStem: string) {
-  const response = await fetch(imageUrl, {
-    method: "GET",
-    cache: "no-store"
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to download generated image: ${response.status}`);
-  }
-
-  const buffer = Buffer.from(await response.arrayBuffer());
-  const contentType = response.headers.get("content-type") || "image/jpeg";
-  const extension = contentType.includes("png")
-    ? "png"
-    : contentType.includes("webp")
-      ? "webp"
-      : "jpg";
-  const fileName = `${fileStem}.${extension}`;
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const bucket = process.env.SUPABASE_STORAGE_BUCKET;
-
-  if (supabaseUrl && supabaseServiceRoleKey && bucket) {
-    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false
-      }
-    });
-
-    const objectPath = `generated/${fileName}`;
-    const upload = await supabase.storage.from(bucket).upload(objectPath, buffer, {
-      contentType,
-      upsert: true
-    });
-
-    if (upload.error) {
-      throw new Error(`Supabase Storage upload failed: ${upload.error.message}`);
-    }
-
-    const publicUrlResult = supabase.storage.from(bucket).getPublicUrl(objectPath);
-    return {
-      filePath: objectPath,
-      publicUrl: publicUrlResult.data.publicUrl
-    };
-  }
-
-  return {
-    filePath: imageUrl,
-    publicUrl: imageUrl
-  };
-}
-
 async function main() {
   loadRuntimeEnv();
   const flags = parseFlags(process.argv.slice(2));
@@ -263,7 +209,10 @@ async function main() {
     throw new Error("LEONARDO_API_KEY is required.");
   }
 
-  const { buildNewsImagePromptPackage } = await import("@/lib/image-prompt");
+  const [{ buildNewsImagePromptPackage }, { saveRemoteImage }] = await Promise.all([
+    import("@/lib/image-prompt"),
+    import("@/lib/storage")
+  ]);
 
   try {
     const { rows } = await pool.query<{
@@ -379,7 +328,7 @@ async function main() {
         if (generationStatus.imageUrl) {
           remoteImageUrl = generationStatus.imageUrl;
           const uniqueStem = `${row.id}-${generation.generationId.slice(0, 8)}`;
-          const stored = await saveGeneratedImage(generationStatus.imageUrl, uniqueStem);
+          const stored = await saveRemoteImage(generationStatus.imageUrl, uniqueStem);
           storedPublicUrl = stored.publicUrl;
 
           await pool.query(
