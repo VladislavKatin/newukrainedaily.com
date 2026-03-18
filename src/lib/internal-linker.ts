@@ -28,13 +28,15 @@ function overlapScore(current: NewsItemRecord, candidate: NewsItemRecord) {
     ...current.tags.map(normalize),
     ...current.topics.map(normalize),
     ...current.entities.map(normalize),
-    normalize(current.primaryTopic)
+    normalize(current.primaryTopic),
+    ...normalize(current.title).split(" ").filter((token) => token.length >= 4)
   ].filter(Boolean));
   const candidateTokens = new Set([
     ...candidate.tags.map(normalize),
     ...candidate.topics.map(normalize),
     ...candidate.entities.map(normalize),
-    normalize(candidate.primaryTopic)
+    normalize(candidate.primaryTopic),
+    ...normalize(candidate.title).split(" ").filter((token) => token.length >= 4)
   ].filter(Boolean));
 
   let score = 0;
@@ -52,12 +54,22 @@ function pickAnchor(templates: string[], index: number, fallback: string) {
 }
 
 export function buildInternalLinks(current: NewsItemRecord, published: NewsItemRecord[]) {
-  const candidates = published
+  const scoredCandidates = published
     .filter((candidate) => candidate.id !== current.id)
     .map((candidate) => ({ candidate, score: overlapScore(current, candidate) }))
-    .filter(({ score }) => score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 5);
+    .sort((a, b) => {
+      if (b.score !== a.score) {
+        return b.score - a.score;
+      }
+
+      return new Date(b.candidate.publishedAt || b.candidate.createdAt).getTime() - new Date(a.candidate.publishedAt || a.candidate.createdAt).getTime();
+    });
+
+  const primaryCandidates = scoredCandidates.filter(({ score }) => score > 0).slice(0, 5);
+  const fallbackCandidates = scoredCandidates
+    .filter(({ candidate }) => !primaryCandidates.some((item) => item.candidate.id === candidate.id))
+    .slice(0, Math.max(0, 5 - primaryCandidates.length));
+  const candidates = [...primaryCandidates, ...fallbackCandidates].slice(0, 5);
 
   const topicLabel = current.primaryTopic || current.topics[0] || current.tags[0] || "World";
   const topicSlug = topicSlugFromLabel(topicLabel);

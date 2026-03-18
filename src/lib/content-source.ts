@@ -239,7 +239,7 @@ function createPreviewContentRepository(): ContentRepository {
 function createDatabaseContentRepository(): ContentRepository {
   return {
     async getAllEntries() {
-      const [newsEntries, blogEntries] = await Promise.all([listNews(100), listBlog(100)]);
+      const [newsEntries, blogEntries] = await Promise.all([listNews(250), listBlog(100)]);
       return sortEntries([
         ...newsEntries.map(mapNewsItemToContentEntry),
         ...blogEntries.map(mapBlogPostToContentEntry)
@@ -247,7 +247,7 @@ function createDatabaseContentRepository(): ContentRepository {
     },
     async getEntriesByType(type) {
       if (type === "news") {
-        return (await listNews(100)).map(mapNewsItemToContentEntry);
+        return (await listNews(250)).map(mapNewsItemToContentEntry);
       }
 
       return (await listBlog(100)).map(mapBlogPostToContentEntry);

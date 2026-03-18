@@ -4,7 +4,8 @@ import { notFound } from "next/navigation";
 import { ArticleJsonLd } from "@/components/article-json-ld";
 import { ArticleBody } from "@/components/article-body";
 import { RelatedEntries } from "@/components/related-entries";
-import { getEntriesByTag, getEntry } from "@/lib/content";
+import { getEntriesByType, getEntry } from "@/lib/content";
+import { buildRelatedEntries } from "@/lib/related-content";
 import { buildArticleMetadata } from "@/lib/seo";
 
 type Props = {
@@ -31,17 +32,7 @@ export default async function BlogArticlePage({ params }: Props) {
     notFound();
   }
 
-  const related = (
-    await Promise.all(entry.tags.slice(0, 3).map((tag) => getEntriesByTag(tag)))
-  )
-    .flat()
-    .filter((candidate) => candidate.type === "blog" && candidate.slug !== entry.slug)
-    .filter(
-      (candidate, index, array) =>
-        array.findIndex((item) => item.slug === candidate.slug && item.type === candidate.type) ===
-        index
-    )
-    .slice(0, 3);
+  const related = buildRelatedEntries(entry, await getEntriesByType("blog"), 3);
 
   return (
     <section className="container-shell py-8 sm:py-16">

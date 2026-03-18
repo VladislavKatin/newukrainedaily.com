@@ -85,24 +85,33 @@ function overlapCount(a, b) {
 
 function buildRelated(current, allPublished) {
   const currentTokens = uniq([...(current.tags || []), ...(current.topics || []), ...(current.entities || []), current.primary_topic]);
-  const related = allPublished
+  const scored = allPublished
     .filter((item) => item.id !== current.id)
     .map((item) => {
       const tokens = uniq([...(item.tags || []), ...(item.topics || []), ...(item.entities || []), item.primary_topic]);
       return { item, score: overlapCount(currentTokens, tokens) };
     })
-    .filter(({ score }) => score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 5)
-    .map(({ item }, index) => ({
-      id: item.id,
-      type: "article",
-      href: `/news/${item.slug}`,
-      title: item.title,
-      anchor:
-        ["related coverage", "earlier reporting", "latest reporting", "recent updates", "previous coverage"][index] ||
-        item.title
-    }));
+    .sort((a, b) => {
+      if (b.score !== a.score) {
+        return b.score - a.score;
+      }
+
+      return new Date(b.item.published_at || b.item.created_at).getTime() - new Date(a.item.published_at || a.item.created_at).getTime();
+    });
+
+  const primary = scored.filter(({ score }) => score > 0).slice(0, 5);
+  const fallback = scored
+    .filter(({ item }) => !primary.some((entry) => entry.item.id === item.id))
+    .slice(0, Math.max(0, 5 - primary.length));
+  const related = [...primary, ...fallback].slice(0, 5).map(({ item }, index) => ({
+    id: item.id,
+    type: "article",
+    href: "/news/" + item.slug,
+    title: item.title,
+    anchor:
+      ["related coverage", "earlier reporting", "latest reporting", "recent updates", "previous coverage"][index] ||
+      item.title
+  }));
 
   const topic = current.primary_topic || current.topics?.[0] || current.tags?.[0] || "World";
   const topicSlug = String(topic).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "world";
@@ -110,7 +119,7 @@ function buildRelated(current, allPublished) {
   const links = [
     {
       type: "topic",
-      href: `/topic/${topicSlug}`,
+      href: "/topic/" + topicSlug,
       title: topic,
       anchor: "more on this topic"
     },
