@@ -974,8 +974,8 @@ export async function listPublishReadyNews(limit = 20) {
         and array_length(tags, 1) >= 3
         and jsonb_typeof(key_points) = 'array'
         and jsonb_array_length(key_points) >= 3
-        and cover_image_url is not null
-        and og_image_url is not null
+        and coalesce(cover_image_url, preview_image_url) is not null
+        and coalesce(og_image_url, preview_image_url) is not null
       order by published_at asc nulls last, created_at asc
       limit $1
     `,
