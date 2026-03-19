@@ -1,12 +1,10 @@
-import fs from "node:fs";
+﻿import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import pg from "pg";
 
 const { Pool } = pg;
 const LEONARDO_API_URL = "https://cloud.leonardo.ai/api/rest/v1/generations";
-const LEONARDO_MODEL_ID = "6bef9f1b-29cb-40c7-b9df-32b51c1f67d3";
-
 type Flags = {
   dryRun: boolean;
   limit: number;
@@ -146,9 +144,8 @@ async function createLeonardoGeneration(prompt: string, apiKey: string) {
     },
     body: JSON.stringify({
       prompt,
-      modelId: LEONARDO_MODEL_ID,
-      width: 1536,
-      height: 1024,
+      width: 1024,
+      height: 768,
       num_images: 1
     }),
     cache: "no-store"
@@ -209,7 +206,7 @@ async function main() {
     throw new Error("LEONARDO_API_KEY is required.");
   }
 
-  const [{ buildNewsImagePromptPackage }, { saveRemoteImage }] = await Promise.all([
+  const [{ buildNewsImagePromptPackage }, { saveRemoteImage, saveEditorialIllustration }] = await Promise.all([
     import("@/lib/image-prompt"),
     import("@/lib/storage")
   ]);
@@ -279,7 +276,48 @@ async function main() {
         continue;
       }
 
-      const generation = await createLeonardoGeneration(imagePackage.prompt, leonardoApiKey);
+      let generation;
+      try {
+        generation = await createLeonardoGeneration(imagePackage.prompt, leonardoApiKey);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Leonardo generation failed.";
+        if (/not enough api tokens|rate limit/i.test(message)) {
+          const fallback = await saveEditorialIllustration(`fallback-${row.id}-${Date.now()}`, {
+            title: row.title,
+            tags: Array.isArray(row.tags) ? row.tags : [],
+            sourceName: row.source_name
+          });
+          await pool.query(`
+            update news_items
+            set
+              generated_image_prompt = $2,
+              generated_image_url = $3,
+              generated_image_alt = $4,
+              generated_image_caption = $5,
+              cover_image_url = coalesce(preview_image_url, cover_image_url),
+              og_image_url = coalesce(preview_image_url, og_image_url),
+              updated_at = timezone('utc', now())
+            where id = $1
+          `, [row.id, imagePackage.prompt, fallback.publicUrl, imagePackage.alt, imagePackage.caption]);
+          await pool.query(`
+            insert into news_images (news_item_id, provider, prompt, status, attempts, remote_image_url, local_path, local_image_url, last_error)
+            values ($1, 'fallback', $2, 'complete', coalesce((select attempts + 1 from news_images where news_item_id = $1), 1), $3, $4, $3, $5)
+            on conflict (news_item_id) do update set
+              provider = excluded.provider,
+              prompt = excluded.prompt,
+              status = excluded.status,
+              attempts = news_images.attempts + 1,
+              remote_image_url = excluded.remote_image_url,
+              local_path = excluded.local_path,
+              local_image_url = excluded.local_image_url,
+              last_error = excluded.last_error,
+              updated_at = timezone('utc', now())
+          `, [row.id, imagePackage.prompt, fallback.publicUrl, fallback.filePath, message]);
+          completed += 1;
+          continue;
+        }
+        throw error;
+      }
 
       await pool.query(
         `
@@ -411,3 +449,4 @@ main().catch((error) => {
   console.error("[regenerate-last-news-images] failed:", error);
   process.exitCode = 1;
 });
+

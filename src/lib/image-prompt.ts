@@ -1,4 +1,4 @@
-function normalizeText(value: string | null | undefined) {
+﻿function normalizeText(value: string | null | undefined) {
   return (value || "").replace(/\s+/g, " ").trim();
 }
 
@@ -48,27 +48,15 @@ export type NewsImagePromptPackage = {
 function classifySceneType(text: string, tags: string[]) {
   const seed = `${text} ${tags.join(" ")}`.toLowerCase();
 
-  if (
-    /\b(housing|residential|substation|power|energy|grid|hospital|school|bridge|rail|railway|port|shelter|blackout|reconstruction|infrastructure)\b/.test(
-      seed
-    )
-  ) {
+  if (/\b(housing|residential|substation|power|energy|grid|hospital|school|bridge|rail|railway|port|shelter|blackout|reconstruction|infrastructure)\b/.test(seed)) {
     return "infrastructure";
   }
 
-  if (
-    /\b(president|minister|ministry|government|parliament|summit|talks|negotiation|ceasefire|aid package|sanctions|meeting|delegation|officials)\b/.test(
-      seed
-    )
-  ) {
+  if (/\b(president|minister|ministry|government|parliament|summit|talks|negotiation|ceasefire|aid package|sanctions|meeting|delegation|officials)\b/.test(seed)) {
     return "institutional";
   }
 
-  if (
-    /\b(drone|missile|strike|shelling|attack|air defense|emergency crews|firefighters|debris|overnight attack|frontline)\b/.test(
-      seed
-    )
-  ) {
+  if (/\b(drone|missile|strike|shelling|attack|air defense|emergency crews|firefighters|debris|overnight attack|frontline)\b/.test(seed)) {
     return "urban-aftermath";
   }
 
@@ -81,51 +69,40 @@ function buildSceneDirection(sceneType: SceneType, location: string | null | und
 
   switch (sceneType) {
     case "infrastructure":
-      return `Show civic or infrastructure context${locationSuffix}, such as housing, energy, transport, or public-service facilities supported by the report.`;
+      return `Editorial illustration of infrastructure or public-service context${locationSuffix}.`;
     case "institutional":
-      return `Show an institutional setting${locationSuffix}, such as a government room, diplomatic venue, or official briefing environment connected to the reported decision.`;
+      return `Editorial illustration of an official or diplomatic setting${locationSuffix}.`;
     case "urban-aftermath":
-      return `Show the aftermath of a reported attack${locationSuffix}, with emergency response, damaged urban surroundings, or defensive infrastructure, without sensational destruction.`;
+      return `Editorial illustration of the aftermath of a reported attack${locationSuffix}, without sensational destruction.`;
     default:
-      return `Show a factual symbolic setting${locationSuffix} tied to the reported development, using civic, diplomatic, or security context rather than dramatic poster imagery.`;
+      return `Editorial illustration of a factual civic or diplomatic context${locationSuffix}.`;
   }
 }
 
-function buildFactLines(input: NewsImagePromptInput) {
+function buildFactLine(input: NewsImagePromptInput) {
   const facts = [
     ...splitSentences(sanitizeForVisualPrompt(input.lead)),
     ...splitSentences(sanitizeForVisualPrompt(input.body)).slice(0, 1),
     ...splitSentences(sanitizeForVisualPrompt(input.whyItMatters)).slice(0, 1)
   ];
 
-  return Array.from(new Set(facts.map((fact) => clamp(fact, 200)))).slice(0, 3);
+  return clamp(Array.from(new Set(facts)).join(" "), 180);
 }
 
 export function buildNewsImagePromptPackage(input: NewsImagePromptInput): NewsImagePromptPackage {
-  const title = clamp(input.title, 120);
-  const lead = clamp(sanitizeForVisualPrompt(input.lead), 180);
-  const tags = (input.tags || []).map((tag) => sanitizeForVisualPrompt(tag)).filter(Boolean).slice(0, 6);
-  const factLines = buildFactLines(input);
-  const sceneType = classifySceneType([title, lead, ...factLines].join(" "), tags);
+  const title = clamp(input.title, 100);
+  const tags = (input.tags || []).map((tag) => sanitizeForVisualPrompt(tag)).filter(Boolean).slice(0, 3);
+  const factLine = buildFactLine(input);
+  const sceneType = classifySceneType([title, factLine].join(" "), tags);
   const sceneDirection = buildSceneDirection(sceneType, input.location);
-  const sourceName = sanitizeForVisualPrompt(input.sourceName);
 
-  const prompt = clamp([
-    "Create a realistic editorial illustration for a Ukraine news report.",
-    `Reported angle: ${title}.`,
-    lead ? `Lead facts: ${lead}.` : null,
-    factLines.length > 0 ? `Key reported details: ${factLines.join(" ")}` : null,
-    tags.length > 0 ? `Themes: ${tags.join(", ")}.` : null,
-    sourceName ? `Source context: ${sourceName}.` : null,
+    const prompt = clamp([
     sceneDirection,
-    "Use muted colors, clear composition, serious newsroom tone, and realistic editorial illustration style.",
-    "This must look like an illustration for a news report, not a documentary photo.",
-    "No text, no logos, no watermark, no propaganda poster style, no fantasy, no gore, no cinematic fire or explosions unless the reported facts clearly require visible damage."
-  ]
-    .filter(Boolean)
-    .join(" "), 1200);
+    tags.length > 0 ? tags.slice(0, 2).join(', ') : null,
+    "Muted colors, editorial illustration, no text."
+  ].filter(Boolean).join(" "), 140);
 
-  const altSeed = lead || factLines[0] || title;
+  const altSeed = clamp(sanitizeForVisualPrompt(input.lead) || title, 110);
 
   return {
     prompt,

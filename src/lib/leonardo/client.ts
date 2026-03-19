@@ -1,9 +1,10 @@
-import "server-only";
+﻿import "server-only";
 import { getEnv, requireEnv } from "@/lib/env";
 import { extractLeonardoWebhookData } from "@/lib/leonardo/webhook";
 
 const LEONARDO_API_URL = "https://cloud.leonardo.ai/api/rest/v1/generations";
-const DEFAULT_MODEL_ID = "6bef9f1b-29cb-40c7-b9df-32b51c1f67d3";
+const DEFAULT_WIDTH = 1024;
+const DEFAULT_HEIGHT = 768;
 
 type LeonardoCreateRequest = {
   prompt: string;
@@ -48,9 +49,8 @@ export async function createLeonardoGeneration(input: LeonardoCreateRequest) {
     },
     body: JSON.stringify({
       prompt: input.prompt,
-      modelId: DEFAULT_MODEL_ID,
-      width: 1536,
-      height: 1024,
+      width: DEFAULT_WIDTH,
+      height: DEFAULT_HEIGHT,
       num_images: 1
     }),
     cache: "no-store"
