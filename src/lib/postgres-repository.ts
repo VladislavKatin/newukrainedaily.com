@@ -976,7 +976,8 @@ export async function listPublishReadyNews(limit = 20) {
         and jsonb_array_length(key_points) >= 3
         and coalesce(cover_image_url, preview_image_url) is not null
         and coalesce(og_image_url, preview_image_url) is not null
-      order by published_at asc nulls last, created_at asc
+        and coalesce(published_at, created_at) >= timezone('utc', now()) - interval '7 days'
+      order by published_at desc nulls last, created_at desc
       limit $1
     `,
     [limit]
