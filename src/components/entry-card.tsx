@@ -1,6 +1,7 @@
-import Image from "next/image";
+﻿import Image from "next/image";
 import Link from "next/link";
 import type { ContentEntry } from "@/lib/content-types";
+import { shouldBypassImageOptimization } from "@/lib/image";
 
 function formatDate(date: string) {
   return new Intl.DateTimeFormat("en-US", {
@@ -18,6 +19,7 @@ type EntryCardProps = {
 export function EntryCard({ entry, compact = false }: EntryCardProps) {
   const previewUrl = entry.previewImageUrl || entry.imageUrl;
   const previewAlt = entry.previewImageAlt || entry.imageAlt || entry.title;
+  const unoptimized = shouldBypassImageOptimization(previewUrl);
   const compactImageClass =
     entry.type === "blog" ? "h-40 sm:h-44" : "h-44 sm:h-48";
 
@@ -33,6 +35,7 @@ export function EntryCard({ entry, compact = false }: EntryCardProps) {
             alt={previewAlt}
             width={1200}
             height={675}
+            unoptimized={unoptimized}
             sizes={
               compact
                 ? "(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"

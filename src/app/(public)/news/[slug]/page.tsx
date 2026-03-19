@@ -1,10 +1,11 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { ArticleJsonLd } from "@/components/article-json-ld";
 import { ArticleBody } from "@/components/article-body";
 import { RelatedEntries } from "@/components/related-entries";
 import { getEntriesByType, getEntry } from "@/lib/content";
+import { shouldBypassImageOptimization } from "@/lib/image";
 import { buildRelatedEntries } from "@/lib/related-content";
 import { buildArticleMetadata } from "@/lib/seo";
 
@@ -34,6 +35,8 @@ export default async function NewsArticlePage({ params }: Props) {
   }
 
   const related = buildRelatedEntries(entry, await getEntriesByType("news"), 3);
+  const unoptimizedPreview = shouldBypassImageOptimization(entry.previewImageUrl);
+  const unoptimizedGenerated = shouldBypassImageOptimization(entry.generatedImageUrl);
 
   return (
     <section className="container-shell py-8 sm:py-16">
@@ -57,6 +60,7 @@ export default async function NewsArticlePage({ params }: Props) {
               alt={entry.previewImageAlt || entry.title}
               width={1200}
               height={675}
+              unoptimized={unoptimizedPreview}
               sizes="(max-width: 768px) 100vw, 768px"
               className="h-auto w-full object-cover"
               priority
@@ -78,6 +82,7 @@ export default async function NewsArticlePage({ params }: Props) {
                   alt={entry.generatedImageAlt || entry.title}
                   width={1200}
                   height={675}
+                  unoptimized={unoptimizedGenerated}
                   sizes="(max-width: 768px) 100vw, 768px"
                   className="h-auto w-full object-cover"
                 />

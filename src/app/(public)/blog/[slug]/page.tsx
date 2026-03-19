@@ -1,10 +1,11 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { ArticleJsonLd } from "@/components/article-json-ld";
 import { ArticleBody } from "@/components/article-body";
 import { RelatedEntries } from "@/components/related-entries";
 import { getEntriesByType, getEntry } from "@/lib/content";
+import { shouldBypassImageOptimization } from "@/lib/image";
 import { buildRelatedEntries } from "@/lib/related-content";
 import { buildArticleMetadata } from "@/lib/seo";
 
@@ -33,6 +34,7 @@ export default async function BlogArticlePage({ params }: Props) {
   }
 
   const related = buildRelatedEntries(entry, await getEntriesByType("blog"), 3);
+  const unoptimizedImage = shouldBypassImageOptimization(entry.imageUrl);
 
   return (
     <section className="container-shell py-8 sm:py-16">
@@ -56,6 +58,7 @@ export default async function BlogArticlePage({ params }: Props) {
               alt={entry.imageAlt || entry.title}
               width={1200}
               height={675}
+              unoptimized={unoptimizedImage}
               sizes="(max-width: 768px) 100vw, 768px"
               className="h-auto w-full object-cover"
               priority
