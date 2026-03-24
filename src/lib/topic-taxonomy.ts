@@ -1,4 +1,4 @@
-import "server-only";
+﻿import "server-only";
 
 export const SUPPORTED_TOPICS = [
   "Ukraine",
@@ -38,6 +38,17 @@ function uniqueNormalized(values: string[]) {
   return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)));
 }
 
+export function resolveSupportedTopicLabel(value: string | null | undefined) {
+  const normalized = normalizeText(value);
+  return SUPPORTED_TOPICS.find(
+    (topic) => topic.toLowerCase() === normalized || topicSlugFromLabel(topic) === normalized
+  ) || null;
+}
+
+export function isSupportedTopicLabel(value: string | null | undefined) {
+  return Boolean(resolveSupportedTopicLabel(value));
+}
+
 export function inferTopics(input: {
   title?: string | null;
   body?: string | null;
@@ -54,9 +65,7 @@ export function inferTopics(input: {
     return keywords.length > 0 && keywords.some((keyword) => source.includes(keyword));
   });
 
-  const normalizedPrimary = SUPPORTED_TOPICS.find(
-    (topic) => topic.toLowerCase() === normalizeText(input.primaryTopic)
-  );
+  const normalizedPrimary = resolveSupportedTopicLabel(input.primaryTopic);
   const primaryTopic = normalizedPrimary || matchedTopics[0] || "World";
   const topics = uniqueNormalized([primaryTopic, ...matchedTopics]);
 

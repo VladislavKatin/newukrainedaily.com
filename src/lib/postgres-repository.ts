@@ -1,5 +1,6 @@
 ﻿import "server-only";
 import type { PoolClient } from "pg";
+import { SUPPORTED_TOPICS } from "@/lib/topic-taxonomy";
 import { query, withTransaction } from "@/lib/db";
 
 export type SourceRecord = {
@@ -1336,6 +1337,7 @@ export async function getTopicByTag(tag: string) {
 }
 
 export async function listIndexableTopics(limit = 1000, minimumEntries = 2) {
+  const allowedTopics = SUPPORTED_TOPICS.map((topic) => topic.toLowerCase());
   const result = await query(
     `
       with used_tags as (
@@ -1352,8 +1354,9 @@ export async function listIndexableTopics(limit = 1000, minimumEntries = 2) {
         select tag, count(*) as entry_count
         from used_tags
         where nullif(trim(tag), '') is not null
+          and lower(tag) = any($1::text[])
         group by tag
-        having count(*) >= $1
+        having count(*) >= $2
       )
       select
         counted_tags.tag,
@@ -1363,9 +1366,9 @@ export async function listIndexableTopics(limit = 1000, minimumEntries = 2) {
       from counted_tags
       left join topics t on t.tag = counted_tags.tag
       order by counted_tags.tag asc
-      limit $2
+      limit $3
     `,
-    [minimumEntries, limit]
+    [allowedTopics, minimumEntries, limit]
   );
 
   return result.rows.map(mapTopic);
@@ -1562,6 +1565,7 @@ export async function createRawNewsWithPublishJob(
     return { raw, job };
   });
 }
+
 
 
 
