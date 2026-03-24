@@ -1,4 +1,4 @@
-import "server-only";
+﻿import "server-only";
 import type { PoolClient } from "pg";
 import { query, withTransaction } from "@/lib/db";
 
@@ -1335,6 +1335,36 @@ export async function getTopicByTag(tag: string) {
   return result.rows[0] ? mapTopic(result.rows[0]) : null;
 }
 
+export async function listIndexableTopics(limit = 1000) {
+  const result = await query(
+    `
+      with used_tags as (
+        select distinct unnest(tags) as tag
+        from news_items
+        where status = 'published'
+
+        union
+
+        select distinct unnest(tags) as tag
+        from blog_posts
+        where status = 'published'
+      )
+      select
+        used_tags.tag,
+        coalesce(t.title, initcap(used_tags.tag)) as title,
+        t.description,
+        coalesce(t.updated_at, timezone('utc', now())) as updated_at
+      from used_tags
+      left join topics t on t.tag = used_tags.tag
+      where nullif(trim(used_tags.tag), '') is not null
+      order by used_tags.tag asc
+      limit $1
+    `,
+    [limit]
+  );
+
+  return result.rows.map(mapTopic);
+}
 export async function getNextFreeTopic() {
   const result = await query(
     `
@@ -1527,3 +1557,5 @@ export async function createRawNewsWithPublishJob(
     return { raw, job };
   });
 }
+
+

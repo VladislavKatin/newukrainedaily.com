@@ -1,4 +1,4 @@
-import "server-only";
+﻿import "server-only";
 import type { ContentEntry } from "@/lib/content-types";
 import {
   sanitizeArticleForPublishing
@@ -12,16 +12,16 @@ import {
   countNewsByTag,
   getBlogBySlug,
   getNewsBySlug,
-  getTopicByTag,
   listBlog,
   listBlogPage,
   listBlogByTag,
   listNews,
   listNewsPage,
   listNewsByTag,
-  listTopics
+  listIndexableTopics
 } from "@/lib/postgres-repository";
 import { getPreviewEntries, getPreviewTopics } from "@/lib/local-preview-content";
+import { topicSlugFromLabel } from "@/lib/topic-taxonomy";
 
 export type ContentRepository = {
   getAllEntries(): Promise<ContentEntry[]>;
@@ -52,6 +52,14 @@ function uniqueTags(tags: string[]) {
 
 function pickDisplayTags(tags: string[]) {
   return uniqueTags(tags).slice(0, 3);
+}
+
+function resolveTopicMatch<T extends { tag: string }>(topics: T[], tagOrSlug: string) {
+  const normalized = String(tagOrSlug || "").trim().toLowerCase();
+  return topics.find(
+    (topic) =>
+      topic.tag.toLowerCase() === normalized || topicSlugFromLabel(topic.tag) === normalized
+  );
 }
 
 function mapNewsItemToContentEntry(newsItem: Awaited<ReturnType<typeof getNewsBySlug>> extends infer T
@@ -221,17 +229,19 @@ function createPreviewContentRepository(): ContentRepository {
       return topics.map((topic) => topic.tag);
     },
     async getEntriesByTag(tag) {
-      return entries.filter((entry) => entry.tags.includes(tag));
+      const resolved = resolveTopicMatch(topics, tag)?.tag || tag;
+      return entries.filter((entry) => entry.tags.includes(resolved));
     },
     async getEntriesByTagPage(tag, options) {
-      const filtered = entries.filter((entry) => entry.tags.includes(tag));
+      const resolved = resolveTopicMatch(topics, tag)?.tag || tag;
+      const filtered = entries.filter((entry) => entry.tags.includes(resolved));
       return {
         entries: filtered.slice(options.offset, options.offset + options.limit),
         total: filtered.length
       };
     },
     async getTopic(tag) {
-      return topics.find((topic) => topic.tag === tag) ?? null;
+      return resolveTopicMatch(topics, tag) ?? null;
     }
   };
 }
@@ -285,7 +295,7 @@ function createDatabaseContentRepository(): ContentRepository {
       return entry ? mapBlogPostToContentEntry(entry) : undefined;
     },
     async getAllTags() {
-      const topics = await listTopics();
+      const topics = await listIndexableTopics(5000);
 
       if (topics.length > 0) {
         return topics.map((topic) => topic.tag);
@@ -295,13 +305,15 @@ function createDatabaseContentRepository(): ContentRepository {
       return Array.from(new Set(entries.flatMap((entry) => entry.tags))).sort();
     },
     async getEntriesByTag(tag) {
+      const topics = await listIndexableTopics(5000);
+      const resolvedTag = resolveTopicMatch(topics, tag)?.tag || tag;
       const [newsTotal, blogTotal] = await Promise.all([
-        countNewsByTag(tag),
-        countBlogByTag(tag)
+        countNewsByTag(resolvedTag),
+        countBlogByTag(resolvedTag)
       ]);
       const [newsEntries, blogEntries] = await Promise.all([
-        listNewsByTag(tag, Math.max(newsTotal, 1)),
-        listBlogByTag(tag, Math.max(blogTotal, 1))
+        listNewsByTag(resolvedTag, Math.max(newsTotal, 1)),
+        listBlogByTag(resolvedTag, Math.max(blogTotal, 1))
       ]);
 
       return sortEntries([
@@ -310,13 +322,15 @@ function createDatabaseContentRepository(): ContentRepository {
       ]);
     },
     async getEntriesByTagPage(tag, options) {
+      const topics = await listIndexableTopics(5000);
+      const resolvedTag = resolveTopicMatch(topics, tag)?.tag || tag;
       const [newsTotal, blogTotal] = await Promise.all([
-        countNewsByTag(tag),
-        countBlogByTag(tag)
+        countNewsByTag(resolvedTag),
+        countBlogByTag(resolvedTag)
       ]);
       const [newsEntries, blogEntries] = await Promise.all([
-        listNewsByTag(tag, Math.max(newsTotal, 1)),
-        listBlogByTag(tag, Math.max(blogTotal, 1))
+        listNewsByTag(resolvedTag, Math.max(newsTotal, 1)),
+        listBlogByTag(resolvedTag, Math.max(blogTotal, 1))
       ]);
       const entries = sortEntries([
         ...newsEntries.map(mapNewsItemToContentEntry),
@@ -329,7 +343,8 @@ function createDatabaseContentRepository(): ContentRepository {
       };
     },
     async getTopic(tag) {
-      const topic = await getTopicByTag(tag);
+      const topics = await listIndexableTopics(5000);
+      const topic = resolveTopicMatch(topics, tag);
       return topic
         ? {
             tag: topic.tag,
@@ -383,3 +398,4 @@ export async function getContentRepository(): Promise<ContentRepository> {
 
   return createEmptyContentRepository();
 }
+

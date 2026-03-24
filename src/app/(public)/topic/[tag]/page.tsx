@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { EntryCard } from "@/components/entry-card";
 import { PaginationNav } from "@/components/pagination-nav";
 import { PageShell } from "@/components/page-shell";
@@ -39,6 +40,10 @@ export default async function TopicPage({ params, searchParams }: Props) {
     getEntriesByTagPage(tag, { limit: PAGE_SIZE, offset })
   ]);
   const { entries, total } = pageResult;
+
+  if (!topic || entries.length === 0) {
+    notFound();
+  }
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const pagePath = currentPage > 1 ? `/topic/${tag}?page=${currentPage}` : `/topic/${tag}`;
   const topicTitle = topic ? topic.title : `#${tag}`;

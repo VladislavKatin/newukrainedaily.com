@@ -1,6 +1,7 @@
-import type { MetadataRoute } from "next";
-import { listBlog, listNews, listTopics } from "@/lib/postgres-repository";
+﻿import type { MetadataRoute } from "next";
+import { listBlog, listIndexableTopics, listNews } from "@/lib/postgres-repository";
 import { absoluteUrl } from "@/lib/site";
+import { topicSlugFromLabel } from "@/lib/topic-taxonomy";
 
 type ChangeFrequency = NonNullable<MetadataRoute.Sitemap[number]["changeFrequency"]>;
 export const dynamic = "force-dynamic";
@@ -10,7 +11,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [newsEntries, blogEntries, topics] = await Promise.all([
     listNews(10000, "published"),
     listBlog(5000, "published"),
-    listTopics(1000)
+    listIndexableTopics(5000)
   ]);
 
   const staticRoutes = [
@@ -45,7 +46,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   const topicEntries = topics.map((topic) => ({
-    url: absoluteUrl(`/topic/${topic.tag}`),
+    url: absoluteUrl(`/topic/${topicSlugFromLabel(topic.tag)}`),
     lastModified: new Date(topic.updatedAt),
     changeFrequency: "daily" as ChangeFrequency,
     priority: 0.75
