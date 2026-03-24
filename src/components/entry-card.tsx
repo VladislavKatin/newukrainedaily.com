@@ -1,7 +1,7 @@
 ﻿import Image from "next/image";
 import Link from "next/link";
 import type { ContentEntry } from "@/lib/content-types";
-import { SUPPORTED_TOPICS } from "@/lib/topic-taxonomy";
+import { SUPPORTED_TOPICS, topicSlugFromLabel } from "@/lib/topic-taxonomy";
 import { shouldBypassImageOptimization } from "@/lib/image";
 
 function formatDate(date: string) {
@@ -71,7 +71,7 @@ export function EntryCard({ entry, compact = false }: EntryCardProps) {
         {entry.tags.map((tag) => linkedTopics.has(tag.toLowerCase()) ? (
           <Link
             key={tag}
-            href={`/topic/${tag}`}
+            href={`/topic/${topicSlugFromLabel(tag)}`}
             className="rounded-full bg-sky px-3 py-1 text-xs font-medium text-slate-700"
           >
             #{tag}
@@ -94,4 +94,5 @@ export function EntryCard({ entry, compact = false }: EntryCardProps) {
     </article>
   );
 }
+
 
