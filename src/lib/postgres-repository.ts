@@ -1335,32 +1335,37 @@ export async function getTopicByTag(tag: string) {
   return result.rows[0] ? mapTopic(result.rows[0]) : null;
 }
 
-export async function listIndexableTopics(limit = 1000) {
+export async function listIndexableTopics(limit = 1000, minimumEntries = 2) {
   const result = await query(
     `
       with used_tags as (
-        select distinct unnest(tags) as tag
+        select unnest(tags) as tag
         from news_items
         where status = 'published'
 
-        union
+        union all
 
-        select distinct unnest(tags) as tag
+        select unnest(tags) as tag
         from blog_posts
         where status = 'published'
+      ), counted_tags as (
+        select tag, count(*) as entry_count
+        from used_tags
+        where nullif(trim(tag), '') is not null
+        group by tag
+        having count(*) >= $1
       )
       select
-        used_tags.tag,
-        coalesce(t.title, initcap(used_tags.tag)) as title,
+        counted_tags.tag,
+        coalesce(t.title, initcap(counted_tags.tag)) as title,
         t.description,
         coalesce(t.updated_at, timezone('utc', now())) as updated_at
-      from used_tags
-      left join topics t on t.tag = used_tags.tag
-      where nullif(trim(used_tags.tag), '') is not null
-      order by used_tags.tag asc
-      limit $1
+      from counted_tags
+      left join topics t on t.tag = counted_tags.tag
+      order by counted_tags.tag asc
+      limit $2
     `,
-    [limit]
+    [minimumEntries, limit]
   );
 
   return result.rows.map(mapTopic);
@@ -1557,5 +1562,6 @@ export async function createRawNewsWithPublishJob(
     return { raw, job };
   });
 }
+
 
 

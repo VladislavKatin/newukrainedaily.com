@@ -1,9 +1,9 @@
-const fallbackBaseUrl = "http://localhost:3000";
+﻿const fallbackBaseUrl = "http://localhost:3000";
 
 export const siteConfig = {
   name: "New Ukraine Daily",
   description:
-    "English-language publishing platform for Ukraine news, analysis, support resources, and topic archives.",
+    "English-language newsroom for Ukraine news, explainers, analysis, recovery coverage, and practical support reporting.",
   locale: "en_US",
   defaultOgImage: "/icon.svg",
   publisherName: "New Ukraine Daily Editorial Team"
@@ -20,3 +20,4 @@ export function absoluteUrl(path = "/") {
 export function getPublisherLogoUrl() {
   return absoluteUrl("/icon.svg");
 }
+

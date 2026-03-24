@@ -1,5 +1,7 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { EntryCard } from "@/components/entry-card";
+import { NewsletterCta } from "@/components/newsletter-cta";
+import { TrustBar } from "@/components/trust-bar";
 import { getAllTags, getEntriesByTypePage } from "@/lib/content";
 import { buildMetadata } from "@/lib/seo";
 import { SUPPORTED_TOPICS, topicSlugFromLabel } from "@/lib/topic-taxonomy";
@@ -10,13 +12,14 @@ export const revalidate = 0;
 export const metadata = buildMetadata({
   title: "Home",
   description:
-    "Latest Ukraine news, practical support guidance, and topic pages tracking diplomacy, aid, security, and recovery.",
+    "Latest Ukraine news, explainers, analysis, and practical support coverage organized for readers who need fast facts and clear context.",
   path: "/"
 });
 
 export default async function HomePage() {
-  const [latestNewsPage, topics] = await Promise.all([
+  const [latestNewsPage, latestBlogPage, topics] = await Promise.all([
     getEntriesByTypePage("news", { limit: 24, offset: 0 }),
+    getEntriesByTypePage("blog", { limit: 6, offset: 0 }),
     getAllTags()
   ]);
 
@@ -26,132 +29,143 @@ export default async function HomePage() {
     (entry) => now - new Date(entry.publishedAt).getTime() <= freshWindowMs
   );
   const latestNews = (freshNews.length > 0 ? freshNews : latestNewsPage.entries).slice(0, 6);
-  const latestNewsUpdatedAt = latestNews[0]?.publishedAt ?? null;
+  const leadStory = latestNews[0];
+  const topStories = latestNews.slice(1, 3);
+  const latestRail = latestNews.slice(3, 6);
+  const latestExplainers = latestBlogPage.entries.slice(0, 3);
   const topicIndex = new Map(topics.map((tag) => [tag.toLowerCase(), tag]));
   const curatedTopics = SUPPORTED_TOPICS.map((topic) => topicIndex.get(topic.toLowerCase()))
     .filter((tag): tag is string => Boolean(tag))
-    .filter((tag, index, array) => array.findIndex((item) => item.toLowerCase() === tag.toLowerCase()) === index)
-    .slice(0, 12);
+    .slice(0, 8);
 
   return (
     <div className="container-shell py-8 sm:py-16">
-      <section className="panel p-5 sm:p-12">
-        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">
-          newukrainedaily.com
-        </p>
-        <h1 className="mt-4 max-w-3xl text-3xl font-semibold tracking-tight text-ink sm:text-6xl">
-          Daily reporting on Ukraine, with clear context and practical support guidance.
-        </h1>
-        <p className="mt-5 max-w-3xl text-[15px] leading-7 text-slate-600 sm:text-base sm:leading-8">
-          New Ukraine Daily combines breaking developments, issue-by-issue topic pages, and
-          useful guides on how to support Ukraine without losing sight of facts, context, or
-          accountability.
-        </p>
-        <div className="mt-6 flex flex-wrap gap-3 sm:mt-8">
-          <Link
-            href="/news"
-            className="rounded-full bg-ink px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand"
-          >
-            Latest News
-          </Link>
-          <Link
-            href="/donate"
-            className="rounded-full border border-line bg-white px-5 py-3 text-sm font-semibold text-ink transition hover:bg-mist"
-          >
-            Support Ukraine
-          </Link>
-        </div>
-      </section>
-
-      <section className="mt-12 sm:mt-16">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">
-              Latest News
-            </p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ink sm:mt-3 sm:text-3xl">
-              New updates (max 6)
-            </h2>
-            {latestNewsUpdatedAt ? (
-              <p className="mt-2 text-sm text-slate-500">
-                Last update: {new Date(latestNewsUpdatedAt).toLocaleString("en-US")}
+      <section className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
+        <div className="panel p-5 sm:p-8">
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">Lead Story</p>
+          {leadStory ? (
+            <>
+              <div className="mt-4 flex flex-wrap items-center gap-3 text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
+                <span>{new Date(leadStory.publishedAt).toLocaleDateString("en-US")}</span>
+                <span>{leadStory.author}</span>
+              </div>
+              <h1 className="mt-4 max-w-4xl text-3xl font-semibold tracking-tight text-ink sm:text-5xl">
+                {leadStory.title}
+              </h1>
+              <p className="mt-5 max-w-3xl text-[15px] leading-7 text-slate-600 sm:text-lg sm:leading-8">
+                {leadStory.lead || leadStory.excerpt}
               </p>
-            ) : null}
-          </div>
-          <Link href="/news" className="text-sm font-semibold text-brand">
-            View all
-          </Link>
-        </div>
-        <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3 sm:mt-8 sm:gap-6">
-          {latestNews.length > 0 ? (
-            latestNews.map((entry) => <EntryCard key={entry.slug} entry={entry} />)
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Link
+                  href={`/news/${leadStory.slug}`}
+                  className="rounded-full bg-ink px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand"
+                >
+                  Read the lead story
+                </Link>
+                <Link
+                  href="/news"
+                  className="rounded-full border border-line bg-white px-5 py-3 text-sm font-semibold text-ink transition hover:bg-mist"
+                >
+                  Open the news desk
+                </Link>
+              </div>
+            </>
           ) : (
-            <div className="panel p-6 text-sm leading-6 text-slate-600">
-              No published news is available right now.
-            </div>
+            <div className="mt-4 text-sm leading-7 text-slate-600">No published news is available right now.</div>
           )}
         </div>
+        <div className="grid gap-4">
+          <div className="panel p-5 sm:p-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">Why readers return</p>
+            <ul className="mt-4 space-y-3 text-sm leading-7 text-slate-700">
+              <li>Fast factual leads instead of padded copy.</li>
+              <li>Related coverage that keeps readers inside the story.</li>
+              <li>Topic hubs for diplomacy, aid, energy, security, and recovery.</li>
+              <li>Support reporting that explains where help matters most.</li>
+            </ul>
+          </div>
+          <NewsletterCta compact />
+        </div>
       </section>
 
-      <section className="mt-12 grid gap-4 sm:mt-16 sm:gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+      <section className="mt-12 grid gap-6 xl:grid-cols-[1fr_0.9fr] sm:mt-16">
+        <div>
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">Top Stories</p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
+                The news desk at a glance
+              </h2>
+            </div>
+            <Link href="/news" className="text-sm font-semibold text-brand">View all news</Link>
+          </div>
+          <div className="mt-6 grid gap-4 md:grid-cols-2">
+            {topStories.map((entry) => (
+              <EntryCard key={entry.slug} entry={entry} compact />
+            ))}
+          </div>
+        </div>
+        <div className="panel p-5 sm:p-6">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">Latest</p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ink">Fast updates</h2>
+            </div>
+          </div>
+          <div className="mt-5 grid gap-4">
+            {latestRail.map((entry) => (
+              <Link key={entry.slug} href={`/news/${entry.slug}`} className="rounded-2xl border border-line bg-white p-4 transition hover:border-brand hover:bg-mist">
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
+                  {new Date(entry.publishedAt).toLocaleDateString("en-US")}
+                </p>
+                <h3 className="mt-2 text-lg font-semibold leading-7 text-ink">{entry.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-600">{entry.excerpt}</p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="mt-12 grid gap-6 lg:grid-cols-[1.05fr_0.95fr] sm:mt-16">
         <div className="panel p-5 sm:p-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">
-            Support Ukraine
-          </p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ink sm:mt-3 sm:text-3xl">
-            Ways to help
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">Analysis and Explainers</p>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
+            Context beyond the headlines
           </h2>
-          <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600">
-            Support is most useful when it is specific, transparent, and steady. These are the
-            areas where readers, donors, and partner organizations can make a practical difference.
-          </p>
-          <div className="mt-5 grid gap-3 sm:mt-6 sm:gap-4 sm:grid-cols-2">
-            {[
-              "Emergency relief campaigns and winter aid",
-              "Medical support and rehabilitation programs",
-              "Support for schools, children, and families",
-              "Independent journalism and fact-checking",
-              "Local recovery and rebuilding initiatives",
-              "Legal, psychological, and social assistance"
-            ].map((item) => (
-              <div key={item} className="rounded-2xl border border-line bg-mist p-3.5 text-sm text-slate-700 sm:p-4">
-                {item}
-              </div>
+          <div className="mt-6 grid gap-4">
+            {latestExplainers.map((entry) => (
+              <Link key={entry.slug} href={`/blog/${entry.slug}`} className="rounded-2xl border border-line bg-white p-4 transition hover:border-brand hover:bg-mist sm:p-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand">Explainer</p>
+                <h3 className="mt-2 text-xl font-semibold tracking-tight text-ink">{entry.title}</h3>
+                <p className="mt-3 text-sm leading-7 text-slate-600">{entry.excerpt}</p>
+              </Link>
             ))}
           </div>
         </div>
         <div className="panel p-5 sm:p-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">Topics</p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ink sm:mt-3 sm:text-3xl">
-            Browse by topic
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">Topic Hubs</p>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
+            Follow the core themes
           </h2>
           <p className="mt-4 text-sm leading-7 text-slate-600">
-            Follow recurring themes across the site, including frontline developments, diplomacy,
-            humanitarian support, reconstruction, and energy security.
+            The site is strongest when readers can move from fast updates into recurring coverage areas with clear context and cleaner archives.
           </p>
-          <div className="mt-5 grid grid-cols-2 gap-2 sm:mt-6 sm:grid-cols-3">
-            {topics.length > 0 ? (
-              curatedTopics.map((tag) => (
-                <Link
-                  key={tag}
-                  href={`/topic/${topicSlugFromLabel(tag)}`}
-                  className="truncate rounded-lg bg-sky px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-brand hover:text-white"
-                >
-                  #{tag}
-                </Link>
-              ))
-            ) : (
-              <p className="text-sm leading-6 text-slate-600">
-                Topics will appear here after the first published items are indexed.
-              </p>
-            )}
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {curatedTopics.map((tag) => (
+              <Link
+                key={tag}
+                href={`/topic/${topicSlugFromLabel(tag)}`}
+                className="rounded-2xl border border-line bg-white px-4 py-4 text-sm font-semibold text-ink transition hover:border-brand hover:bg-mist"
+              >
+                {tag}
+              </Link>
+            ))}
           </div>
-          {topics.length > 12 ? (
-            <Link href="/news" className="mt-5 inline-block text-sm font-semibold text-brand">
-              Browse all topics in news archive
-            </Link>
-          ) : null}
         </div>
+      </section>
+
+      <section className="mt-12 sm:mt-16">
+        <TrustBar />
       </section>
     </div>
   );

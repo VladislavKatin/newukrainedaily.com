@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { EntryCard } from "@/components/entry-card";
 import { PaginationNav } from "@/components/pagination-nav";
@@ -41,7 +41,7 @@ export default async function TopicPage({ params, searchParams }: Props) {
   ]);
   const { entries, total } = pageResult;
 
-  if (!topic || entries.length === 0) {
+  if (!topic || entries.length < 2) {
     notFound();
   }
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -103,3 +103,4 @@ export default async function TopicPage({ params, searchParams }: Props) {
     </>
   );
 }
+

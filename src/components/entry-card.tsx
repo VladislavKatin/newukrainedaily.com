@@ -1,6 +1,7 @@
 ﻿import Image from "next/image";
 import Link from "next/link";
 import type { ContentEntry } from "@/lib/content-types";
+import { SUPPORTED_TOPICS } from "@/lib/topic-taxonomy";
 import { shouldBypassImageOptimization } from "@/lib/image";
 
 function formatDate(date: string) {
@@ -20,6 +21,7 @@ export function EntryCard({ entry, compact = false }: EntryCardProps) {
   const previewUrl = entry.previewImageUrl || entry.imageUrl;
   const previewAlt = entry.previewImageAlt || entry.imageAlt || entry.title;
   const unoptimized = shouldBypassImageOptimization(previewUrl);
+  const linkedTopics = new Set(SUPPORTED_TOPICS.map((topic) => topic.toLowerCase()));
   const compactImageClass =
     entry.type === "blog" ? "h-40 sm:h-44" : "h-44 sm:h-48";
 
@@ -66,7 +68,7 @@ export function EntryCard({ entry, compact = false }: EntryCardProps) {
         {entry.excerpt}
       </p>
       <div className={`mt-3 flex flex-wrap gap-2 ${compact ? "hidden sm:flex" : ""}`}>
-        {entry.tags.map((tag) => (
+        {entry.tags.map((tag) => linkedTopics.has(tag.toLowerCase()) ? (
           <Link
             key={tag}
             href={`/topic/${tag}`}
@@ -74,6 +76,13 @@ export function EntryCard({ entry, compact = false }: EntryCardProps) {
           >
             #{tag}
           </Link>
+        ) : (
+          <span
+            key={tag}
+            className="rounded-full bg-sky px-3 py-1 text-xs font-medium text-slate-700"
+          >
+            #{tag}
+          </span>
         ))}
       </div>
       <Link
@@ -85,3 +94,4 @@ export function EntryCard({ entry, compact = false }: EntryCardProps) {
     </article>
   );
 }
+

@@ -1,11 +1,11 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 
 const navItems = [
   { href: "/", label: "Home" },
   { href: "/news", label: "News" },
-  { href: "/blog", label: "Blog" },
-  { href: "/donate", label: "Donate" },
-  { href: "/about", label: "About" },
+  { href: "/blog", label: "Analysis" },
+  { href: "/newsroom", label: "Newsroom" },
+  { href: "/donate", label: "Support" },
   { href: "/contact", label: "Contact" }
 ];
 
@@ -13,11 +13,14 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-line/70 bg-white/90 backdrop-blur">
       <div className="container-shell flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:py-4">
-        <Link href="/" className="max-w-sm">
+        <Link href="/" className="max-w-md">
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">
             newukrainedaily.com
           </p>
           <p className="mt-1 text-base font-semibold text-ink sm:text-lg">New Ukraine Daily</p>
+          <p className="mt-1 text-xs leading-5 text-slate-500 sm:text-sm">
+            Ukraine reporting, explainers, and practical support coverage.
+          </p>
         </Link>
         <nav className="flex flex-wrap gap-1.5 text-sm font-medium text-slate-600 sm:gap-2">
           {navItems.map((item) => (
