@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { EntryCard } from "@/components/entry-card";
 import { NewsletterCta } from "@/components/newsletter-cta";
 import { TrustBar } from "@/components/trust-bar";
@@ -46,6 +46,8 @@ export default async function HomePage() {
           {leadStory ? (
             <>
               <div className="mt-4 flex flex-wrap items-center gap-3 text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
+                <span>{leadStory.storyFormat || "News"}</span>
+                {leadStory.readingTimeMinutes ? <span>{leadStory.readingTimeMinutes} min read</span> : null}
                 <span>{new Date(leadStory.publishedAt).toLocaleDateString("en-US")}</span>
                 <span>{leadStory.author}</span>
               </div>
@@ -84,7 +86,7 @@ export default async function HomePage() {
               <li>Support reporting that explains where help matters most.</li>
             </ul>
           </div>
-          <NewsletterCta compact />
+          <NewsletterCta compact sourcePage="home" />
         </div>
       </section>
 
@@ -115,9 +117,11 @@ export default async function HomePage() {
           <div className="mt-5 grid gap-4">
             {latestRail.map((entry) => (
               <Link key={entry.slug} href={`/news/${entry.slug}`} className="rounded-2xl border border-line bg-white p-4 transition hover:border-brand hover:bg-mist">
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
-                  {new Date(entry.publishedAt).toLocaleDateString("en-US")}
-                </p>
+                <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
+                  <span>{entry.storyFormat || "News"}</span>
+                  {entry.readingTimeMinutes ? <span>{entry.readingTimeMinutes} min read</span> : null}
+                  <span>{new Date(entry.publishedAt).toLocaleDateString("en-US")}</span>
+                </div>
                 <h3 className="mt-2 text-lg font-semibold leading-7 text-ink">{entry.title}</h3>
                 <p className="mt-2 text-sm leading-6 text-slate-600">{entry.excerpt}</p>
               </Link>
@@ -135,7 +139,10 @@ export default async function HomePage() {
           <div className="mt-6 grid gap-4">
             {latestExplainers.map((entry) => (
               <Link key={entry.slug} href={`/blog/${entry.slug}`} className="rounded-2xl border border-line bg-white p-4 transition hover:border-brand hover:bg-mist sm:p-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand">Explainer</p>
+                <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-brand">
+                  <span>{entry.storyFormat || "Explainer"}</span>
+                  {entry.readingTimeMinutes ? <span className="text-slate-500">{entry.readingTimeMinutes} min read</span> : null}
+                </div>
                 <h3 className="mt-2 text-xl font-semibold tracking-tight text-ink">{entry.title}</h3>
                 <p className="mt-3 text-sm leading-7 text-slate-600">{entry.excerpt}</p>
               </Link>

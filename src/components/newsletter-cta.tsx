@@ -1,13 +1,15 @@
-﻿import Link from "next/link";
+import { NewsletterSignupForm } from "@/components/newsletter-signup-form";
 
 export function NewsletterCta({
   title = "Get the daily Ukraine briefing",
   description = "Receive the key developments, major policy moves, and support reporting in one concise daily note.",
-  compact = false
+  compact = false,
+  sourcePage = "site"
 }: {
   title?: string;
   description?: string;
   compact?: boolean;
+  sourcePage?: string;
 }) {
   return (
     <section className={`panel ${compact ? "p-5 sm:p-6" : "p-6 sm:p-8"}`}>
@@ -18,20 +20,7 @@ export function NewsletterCta({
       <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base sm:leading-8">
         {description}
       </p>
-      <div className="mt-5 flex flex-wrap gap-3">
-        <Link
-          href="mailto:vladkatintam@gmail.com?subject=Daily%20Ukraine%20Briefing"
-          className="rounded-full bg-ink px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand"
-        >
-          Request the briefing
-        </Link>
-        <Link
-          href="/contact"
-          className="rounded-full border border-line bg-white px-5 py-3 text-sm font-semibold text-ink transition hover:bg-mist"
-        >
-          Contact the newsroom
-        </Link>
-      </div>
+      <NewsletterSignupForm sourcePage={sourcePage} compact={compact} />
     </section>
   );
 }

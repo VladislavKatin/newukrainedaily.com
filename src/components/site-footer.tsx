@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 
 export function SiteFooter() {
   return (
@@ -31,7 +31,7 @@ export function SiteFooter() {
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">Contact</p>
           <div className="mt-3 flex flex-col gap-2 text-sm text-slate-600">
             <Link href="/contact">Contact the newsroom</Link>
-            <Link href="mailto:vladkatintam@gmail.com">vladkatintam@gmail.com</Link>
+            <span>vladkatintam@gmail.com</span>
             <Link href="/feed.xml">News feed</Link>
           </div>
         </div>

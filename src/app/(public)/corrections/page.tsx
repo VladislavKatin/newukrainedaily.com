@@ -1,4 +1,4 @@
-﻿import { PageShell } from "@/components/page-shell";
+import { PageShell } from "@/components/page-shell";
 import { buildMetadata } from "@/lib/seo";
 
 export const metadata = buildMetadata({
@@ -31,7 +31,7 @@ export default function CorrectionsPage() {
             </p>
             <h2>Contact</h2>
             <p>
-              Correction requests can be sent to <a href="mailto:vladkatintam@gmail.com">vladkatintam@gmail.com</a>.
+              Correction requests are handled through the internal newsroom contact path. Use the contact page and include the URL, disputed line, and supporting public source.
             </p>
           </div>
         </article>

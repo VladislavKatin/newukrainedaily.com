@@ -10,6 +10,7 @@ import { getEntriesByType, getEntry } from "@/lib/content";
 import { shouldBypassImageOptimization } from "@/lib/image";
 import { buildRelatedEntries } from "@/lib/related-content";
 import { buildArticleMetadata } from "@/lib/seo";
+import { getStoryFormatConfig } from "@/lib/story-format";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -39,6 +40,7 @@ export default async function NewsArticlePage({ params }: Props) {
   const related = buildRelatedEntries(entry, await getEntriesByType("news"), 3);
   const unoptimizedPreview = shouldBypassImageOptimization(entry.previewImageUrl);
   const unoptimizedGenerated = shouldBypassImageOptimization(entry.generatedImageUrl);
+  const formatConfig = getStoryFormatConfig(entry);
 
   return (
     <section className="container-shell py-8 sm:py-16">
@@ -46,7 +48,7 @@ export default async function NewsArticlePage({ params }: Props) {
       <article className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
         <div className="panel p-5 sm:p-12">
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">
-            News
+            {formatConfig.sectionEyebrow}
           </p>
           <h1 className="mt-3 text-3xl font-semibold tracking-tight text-ink sm:mt-4 sm:text-4xl">
             {entry.title}
@@ -113,18 +115,23 @@ export default async function NewsArticlePage({ params }: Props) {
             </div>
           ) : null}
           <div className="mt-8">
-            <NewsletterCta compact title="Get the next major Ukraine update" description="Use the newsroom contact path to request the daily briefing or flag a story that deserves closer follow-up." />
+            <NewsletterCta
+              compact
+              sourcePage={`/news/${entry.slug}`}
+              title={formatConfig.newsletterTitle}
+              description={formatConfig.newsletterDescription}
+            />
           </div>
           <RelatedEntries title="Related News" entries={related} />
         </div>
         <div className="grid gap-6 lg:sticky lg:top-24">
           <ArticleKeyFacts lead={entry.lead} body={entry.body} tags={entry.tags} />
           <div className="panel p-5 sm:p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">Why this page is structured this way</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">{formatConfig.sidebarTitle}</p>
             <div className="mt-4 space-y-3 text-sm leading-7 text-slate-600">
-              <p>Fast lead first, then fuller context.</p>
-              <p>Source photo stays distinct from any illustration.</p>
-              <p>Related coverage stays inside the same reporting thread.</p>
+              {formatConfig.sidebarPoints.map((point) => (
+                <p key={point}>{point}</p>
+              ))}
             </div>
           </div>
         </div>

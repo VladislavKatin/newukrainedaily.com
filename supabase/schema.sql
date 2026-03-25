@@ -150,6 +150,16 @@ create table if not exists news_images (
   updated_at timestamptz not null default timezone('utc', now())
 );
 
+create table if not exists newsletter_subscribers (
+  id uuid primary key default gen_random_uuid(),
+  email text not null unique,
+  name text,
+  source_page text,
+  status text not null default 'active',
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
+);
+
 create index if not exists idx_news_raw_canonical_url on news_raw (canonical_url);
 create index if not exists idx_news_raw_fetched_at on news_raw (fetched_at desc);
 create index if not exists idx_news_items_status_published_at on news_items (status, published_at desc);
@@ -165,6 +175,8 @@ where fingerprint is not null;
 create index if not exists idx_blog_posts_published_at on blog_posts (published_at desc);
 create index if not exists idx_jobs_status_run_at on jobs (status, run_at);
 create index if not exists idx_news_images_status_attempts on news_images (status, attempts);
+create index if not exists idx_newsletter_subscribers_status_created_at
+on newsletter_subscribers (status, created_at desc);
 
 create trigger trg_news_items_updated_at
 before update on news_items
@@ -186,6 +198,11 @@ before update on news_images
 for each row
 execute function set_updated_at();
 
+create trigger trg_newsletter_subscribers_updated_at
+before update on newsletter_subscribers
+for each row
+execute function set_updated_at();
+
 alter table sources enable row level security;
 alter table news_raw enable row level security;
 alter table news_items enable row level security;
@@ -193,3 +210,4 @@ alter table blog_posts enable row level security;
 alter table topics enable row level security;
 alter table jobs enable row level security;
 alter table news_images enable row level security;
+alter table newsletter_subscribers enable row level security;

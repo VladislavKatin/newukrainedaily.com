@@ -10,6 +10,7 @@ import { getEntriesByType, getEntry } from "@/lib/content";
 import { shouldBypassImageOptimization } from "@/lib/image";
 import { buildRelatedEntries } from "@/lib/related-content";
 import { buildArticleMetadata } from "@/lib/seo";
+import { getStoryFormatConfig } from "@/lib/story-format";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -37,6 +38,7 @@ export default async function BlogArticlePage({ params }: Props) {
 
   const related = buildRelatedEntries(entry, await getEntriesByType("blog"), 3);
   const unoptimizedImage = shouldBypassImageOptimization(entry.imageUrl);
+  const formatConfig = getStoryFormatConfig(entry);
 
   return (
     <section className="container-shell py-8 sm:py-16">
@@ -44,7 +46,7 @@ export default async function BlogArticlePage({ params }: Props) {
       <article className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
         <div className="panel p-5 sm:p-12">
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">
-            Analysis
+            {formatConfig.sectionEyebrow}
           </p>
           <h1 className="mt-3 text-3xl font-semibold tracking-tight text-ink sm:mt-4 sm:text-4xl">
             {entry.title}
@@ -75,17 +77,23 @@ export default async function BlogArticlePage({ params }: Props) {
           ) : null}
           <ArticleBody paragraphs={entry.body} />
           <div className="mt-8">
-            <NewsletterCta compact title="Get the next explainer" description="Request the daily Ukraine briefing or ask the newsroom to expand a topic that needs a deeper explainer." />
+            <NewsletterCta
+              compact
+              sourcePage={`/blog/${entry.slug}`}
+              title={formatConfig.newsletterTitle}
+              description={formatConfig.newsletterDescription}
+            />
           </div>
           <RelatedEntries title="Related Posts" entries={related} />
         </div>
         <div className="grid gap-6 lg:sticky lg:top-24">
           <ArticleKeyFacts lead={entry.lead} body={entry.body} tags={entry.tags} />
           <div className="panel p-5 sm:p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">Explainer standard</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">{formatConfig.sidebarTitle}</p>
             <div className="mt-4 space-y-3 text-sm leading-7 text-slate-600">
-              <p>Analysis pages are meant to slow the story down.</p>
-              <p>They connect current reporting to policy, reconstruction, aid, and long-term consequences.</p>
+              {formatConfig.sidebarPoints.map((point) => (
+                <p key={point}>{point}</p>
+              ))}
             </div>
           </div>
         </div>

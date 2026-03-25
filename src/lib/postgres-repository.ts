@@ -1,4 +1,4 @@
-﻿import "server-only";
+import "server-only";
 import type { PoolClient } from "pg";
 import { SUPPORTED_TOPICS } from "@/lib/topic-taxonomy";
 import { query, withTransaction } from "@/lib/db";
@@ -139,6 +139,16 @@ export type JobRecord = {
   updatedAt: string;
 };
 
+
+export type NewsletterSubscriberRecord = {
+  id: string;
+  email: string;
+  name: string | null;
+  sourcePage: string | null;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+};
 export type SourceStatusCounts = {
   total: number;
   active: number;
@@ -246,7 +256,15 @@ type EnqueueJobInput = {
   runAt?: string | Date;
 };
 
+type SubscribeNewsletterInput = {
+  email: string;
+  name?: string | null;
+  sourcePage?: string | null;
+  status?: string;
+};
+
 function normalizeTimestampInput(value: string | Date | null | undefined) {
+
   if (!value) {
     return null;
   }
@@ -376,6 +394,18 @@ function mapTopic(row: Record<string, unknown>): TopicRecord {
     updatedAt: String(row.updated_at)
   };
 }
+function mapNewsletterSubscriber(row: Record<string, unknown>): NewsletterSubscriberRecord {
+  return {
+    id: String(row.id),
+    email: String(row.email),
+    name: row.name ? String(row.name) : null,
+    sourcePage: row.source_page ? String(row.source_page) : null,
+    status: String(row.status),
+    createdAt: String(row.created_at),
+    updatedAt: String(row.updated_at)
+  };
+}
+
 
 function mapSource(row: Record<string, unknown>): SourceRecord {
   return {
@@ -387,6 +417,7 @@ function mapSource(row: Record<string, unknown>): SourceRecord {
     createdAt: String(row.created_at)
   };
 }
+
 
 function mapJob(row: Record<string, unknown>): JobRecord {
   return {
@@ -1392,6 +1423,28 @@ export async function getNextFreeTopic() {
   return result.rows[0] ? mapTopic(result.rows[0]) : null;
 }
 
+export async function upsertNewsletterSubscriber(input: SubscribeNewsletterInput) {
+  const result = await query(
+    `
+      insert into newsletter_subscribers (email, name, source_page, status)
+      values (lower($1), $2, $3, coalesce($4, 'active'))
+      on conflict (email) do update set
+        name = coalesce(excluded.name, newsletter_subscribers.name),
+        source_page = coalesce(excluded.source_page, newsletter_subscribers.source_page),
+        status = coalesce(excluded.status, newsletter_subscribers.status)
+      returning *
+    `,
+    [
+      input.email,
+      input.name ?? null,
+      input.sourcePage ?? null,
+      input.status ?? null
+    ]
+  );
+
+  return mapNewsletterSubscriber(result.rows[0]);
+}
+
 export async function enqueueJob(input: EnqueueJobInput, client: PoolClient | null = null) {
   const result = await runClientQuery<Record<string, unknown>>(
     client,
@@ -1412,6 +1465,7 @@ export async function enqueueJob(input: EnqueueJobInput, client: PoolClient | nu
 
   return mapJob(result.rows[0]);
 }
+
 
 export async function listPendingJobs(limit = 50) {
   const result = await query(
