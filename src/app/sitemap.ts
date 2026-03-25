@@ -1,58 +1,79 @@
 import type { MetadataRoute } from "next";
-import { listBlog, listIndexableTopics, listNews } from "@/lib/postgres-repository";
 import { absoluteUrl } from "@/lib/site";
-import { topicSlugFromLabel } from "@/lib/topic-taxonomy";
 
 type ChangeFrequency = NonNullable<MetadataRoute.Sitemap[number]["changeFrequency"]>;
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [newsEntries, blogEntries, topics] = await Promise.all([
-    listNews(10000, "published"),
-    listBlog(5000, "published"),
-    listIndexableTopics(5000)
-  ]);
+const staticRoutes = [
+  "/",
+  "/news",
+  "/blog",
+  "/donate",
+  "/about",
+  "/editorial-policy",
+  "/contact",
+  "/newsroom",
+  "/corrections"
+];
 
-  const staticRoutes = [
-    "/",
-    "/news",
-    "/blog",
-    "/donate",
-    "/about",
-    "/editorial-policy",
-    "/contact",
-    "/newsroom",
-    "/corrections"
-  ];
-
-  const staticEntries = staticRoutes.map((route) => ({
+function buildStaticEntries(): MetadataRoute.Sitemap {
+  return staticRoutes.map((route) => ({
     url: absoluteUrl(route),
     lastModified: new Date(),
     changeFrequency: (route === "/" ? "daily" : "weekly") as ChangeFrequency,
     priority: route === "/" ? 1 : 0.7
   }));
+}
 
-  const newsSitemapEntries = newsEntries.map((entry) => ({
-    url: absoluteUrl(`/news/${entry.slug}`),
-    lastModified: new Date(entry.updatedAt || entry.publishedAt || entry.createdAt),
-    changeFrequency: "hourly" as ChangeFrequency,
-    priority: 0.9
-  }));
+function safeDate(value: string | null | undefined) {
+  if (!value) {
+    return new Date();
+  }
 
-  const blogSitemapEntries = blogEntries.map((entry) => ({
-    url: absoluteUrl(`/blog/${entry.slug}`),
-    lastModified: new Date(entry.updatedAt || entry.publishedAt || entry.createdAt),
-    changeFrequency: "weekly" as ChangeFrequency,
-    priority: 0.8
-  }));
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+}
 
-  const topicEntries = topics.map((topic) => ({
-    url: absoluteUrl(`/topic/${topicSlugFromLabel(topic.tag)}`),
-    lastModified: new Date(topic.updatedAt),
-    changeFrequency: "daily" as ChangeFrequency,
-    priority: 0.75
-  }));
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const staticEntries = buildStaticEntries();
 
-  return [...staticEntries, ...newsSitemapEntries, ...blogSitemapEntries, ...topicEntries];
+  try {
+    const [{ listBlog, listIndexableTopics, listNews }, { topicSlugFromLabel }] = await Promise.all([
+      import("@/lib/postgres-repository"),
+      import("@/lib/topic-taxonomy")
+    ]);
+
+    const [newsEntries, blogEntries, topics] = await Promise.all([
+      listNews(10000, "published"),
+      listBlog(5000, "published"),
+      listIndexableTopics(5000)
+    ]);
+
+    const newsSitemapEntries = newsEntries.map((entry) => ({
+      url: absoluteUrl(`/news/${entry.slug}`),
+      lastModified: safeDate(entry.updatedAt || entry.publishedAt || entry.createdAt),
+      changeFrequency: "hourly" as ChangeFrequency,
+      priority: 0.9
+    }));
+
+    const blogSitemapEntries = blogEntries.map((entry) => ({
+      url: absoluteUrl(`/blog/${entry.slug}`),
+      lastModified: safeDate(entry.updatedAt || entry.publishedAt || entry.createdAt),
+      changeFrequency: "weekly" as ChangeFrequency,
+      priority: 0.8
+    }));
+
+    const topicEntries = topics.map((topic) => ({
+      url: absoluteUrl(`/topic/${topicSlugFromLabel(topic.tag)}`),
+      lastModified: safeDate(topic.updatedAt),
+      changeFrequency: "daily" as ChangeFrequency,
+      priority: 0.75
+    }));
+
+    return [...staticEntries, ...newsSitemapEntries, ...blogSitemapEntries, ...topicEntries];
+  } catch (error) {
+    console.error("[sitemap] failed to build dynamic sitemap", error);
+    return staticEntries;
+  }
 }
