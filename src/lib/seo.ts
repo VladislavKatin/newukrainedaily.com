@@ -137,14 +137,46 @@ export function buildArticleJsonLd(entry: ContentEntry) {
       }
     },
     mainEntityOfPage: absoluteUrl(`/${entry.type}/${entry.slug}`),
+    isAccessibleForFree: true,
+    articleSection: entry.storyFormat || entry.tags[0] || entry.type,
+    about: entry.primaryTopic || entry.tags[0] || undefined,
+    keywords: entry.tags.join(", "),
     image: [
       {
         "@type": "ImageObject",
         url: jsonLdImage,
         caption: jsonLdImageAlt
       }
-    ],
-    articleSection: entry.tags[0] || entry.type,
-    keywords: entry.tags.join(", ")
+    ]
+  };
+}
+
+export function buildBreadcrumbJsonLd(entry: ContentEntry) {
+  const sectionLabel = entry.type === "news" ? "News" : "Blog";
+  const sectionPath = entry.type === "news" ? "/news" : "/blog";
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: absoluteUrl("/")
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: sectionLabel,
+        item: absoluteUrl(sectionPath)
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: entry.title,
+        item: absoluteUrl(`/${entry.type}/${entry.slug}`)
+      }
+    ]
   };
 }
