@@ -3,6 +3,7 @@ import { EntryCard } from "@/components/entry-card";
 import { NewsletterCta } from "@/components/newsletter-cta";
 import { TrustBar } from "@/components/trust-bar";
 import { getAllTags, getEntriesByTypePage } from "@/lib/content";
+import { curateHomepageNews } from "@/lib/homepage-curation";
 import { buildMetadata } from "@/lib/seo";
 import { SUPPORTED_TOPICS, topicSlugFromLabel } from "@/lib/topic-taxonomy";
 
@@ -28,10 +29,8 @@ export default async function HomePage() {
   const freshNews = latestNewsPage.entries.filter(
     (entry) => now - new Date(entry.publishedAt).getTime() <= freshWindowMs
   );
-  const latestNews = (freshNews.length > 0 ? freshNews : latestNewsPage.entries).slice(0, 6);
-  const leadStory = latestNews[0];
-  const topStories = latestNews.slice(1, 3);
-  const latestRail = latestNews.slice(3, 6);
+  const candidateNews = freshNews.length > 0 ? freshNews : latestNewsPage.entries;
+  const { leadStory, developingNow, topStories, latestRail } = curateHomepageNews(candidateNews);
   const latestExplainers = latestBlogPage.entries.slice(0, 3);
   const topicIndex = new Map(topics.map((tag) => [tag.toLowerCase(), tag]));
   const curatedTopics = SUPPORTED_TOPICS.map((topic) => topicIndex.get(topic.toLowerCase()))
@@ -90,7 +89,28 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="mt-12 grid gap-6 xl:grid-cols-[1fr_0.9fr] sm:mt-16">
+      <section className="mt-12 grid gap-6 lg:grid-cols-[0.9fr_1.1fr] sm:mt-16">
+        <div className="panel p-5 sm:p-6">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">Developing Now</p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ink">Fast-moving story lines</h2>
+            </div>
+          </div>
+          <div className="mt-5 grid gap-4">
+            {developingNow.map((entry) => (
+              <Link key={entry.slug} href={`/news/${entry.slug}`} className="rounded-2xl border border-line bg-white p-4 transition hover:border-brand hover:bg-mist">
+                <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
+                  <span>{entry.storyFormat || "News"}</span>
+                  {entry.readingTimeMinutes ? <span>{entry.readingTimeMinutes} min read</span> : null}
+                  <span>{new Date(entry.publishedAt).toLocaleDateString("en-US")}</span>
+                </div>
+                <h3 className="mt-2 text-lg font-semibold leading-7 text-ink">{entry.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-600">{entry.excerpt}</p>
+              </Link>
+            ))}
+          </div>
+        </div>
         <div>
           <div className="flex items-end justify-between gap-4">
             <div>
@@ -107,30 +127,23 @@ export default async function HomePage() {
             ))}
           </div>
         </div>
-        <div className="panel p-5 sm:p-6">
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">Latest</p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ink">Fast updates</h2>
-            </div>
-          </div>
-          <div className="mt-5 grid gap-4">
-            {latestRail.map((entry) => (
-              <Link key={entry.slug} href={`/news/${entry.slug}`} className="rounded-2xl border border-line bg-white p-4 transition hover:border-brand hover:bg-mist">
-                <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
-                  <span>{entry.storyFormat || "News"}</span>
-                  {entry.readingTimeMinutes ? <span>{entry.readingTimeMinutes} min read</span> : null}
-                  <span>{new Date(entry.publishedAt).toLocaleDateString("en-US")}</span>
-                </div>
-                <h3 className="mt-2 text-lg font-semibold leading-7 text-ink">{entry.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-600">{entry.excerpt}</p>
-              </Link>
-            ))}
-          </div>
-        </div>
       </section>
 
       <section className="mt-12 grid gap-6 lg:grid-cols-[1.05fr_0.95fr] sm:mt-16">
+        <div className="panel p-5 sm:p-8">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">Latest</p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Fast updates</h2>
+            </div>
+            <Link href="/news" className="text-sm font-semibold text-brand">Open the news desk</Link>
+          </div>
+          <div className="mt-6 grid gap-4 md:grid-cols-2">
+            {latestRail.map((entry) => (
+              <EntryCard key={entry.slug} entry={entry} compact />
+            ))}
+          </div>
+        </div>
         <div className="panel p-5 sm:p-8">
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">Analysis and Explainers</p>
           <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
@@ -149,6 +162,9 @@ export default async function HomePage() {
             ))}
           </div>
         </div>
+      </section>
+
+      <section className="mt-12 grid gap-6 lg:grid-cols-[0.95fr_1.05fr] sm:mt-16">
         <div className="panel p-5 sm:p-8">
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">Topic Hubs</p>
           <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
@@ -169,9 +185,6 @@ export default async function HomePage() {
             ))}
           </div>
         </div>
-      </section>
-
-      <section className="mt-12 sm:mt-16">
         <TrustBar />
       </section>
     </div>
