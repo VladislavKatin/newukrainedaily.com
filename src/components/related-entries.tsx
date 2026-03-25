@@ -43,9 +43,10 @@ export function RelatedEntries({
                 </div>
               ) : null}
               <div className="p-4 sm:p-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand">
-                  {entry.type}
-                </p>
+                <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-brand">
+                  <span>{entry.storyFormat || entry.type}</span>
+                  {entry.readingTimeMinutes ? <span className="text-slate-500">{entry.readingTimeMinutes} min</span> : null}
+                </div>
                 <h3 className="mt-2 text-base font-semibold leading-6 text-ink sm:text-lg">
                   {entry.title}
                 </h3>

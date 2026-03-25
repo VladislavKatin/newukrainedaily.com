@@ -23,6 +23,9 @@ export type ContentEntry = {
   generatedImageUrl?: string;
   generatedImageAlt?: string;
   generatedImageCaption?: string;
+  readingTimeMinutes?: number;
+  primaryTopic?: string;
+  storyFormat?: string;
   status: "draft" | "scheduled" | "published";
   featured?: boolean;
 };

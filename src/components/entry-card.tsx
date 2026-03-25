@@ -22,8 +22,7 @@ export function EntryCard({ entry, compact = false }: EntryCardProps) {
   const previewAlt = entry.previewImageAlt || entry.imageAlt || entry.title;
   const unoptimized = shouldBypassImageOptimization(previewUrl);
   const linkedTopics = new Set(SUPPORTED_TOPICS.map((topic) => topic.toLowerCase()));
-  const compactImageClass =
-    entry.type === "blog" ? "h-40 sm:h-44" : "h-44 sm:h-48";
+  const compactImageClass = entry.type === "blog" ? "h-40 sm:h-44" : "h-44 sm:h-48";
 
   return (
     <article className={`panel overflow-hidden ${compact ? "p-4 sm:p-5" : "p-5 sm:p-6"}`}>
@@ -49,8 +48,11 @@ export function EntryCard({ entry, compact = false }: EntryCardProps) {
           />
         </Link>
       ) : null}
-      <div className="flex items-center justify-between gap-3 text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
-        <span>{entry.type}</span>
+      <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
+        <div className="flex flex-wrap items-center gap-2">
+          <span>{entry.storyFormat || entry.type}</span>
+          {entry.readingTimeMinutes ? <span>{entry.readingTimeMinutes} min read</span> : null}
+        </div>
         <time dateTime={entry.publishedAt}>{formatDate(entry.publishedAt)}</time>
       </div>
       <h2
@@ -68,22 +70,24 @@ export function EntryCard({ entry, compact = false }: EntryCardProps) {
         {entry.excerpt}
       </p>
       <div className={`mt-3 flex flex-wrap gap-2 ${compact ? "hidden sm:flex" : ""}`}>
-        {entry.tags.map((tag) => linkedTopics.has(tag.toLowerCase()) ? (
-          <Link
-            key={tag}
-            href={`/topic/${topicSlugFromLabel(tag)}`}
-            className="rounded-full bg-sky px-3 py-1 text-xs font-medium text-slate-700"
-          >
-            #{tag}
-          </Link>
-        ) : (
-          <span
-            key={tag}
-            className="rounded-full bg-sky px-3 py-1 text-xs font-medium text-slate-700"
-          >
-            #{tag}
-          </span>
-        ))}
+        {entry.tags.map((tag) =>
+          linkedTopics.has(tag.toLowerCase()) ? (
+            <Link
+              key={tag}
+              href={`/topic/${topicSlugFromLabel(tag)}`}
+              className="rounded-full bg-sky px-3 py-1 text-xs font-medium text-slate-700"
+            >
+              #{tag}
+            </Link>
+          ) : (
+            <span
+              key={tag}
+              className="rounded-full bg-sky px-3 py-1 text-xs font-medium text-slate-700"
+            >
+              #{tag}
+            </span>
+          )
+        )}
       </div>
       <Link
         href={`/${entry.type}/${entry.slug}`}
@@ -94,5 +98,3 @@ export function EntryCard({ entry, compact = false }: EntryCardProps) {
     </article>
   );
 }
-
-

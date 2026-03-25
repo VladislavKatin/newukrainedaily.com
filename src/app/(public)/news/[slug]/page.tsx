@@ -1,4 +1,4 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { ArticleJsonLd } from "@/components/article-json-ld";
@@ -54,6 +54,8 @@ export default async function NewsArticlePage({ params }: Props) {
           <p className="lede-copy mt-4 sm:mt-5">{entry.lead || entry.description}</p>
           <div className="meta-row mt-5 sm:mt-6">
             <span>{entry.author}</span>
+            {entry.storyFormat ? <span>{entry.storyFormat}</span> : null}
+            {entry.readingTimeMinutes ? <span>{entry.readingTimeMinutes} min read</span> : null}
             <time dateTime={entry.publishedAt}>{new Date(entry.publishedAt).toLocaleDateString("en-US")}</time>
             {entry.updatedAt ? <span>Updated {new Date(entry.updatedAt).toLocaleDateString("en-US")}</span> : null}
           </div>

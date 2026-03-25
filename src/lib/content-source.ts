@@ -1,4 +1,4 @@
-﻿import "server-only";
+import "server-only";
 import type { ContentEntry } from "@/lib/content-types";
 import {
   sanitizeArticleForPublishing
@@ -22,6 +22,7 @@ import {
 } from "@/lib/postgres-repository";
 import { getPreviewEntries, getPreviewTopics } from "@/lib/local-preview-content";
 import { topicSlugFromLabel } from "@/lib/topic-taxonomy";
+import { inferStoryFormat } from "@/lib/story-format";
 
 export type ContentRepository = {
   getAllEntries(): Promise<ContentEntry[]>;
@@ -104,6 +105,9 @@ function mapNewsItemToContentEntry(newsItem: Awaited<ReturnType<typeof getNewsBy
     generatedImageUrl: sanitized.generatedImageUrl,
     generatedImageAlt: sanitized.generatedImageAlt,
     generatedImageCaption: sanitized.generatedImageCaption,
+    readingTimeMinutes: newsItem.readingTimeMinutes || undefined,
+    primaryTopic: newsItem.primaryTopic || undefined,
+    storyFormat: inferStoryFormat({ type: "news", title: sanitized.title, tags: newsItem.tags }),
     status: newsItem.status,
     featured: false
   };
@@ -139,6 +143,9 @@ function mapBlogPostToContentEntry(blogPost: Awaited<ReturnType<typeof getBlogBy
     previewImageUrl: sanitized.previewImageUrl,
     previewImageAlt: sanitized.previewImageAlt,
     previewImageCaption: sanitized.previewImageCaption,
+    readingTimeMinutes: blogPost.readingTimeMinutes || undefined,
+    primaryTopic: blogPost.primaryTopic || undefined,
+    storyFormat: inferStoryFormat({ type: "blog", title: sanitized.title, tags: blogPost.tags }),
     status: blogPost.status,
     featured: false
   };
@@ -398,4 +405,3 @@ export async function getContentRepository(): Promise<ContentRepository> {
 
   return createEmptyContentRepository();
 }
-
