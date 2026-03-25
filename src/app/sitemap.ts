@@ -21,7 +21,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/donate",
     "/about",
     "/editorial-policy",
-    "/contact"
+    "/contact",
+    "/newsroom",
+    "/corrections"
   ];
 
   const staticEntries = staticRoutes.map((route) => ({
@@ -54,6 +56,3 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   return [...staticEntries, ...newsSitemapEntries, ...blogSitemapEntries, ...topicEntries];
 }
-
-
-
