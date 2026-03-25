@@ -1,4 +1,4 @@
-﻿import type { MetadataRoute } from "next";
+import type { MetadataRoute } from "next";
 import { listBlog, listIndexableTopics, listNews } from "@/lib/postgres-repository";
 import { absoluteUrl } from "@/lib/site";
 import { topicSlugFromLabel } from "@/lib/topic-taxonomy";

@@ -32,6 +32,7 @@ export default async function HomePage() {
   const candidateNews = freshNews.length > 0 ? freshNews : latestNewsPage.entries;
   const { leadStory, developingNow, topStories, latestRail } = curateHomepageNews(candidateNews);
   const latestExplainers = latestBlogPage.entries.slice(0, 3);
+  const editorsPicks = latestBlogPage.entries.slice(0, 2);
   const topicIndex = new Map(topics.map((tag) => [tag.toLowerCase(), tag]));
   const curatedTopics = SUPPORTED_TOPICS.map((topic) => topicIndex.get(topic.toLowerCase()))
     .filter((tag): tag is string => Boolean(tag))
@@ -160,6 +161,33 @@ export default async function HomePage() {
                 <p className="mt-3 text-sm leading-7 text-slate-600">{entry.excerpt}</p>
               </Link>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="mt-12 grid gap-6 lg:grid-cols-[1fr_0.9fr] sm:mt-16">
+        <div className="panel p-5 sm:p-8">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">Editor&apos;s Picks</p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
+                Start here if you want the deeper read
+              </h2>
+            </div>
+            <Link href="/blog" className="text-sm font-semibold text-brand">Open explainers</Link>
+          </div>
+          <div className="mt-6 grid gap-4 md:grid-cols-2">
+            {editorsPicks.map((entry) => (
+              <EntryCard key={entry.slug} entry={entry} compact />
+            ))}
+          </div>
+        </div>
+        <div className="panel p-5 sm:p-8">
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">Reader path</p>
+          <div className="mt-4 space-y-4 text-sm leading-7 text-slate-600">
+            <p>Start with the lead story for the top confirmed angle.</p>
+            <p>Move to Developing Now if you want the fastest live threads.</p>
+            <p>Use Editor&apos;s Picks when the headline needs more context, policy background, or support reporting.</p>
           </div>
         </div>
       </section>
