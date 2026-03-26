@@ -212,6 +212,10 @@ function isModerationFailure(errorMessage: string) {
   return /content moderated|moderation|safety|policy/i.test(errorMessage);
 }
 
+function shouldUseFallbackImage(errorMessage: string) {
+  return isModerationFailure(errorMessage) || /not enough api tokens|quota|credits?/i.test(errorMessage);
+}
+
 function getUtcDayStartIso(date = new Date()) {
   return new Date(
     Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 0, 0, 0, 0)
@@ -518,12 +522,12 @@ export async function runGenerateImagesJob(limitOverride?: number) {
     } catch (error) {
       failed += 1;
       const message = error instanceof Error ? error.message : "Unknown Leonardo error";
-      const terminalModerationFailure = isModerationFailure(message);
+      const shouldFallback = shouldUseFallbackImage(message);
       errors.push({
         slug: item.slug,
         message
       });
-      if (terminalModerationFailure) {
+      if (shouldFallback) {
         const fallbackImageUrl = absoluteUrl(siteConfig.defaultOgImage);
         await updateNewsItemAssets(item.id, {
           coverImageUrl: fallbackImageUrl,
@@ -536,7 +540,7 @@ export async function runGenerateImagesJob(limitOverride?: number) {
         newsItemId: item.id,
         prompt,
         status: "failed",
-        attempts: terminalModerationFailure ? limits.imageMaxAttempts : attempts,
+        attempts: shouldFallback ? limits.imageMaxAttempts : attempts,
         lastError: message
       });
     }
