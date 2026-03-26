@@ -21,8 +21,8 @@ function parseEnvLine(line) {
   return { key, value };
 }
 
-export function loadLocalEnv(cwd = process.cwd()) {
-  for (const fileName of [".env.local", ".env"]) {
+export function loadLocalEnv(cwd = process.cwd(), fileNames = [".env.local", ".env", ".env.vercel.prod"]) {
+  for (const fileName of fileNames) {
     const filePath = path.join(cwd, fileName);
 
     if (!fs.existsSync(filePath)) {
@@ -43,3 +43,4 @@ export function loadLocalEnv(cwd = process.cwd()) {
     }
   }
 }
+

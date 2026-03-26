@@ -144,19 +144,28 @@ export async function rewriteRawNews(raw: NewsRawRecord): Promise<RewriteOutput 
   };
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    const rewritten = await attemptRewrite(input);
+    try {
+      const rewritten = await attemptRewrite(input);
 
-    if (!rewritten) {
-      continue;
+      if (!rewritten) {
+        continue;
+      }
+
+      const normalized = rewriteOutputSchema.parse(rewritten);
+
+      if (!assertRewriteBodyLength(normalized.body)) {
+        console.warn(
+          `[rewrite] rejected short body raw=${raw.id} attempt=${attempt + 1} length=${normalized.body.length}`
+        );
+          continue;
+      }
+
+      return normalized;
+    } catch (error) {
+      console.warn(
+        `[rewrite] provider validation failed raw=${raw.id} attempt=${attempt + 1} reason=${error instanceof Error ? error.message : "Unknown error"}`
+      );
     }
-
-    const normalized = rewriteOutputSchema.parse(rewritten);
-
-    if (!assertRewriteBodyLength(normalized.body)) {
-      continue;
-    }
-
-    return normalized;
   }
 
   return null;

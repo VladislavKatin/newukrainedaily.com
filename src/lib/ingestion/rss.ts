@@ -169,10 +169,23 @@ function extractItems(xml: string) {
     .filter((item): item is ParsedFeedItem => item !== null);
 }
 
-export async function inspectRssSources(options?: { sourceLimit?: number; itemsPerSourceLimit?: number }) {
+export async function inspectRssSources(options?: { sourceLimit?: number; itemsPerSourceLimit?: number; sourceFilter?: string[] }) {
   const sourceLimit = options?.sourceLimit ?? 50;
   const itemsPerSourceLimit = options?.itemsPerSourceLimit ?? 25;
-  const sources = (await listActiveSources(sourceLimit)).filter((source) => source.type === "rss");
+  const normalizedFilter = (options?.sourceFilter ?? []).map((value) => value.trim().toLowerCase()).filter(Boolean);
+  const sources = (await listActiveSources(sourceLimit)).filter((source) => {
+    if (source.type !== "rss") {
+      return false;
+    }
+
+    if (normalizedFilter.length === 0) {
+      return true;
+    }
+
+    const sourceName = source.name.trim().toLowerCase();
+    const sourceUrl = source.url.trim().toLowerCase();
+    return normalizedFilter.some((value) => sourceName.includes(value) || sourceUrl.includes(value));
+  });
 
   const details: RssSourceHealth[] = [];
 
@@ -257,6 +270,7 @@ function buildHash(input: ParsedFeedItem) {
 export async function ingestRssSources(options?: {
   sourceLimit?: number;
   itemsPerSourceLimit?: number;
+  sourceFilter?: string[];
 }) {
   const sourceLimit = options?.sourceLimit ?? 50;
   const itemsPerSourceLimit = options?.itemsPerSourceLimit ?? 25;
@@ -396,3 +410,4 @@ export async function ingestRssSources(options?: {
     sampleErrors
   };
 }
+

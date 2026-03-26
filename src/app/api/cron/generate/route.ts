@@ -74,7 +74,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await runGeneratePipeline(parsed.count);
+    const result = await runGeneratePipeline(parsed.count, { sourceFilter: parsed.sources });
 
     return NextResponse.json(result);
   } catch (error) {
@@ -89,3 +89,4 @@ export async function POST(request: Request) {
     );
   }
 }
+

@@ -238,11 +238,13 @@ async function buildUniqueSlug(baseSlug: string) {
 export async function runFetchNewsJob(options?: {
   sourceLimit?: number;
   itemsPerSourceLimit?: number;
+  sourceFilter?: string[];
 }) {
   const limits = getPipelineLimits();
   return ingestRssSources({
     sourceLimit: options?.sourceLimit ?? limits.fetchSourcesLimit,
-    itemsPerSourceLimit: options?.itemsPerSourceLimit ?? limits.fetchItemsPerSourceLimit
+    itemsPerSourceLimit: options?.itemsPerSourceLimit ?? limits.fetchItemsPerSourceLimit,
+    sourceFilter: options?.sourceFilter ?? []
   });
 }
 
@@ -614,7 +616,7 @@ export async function runAutopostJob() {
   return runPublishJob(env.DAILY_PUBLISH_LIMIT);
 }
 
-export async function runGeneratePipeline(count = 1) {
+export async function runGeneratePipeline(count = 1, options?: { sourceFilter?: string[] }) {
   const normalizedCount = Math.max(1, Math.min(10, Math.floor(count)));
   const limits = getPipelineLimits();
   const candidateMultiplier = 4;
@@ -632,7 +634,8 @@ export async function runGeneratePipeline(count = 1) {
   const fetchResult = await markJobLifecycle("fetch", () =>
     runFetchNewsJob({
       sourceLimit: limits.fetchSourcesLimit,
-      itemsPerSourceLimit: fetchItemsPerSource
+      itemsPerSourceLimit: fetchItemsPerSource,
+      sourceFilter: options?.sourceFilter ?? []
     })
   );
   console.log(
@@ -925,3 +928,6 @@ export async function handleLeonardoWebhook(payload: Record<string, unknown>) {
     publicUrl: stored.publicUrl
   };
 }
+
+
+

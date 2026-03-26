@@ -1,4 +1,5 @@
 import process from "node:process";
+import { loadLocalEnv } from "./load-local-env.mjs";
 
 function readEnv(name) {
   const value = process.env[name];
@@ -70,6 +71,7 @@ async function fetchStatus(baseUrl, secret, label) {
 }
 
 async function main() {
+  loadLocalEnv(process.cwd(), [".env.vercel.prod", ".env.local", ".env"]);
   const cronSecret = readEnv("CRON_SECRET");
   const baseUrl = normalizeBaseUrl();
 
@@ -80,7 +82,6 @@ async function main() {
   console.log(`[smoke] baseUrl=${baseUrl}`);
 
   await fetchStatus(baseUrl, cronSecret, "before");
-
   await runStep(baseUrl, cronSecret, "/api/cron/generate", { count: 1 });
 
   for (const route of ["/api/cron/fetch-news", "/api/cron/rewrite-news", "/api/cron/generate-images", "/api/cron/publish"]) {
@@ -88,7 +89,6 @@ async function main() {
   }
 
   await fetchStatus(baseUrl, cronSecret, "after");
-
   console.log("\n[smoke] completed");
 }
 
