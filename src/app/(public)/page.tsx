@@ -33,6 +33,8 @@ export default async function HomePage() {
   const { leadStory, developingNow, topStories, latestRail } = curateHomepageNews(candidateNews);
   const latestExplainers = latestBlogPage.entries.slice(0, 3);
   const editorsPicks = latestBlogPage.entries.slice(0, 2);
+  const getEntrySummary = (entry: { excerpt?: string; lead?: string; description: string }) =>
+    entry.excerpt || entry.lead || entry.description;
   const topicIndex = new Map(topics.map((tag) => [tag.toLowerCase(), tag]));
   const curatedTopics = SUPPORTED_TOPICS.map((topic) => topicIndex.get(topic.toLowerCase()))
     .filter((tag): tag is string => Boolean(tag))
@@ -107,7 +109,7 @@ export default async function HomePage() {
                   <span>{new Date(entry.publishedAt).toLocaleDateString("en-US")}</span>
                 </div>
                 <h3 className="mt-2 text-lg font-semibold leading-7 text-ink">{entry.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-600">{entry.excerpt}</p>
+                <p className="mt-2 text-sm leading-6 text-slate-600">{getEntrySummary(entry)}</p>
               </Link>
             ))}
           </div>
@@ -158,7 +160,7 @@ export default async function HomePage() {
                   {entry.readingTimeMinutes ? <span className="text-slate-500">{entry.readingTimeMinutes} min read</span> : null}
                 </div>
                 <h3 className="mt-2 text-xl font-semibold tracking-tight text-ink">{entry.title}</h3>
-                <p className="mt-3 text-sm leading-7 text-slate-600">{entry.excerpt}</p>
+                <p className="mt-3 text-sm leading-7 text-slate-600">{getEntrySummary(entry)}</p>
               </Link>
             ))}
           </div>

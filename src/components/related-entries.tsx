@@ -21,6 +21,7 @@ export function RelatedEntries({
         {entries.map((entry) => {
           const imageUrl = entry.previewImageUrl || entry.imageUrl;
           const imageAlt = entry.previewImageAlt || entry.imageAlt || entry.title;
+          const entryExcerpt = entry.excerpt || entry.lead || entry.description;
           const unoptimized = shouldBypassImageOptimization(imageUrl);
 
           return (
@@ -50,7 +51,7 @@ export function RelatedEntries({
                 <h3 className="mt-2 text-base font-semibold leading-6 text-ink sm:text-lg">
                   {entry.title}
                 </h3>
-                <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-600">{entry.excerpt}</p>
+                <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-600">{entryExcerpt}</p>
               </div>
             </Link>
           );

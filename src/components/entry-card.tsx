@@ -20,6 +20,7 @@ type EntryCardProps = {
 export function EntryCard({ entry, compact = false }: EntryCardProps) {
   const previewUrl = entry.previewImageUrl || entry.imageUrl;
   const previewAlt = entry.previewImageAlt || entry.imageAlt || entry.title;
+  const entryExcerpt = entry.excerpt || entry.lead || entry.description;
   const unoptimized = shouldBypassImageOptimization(previewUrl);
   const linkedTopics = new Set(SUPPORTED_TOPICS.map((topic) => topic.toLowerCase()));
   const compactImageClass = entry.type === "blog" ? "h-40 sm:h-44" : "h-44 sm:h-48";
@@ -67,7 +68,7 @@ export function EntryCard({ entry, compact = false }: EntryCardProps) {
           compact ? "line-clamp-2 leading-[1.35rem]" : "line-clamp-4 leading-6"
         }`}
       >
-        {entry.excerpt}
+        {entryExcerpt}
       </p>
       <div className={`mt-3 flex flex-wrap gap-2 ${compact ? "hidden sm:flex" : ""}`}>
         {entry.tags.map((tag) =>

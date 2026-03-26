@@ -45,6 +45,7 @@ export default async function NewsArticlePage({ params }: Props) {
   const unoptimizedGenerated = shouldBypassImageOptimization(entry.generatedImageUrl);
   const formatConfig = getStoryFormatConfig(entry);
   const shareUrl = absoluteUrl(`/news/${entry.slug}`);
+  const sourceLabel = entry.sourceAttribution || (entry.author ? `Source: ${entry.author}` : null);
 
   return (
     <section className="container-shell py-8 sm:py-16">
@@ -109,12 +110,9 @@ export default async function NewsArticlePage({ params }: Props) {
               ) : null
             }
           />
-          {entry.sourceAttribution || entry.author ? (
+          {sourceLabel ? (
             <div className="mt-8 rounded-2xl border border-line bg-mist/70 p-4 text-sm leading-6 text-slate-600">
-              <p>
-                <span className="font-semibold text-ink">{entry.sourceAttribution || "Source:"}</span>{" "}
-                <span>{entry.author}</span>
-              </p>
+              <p className="font-semibold text-ink">{sourceLabel}</p>
               <p className="mt-2">
                 This report is maintained as a live newsroom article. Headlines and top paragraphs may be tightened when fresh reporting changes the clearest angle.
               </p>

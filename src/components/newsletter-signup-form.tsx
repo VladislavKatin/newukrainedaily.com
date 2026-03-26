@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 type NewsletterSignupFormProps = {
@@ -71,12 +72,12 @@ export function NewsletterSignupForm({ sourcePage, compact = false }: Newsletter
         >
           {status === "submitting" ? "Saving..." : "Join the daily briefing"}
         </button>
-        <a
+        <Link
           href="/contact"
           className="rounded-full border border-line bg-white px-5 py-3 text-sm font-semibold text-ink transition hover:bg-mist"
         >
           Contact the newsroom
-        </a>
+        </Link>
       </div>
       {message ? (
         <p className={`text-sm leading-6 ${status === "error" ? "text-red-600" : "text-slate-600"}`}>
