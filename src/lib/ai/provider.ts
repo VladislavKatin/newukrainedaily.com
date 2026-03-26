@@ -22,12 +22,26 @@ function clampText(value: string, max: number) {
   return value.length <= max ? value : `${value.slice(0, max - 3).trim()}...`;
 }
 
-function countCharactersWithoutSpaces(value: string) {
-  return normalizeText(value).replace(/\s+/g, "").length;
-}
-
 function normalizeText(value: unknown) {
   return typeof value === "string" ? value.replace(/\s+/g, " ").trim() : "";
+}
+
+function normalizeMultilineText(value: unknown) {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  return value
+    .replace(/\r\n/g, "\n")
+    .split("\n")
+    .map((line) => line.replace(/[ \t]+/g, " ").trim())
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function countCharactersWithoutSpaces(value: string) {
+  return value.replace(/\s+/g, "").length;
 }
 
 function normalizeStringList(value: unknown, maxItems: number, maxLength: number) {
@@ -47,6 +61,30 @@ function normalizeStringList(value: unknown, maxItems: number, maxLength: number
   ).slice(0, maxItems);
 }
 
+function buildStructuredBody(body: string, whyItMatters: string) {
+  const normalized = normalizeMultilineText(body);
+  if (/^##\s+/m.test(normalized)) {
+    return normalized;
+  }
+
+  const paragraphs = normalized
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
+
+  const sections = [
+    { heading: "## What Happened", items: paragraphs.slice(0, 2) },
+    { heading: "## Key Details", items: paragraphs.slice(2, 4) },
+    { heading: "## Why It Matters", items: [whyItMatters || paragraphs[4] || ""] },
+    { heading: "## Background", items: paragraphs.slice(4) }
+  ].filter((section) => section.items.some(Boolean));
+
+  return sections
+    .map((section) => `${section.heading}\n\n${section.items.filter(Boolean).join("\n\n")}`)
+    .join("\n\n")
+    .trim();
+}
+
 function sanitizeRewriteOutput(value: unknown) {
   const record = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
   const title = clampText(normalizeText(record.title), 70);
@@ -58,6 +96,8 @@ function sanitizeRewriteOutput(value: unknown) {
   const imageAlt = clampText(normalizeText(record.image_alt), 140);
   const slug = clampText(normalizeText(record.slug), 90);
   const location = clampText(normalizeText(record.location), 120);
+  const rawBody = normalizeMultilineText(record.body);
+  const body = buildStructuredBody(rawBody, whyItMatters);
 
   return {
     ...record,
@@ -65,7 +105,7 @@ function sanitizeRewriteOutput(value: unknown) {
     meta_title: metaTitle,
     meta_description: metaDescription,
     lede,
-    body: normalizeText(record.body),
+    body,
     why_it_matters: whyItMatters,
     key_points: normalizeStringList(record.key_points, 6, 220),
     tags: normalizeStringList(record.tags, 10, 32),
@@ -89,12 +129,16 @@ function splitSentences(value: string) {
 function buildStubRewrite(input: RewriteInput): RewriteOutput | null {
   const sentences = splitSentences(input.sourceText);
   const body = [
+    "## What Happened",
     `According to ${input.sourceName}, ${input.raw.title}.`,
     sentences[0] || "",
+    "## Key Details",
     sentences[1] || "",
-    `The source frames this as part of the wider Ukraine news cycle and the article remains tightly limited to what the source itself reports.`,
-    `According to the source, the reported development fits into the broader context of Ukraine-related diplomacy, security, humanitarian pressure, and state response.`,
-    `This draft is intentionally restrained: it avoids adding figures, timelines, or claims that are not clearly present in the source material, while still giving readers enough editorial context to understand why the update matters within the wider Ukraine file.`
+    sentences[2] || "",
+    "## Why It Matters",
+    `The reported development adds to the current Ukraine news cycle and is presented here only within the limits of what ${input.sourceName} reported.`,
+    "## Background",
+    `This rewrite deliberately avoids unsupported details and keeps the focus on the source-backed facts that matter most to readers following Ukraine news.`
   ]
     .filter(Boolean)
     .join("\n\n")
@@ -111,18 +155,19 @@ function buildStubRewrite(input: RewriteInput): RewriteOutput | null {
     lede: clampText(`According to ${input.sourceName}, ${input.raw.title}.`, 300),
     body,
     why_it_matters:
-      "This matters because it adds source-based context to the Ukraine news cycle and gives readers a clearer editorial summary of the latest development.",
+      "This matters because it gives readers a clear, source-backed explanation of the latest development without speculative filler or recycled phrasing.",
     key_points: [
       `Source: ${input.sourceName}`,
       `Primary development: ${input.raw.title}`,
-      "The article stays strictly within source-backed reporting."
+      "The article stays strictly within source-backed reporting.",
+      "The structure is optimized for readability and search clarity."
     ],
     tags: ["ukraine", "news", "source-report", "editorial"],
     topics: ["Ukraine"],
     entities: [input.sourceName, "Ukraine"],
     primary_topic: "Ukraine",
     image_prompt:
-      "Photorealistic editorial image for a Ukraine news article, symbolic civic or institutional scene, no text, no gore, cinematic 16:9 composition, natural lighting, high detail.",
+      "Realistic editorial illustration based on reported facts in the article, serious newsroom tone, muted colors, clear setting, no text, no logos, no gore, not a documentary photo.",
     image_alt: `${input.raw.title} illustration`,
     slug: input.raw.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""),
     location: "Ukraine"
@@ -136,38 +181,44 @@ function getOpenAiModel(provider: string) {
 
 function buildOpenAiPrompt(input: RewriteInput) {
   return [
-    "You are writing for New Ukraine Daily, an English-language newsroom site.",
-    "Write like a skilled digital news editor: natural, precise, calm, and publication-ready.",
-    "Use only source-backed facts. Do not invent numbers, quotes, or events.",
-    "Do not sound translated, synthetic, bureaucratic, academic, or over-smoothed.",
-    "Avoid machine-style filler, 'As an AI', 'In conclusion', 'it is worth noting', 'moreover', 'this development highlights', 'As the situation continues to develop', 'This underscores', and similar stock phrases.",
-    "If the source is limited, stay careful and attribute with 'according to the source' or 'reportedly'.",
-    "Keep the article on the topic of Ukraine and the direct reported development.",
-    "Return strict JSON only, with no markdown.",
+    "You are a senior editor writing for New Ukraine Daily, an English-language newsroom focused on Ukraine.",
+    "Write in clear, factual, human editorial English.",
+    "Do not sound generic, padded, machine-written, bureaucratic, or translated.",
+    "Preserve only facts supported by the source.",
+    "Do not invent numbers, quotes, motives, background, or chronology.",
+    "If the source is limited, be careful and attribute plainly: 'according to the source' or 'the source said'.",
+    "Avoid filler such as 'this highlights', 'this underscores', 'as the situation develops', 'it remains to be seen', 'moreover', 'in addition', and similar stock phrases.",
+    "Do not repeat the same point in different wording.",
+    "The article must read like a real edited news brief.",
+    "Return strict JSON only. No markdown fences.",
     "",
     "Required JSON schema keys:",
     "title, meta_title, meta_description, lede, body, why_it_matters, key_points, tags, topics, entities, primary_topic, image_prompt, image_alt, slug, location",
     "",
-    "Constraints:",
-    "- title <= 70 chars",
+    "Hard requirements:",
+    "- title <= 70 chars and specific",
     "- meta_title <= 70 chars",
-    "- meta_description 80-170 chars",
-    "- lede 1-2 sentences, strong and direct, answering what happened / where / who said it when possible",
-    "- body 4-7 readable paragraphs and at least 1500 characters without spaces",
-    "- why_it_matters 2-3 sentences",
+    "- meta_description 90-160 chars",
+    "- lede 2-3 short sentences max, answering what happened, when, where, and who reported it where possible",
+    "- body must be at least 1500 characters without spaces",
+    "- body must use markdown-style H2 headings in this order when possible:",
+    "  ## What Happened",
+    "  ## Key Details",
+    "  ## Why It Matters",
+    "  ## Background",
+    "- each paragraph should be short and readable, never one wall of text",
+    "- why_it_matters must be 2-3 sentences and factual",
     "- key_points 3-6 items",
     "- tags/topics/entities concise and relevant",
-    "- image_prompt must be 1-2 sentences, based on lead and body facts rather than headline alone, realistic editorial illustration, not documentary photo, no text on image, safe, 16:9, muted colors, high detail",
-    "- image_prompt should describe the likely setting or visual context supported by the article facts: infrastructure, institutional setting, urban aftermath, or symbolic factual context",
+    "- image_prompt must be based on article facts from the lead/body, not just the headline",
+    "- image_prompt should describe a realistic editorial illustration, muted colors, serious tone, no text, no logos, no watermark, no gore, not a documentary photo",
     "",
-    "Editorial quality rules:",
-    "- Open with the central fact, not throat-clearing.",
-    "- Keep one main point per paragraph.",
-    "- Vary sentence length naturally.",
-    "- Add brief context only when it helps the reader understand the significance.",
-    "- End cleanly without generic conclusions.",
-    "- Keep names, institutions, and country references natural; avoid repetitive repetition.",
-    "- Never output one giant wall-of-text paragraph.",
+    "Editorial rules:",
+    "- Start with the central fact immediately.",
+    "- Keep attribution clean and factual.",
+    "- Prefer dense factual context over generic conclusions.",
+    "- End cleanly without moralizing or filler.",
+    "- The article should be useful to an international reader following Ukraine news.",
     "",
     `Site context: ${input.siteContext}`,
     `Source name: ${input.sourceName}`,

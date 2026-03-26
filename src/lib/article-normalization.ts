@@ -12,14 +12,29 @@ const FORBIDDEN_FILLER_PATTERNS = [
   /in the context of ongoing events[^.!?]*[.!?]/gi,
   /it is worth noting[^.!?]*[.!?]/gi,
   /moreover[^.!?]*[.!?]/gi,
-  /in addition[^.!?]*[.!?]/gi
+  /in addition[^.!?]*[.!?]/gi,
+  /according to him[^.!?]*[.!?]/gi,
+  /according to her[^.!?]*[.!?]/gi,
+  /according to them[^.!?]*[.!?]/gi,
+  /according to officials[^.!?]*[.!?]/gi,
+  /this development highlights[^.!?]*[.!?]/gi,
+  /this latest development highlights[^.!?]*[.!?]/gi,
+  /the latest development underscores[^.!?]*[.!?]/gi,
+  /in today'?s rapidly changing world[^.!?]*[.!?]/gi
 ];
 
-const TECHNICAL_PREVIEW_CAPTION_PATTERNS = [
-  /^preview:\s*original image from\s+/i,
-  /^preview:\s*/i
+const GENERIC_LEAD_PATTERNS = [
+  /^ukraine(?:'s)? [a-z\s]+ require/i,
+  /^this article /i,
+  /^this report /i,
+  /^this blog /i,
+  /^in a significant move/i,
+  /^the latest development/i,
+  /^recent events/i,
+  /^the situation in ukraine/i
 ];
 
+const TECHNICAL_PREVIEW_CAPTION_PATTERNS = [/^preview:\s*original image from\s+/i, /^preview:\s*/i];
 const TECHNICAL_AI_CAPTION_PATTERNS = [
   /^illustration generated with ai \(leonardo\) based on the headline$/i,
   /^generated with ai based on the headline$/i,
@@ -87,6 +102,15 @@ function normalizeWhitespace(value: string | null | undefined) {
     .trim();
 }
 
+function normalizeMultilineWhitespace(value: string | null | undefined) {
+  return normalizeWhitespace(value)
+    .split("\n")
+    .map((line) => line.replace(/[ \t]+/g, " ").trim())
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 function splitSentences(value: string) {
   return normalizeWhitespace(value)
     .split(/(?<=[.!?])\s+/)
@@ -121,7 +145,7 @@ function dedupeParagraphs(paragraphs: string[]) {
 }
 
 function splitContentBlocks(value: string) {
-  const normalized = normalizeWhitespace(value);
+  const normalized = normalizeMultilineWhitespace(value);
   const rawBlocks = normalized
     .split(/\n{2,}|(?=^#{1,3}\s+)/m)
     .map((block) => block.trim())
@@ -163,6 +187,15 @@ function sentenceLooksUseful(sentence: string) {
   return !needsSentenceCleanup(normalized);
 }
 
+function looksGenericLead(value: string) {
+  const normalized = normalizeWhitespace(value);
+  if (!normalized) {
+    return true;
+  }
+
+  return GENERIC_LEAD_PATTERNS.some((pattern) => pattern.test(normalized));
+}
+
 export function cleanAIFiller(text: string) {
   const blocks = splitContentBlocks(text);
 
@@ -201,7 +234,7 @@ export function normalizeTitle(title: string, fallbackTitle?: string | null) {
 export function splitIntoEditorialParagraphs(text: string) {
   const normalized = cleanAIFiller(text);
   const rawParagraphs = splitContentBlocks(normalized)
-    .map((paragraph) => normalizeWhitespace(paragraph))
+    .map((paragraph) => normalizeMultilineWhitespace(paragraph))
     .filter(Boolean);
 
   const editorialParagraphs: string[] = [];
@@ -213,7 +246,7 @@ export function splitIntoEditorialParagraphs(text: string) {
     }
 
     const sentences = splitSentences(paragraph);
-    if (sentences.length <= 4 && paragraph.length <= 500) {
+    if (sentences.length <= 3 && paragraph.length <= 420) {
       editorialParagraphs.push(paragraph);
       continue;
     }
@@ -221,8 +254,9 @@ export function splitIntoEditorialParagraphs(text: string) {
     let bucket: string[] = [];
     for (const sentence of sentences) {
       bucket.push(sentence);
-      if (bucket.length >= 2) {
-        editorialParagraphs.push(bucket.join(" "));
+      const bucketText = bucket.join(" ");
+      if (bucket.length >= 2 && bucketText.length >= 180) {
+        editorialParagraphs.push(bucketText);
         bucket = [];
       }
     }
@@ -236,13 +270,13 @@ export function splitIntoEditorialParagraphs(text: string) {
 }
 
 function buildLeadSeed(input: SanitizedArticleInput) {
-  const candidates = [
-    input.summary,
-    input.excerpt,
-    input.content,
-    input.body,
-    input.whyItMatters
-  ]
+  const contentParagraph = splitIntoEditorialParagraphs(input.content || input.body || "")
+    .find((paragraph) => !/^#{1,3}\s+/.test(paragraph));
+
+  const preferredSummary = !looksGenericLead(input.summary || "") ? input.summary : undefined;
+  const preferredExcerpt = !looksGenericLead(input.excerpt || "") ? input.excerpt : undefined;
+
+  const candidates = [preferredSummary, preferredExcerpt, contentParagraph, input.whyItMatters, input.title]
     .map((value) => normalizeWhitespace(value))
     .filter(Boolean);
 
@@ -265,7 +299,7 @@ export function buildImageCaption(kind: ImageKind, sourceName?: string | null) {
     return `Photo: ${normalizedSource}`;
   }
 
-  return "AI illustration based on reported details. Not a documentary image.";
+  return "Illustration for this report. Created by the editorial desk using AI.";
 }
 
 export function buildImageAlt(kind: ImageKind, input: { title: string; lead?: string | null; sourceName?: string | null }) {
@@ -282,17 +316,13 @@ export function buildImageAlt(kind: ImageKind, input: { title: string; lead?: st
 export function normalizeImageBlocks(input: NormalizeImageBlocksInput) {
   const previewUrl = normalizeWhitespace(input.previewImageUrl || "") || undefined;
   const generatedUrl = normalizeWhitespace(input.generatedImageUrl || "") || undefined;
-  const dedupedGeneratedUrl =
-    generatedUrl && previewUrl && generatedUrl === previewUrl ? undefined : generatedUrl;
-
-  const previewCaption = previewUrl
-    ? buildImageCaption("preview", input.previewImageSourceName || input.sourceName)
-    : undefined;
-  const generatedCaption = dedupedGeneratedUrl ? buildImageCaption("generated", input.sourceName) : undefined;
+  const dedupedGeneratedUrl = generatedUrl && previewUrl && generatedUrl === previewUrl ? undefined : generatedUrl;
 
   return {
     previewImageUrl: previewUrl,
-    previewImageCaption: previewCaption,
+    previewImageCaption: previewUrl
+      ? buildImageCaption("preview", input.previewImageSourceName || input.sourceName)
+      : undefined,
     previewImageAlt: previewUrl
       ? buildImageAlt("preview", {
           title: input.title,
@@ -301,7 +331,7 @@ export function normalizeImageBlocks(input: NormalizeImageBlocksInput) {
         })
       : undefined,
     generatedImageUrl: dedupedGeneratedUrl,
-    generatedImageCaption: generatedCaption,
+    generatedImageCaption: dedupedGeneratedUrl ? buildImageCaption("generated", input.sourceName) : undefined,
     generatedImageAlt: dedupedGeneratedUrl
       ? buildImageAlt("generated", {
           title: input.title,
@@ -317,8 +347,32 @@ export function buildMetaDescription(input: { lead: string; title: string }) {
   return clampText(seed, MAX_META_DESCRIPTION);
 }
 
+function ensureEditorialSections(paragraphs: string[], whyItMatters?: string | null) {
+  if (paragraphs.some((paragraph) => /^##\s+/.test(paragraph))) {
+    return paragraphs;
+  }
+
+  const plainParagraphs = paragraphs.filter((paragraph) => !/^#{1,3}\s+/.test(paragraph));
+  if (plainParagraphs.length === 0) {
+    return paragraphs;
+  }
+
+  const first = plainParagraphs.slice(0, 2);
+  const second = plainParagraphs.slice(2, 4);
+  const remainder = plainParagraphs.slice(4);
+  const whyBlock = normalizeWhitespace(whyItMatters) || remainder.shift() || "";
+  const sections = [
+    { heading: "## What Happened", items: first },
+    { heading: "## Key Details", items: second.length > 0 ? second : plainParagraphs.slice(0, 1) },
+    { heading: "## Why It Matters", items: whyBlock ? [whyBlock] : [] },
+    { heading: "## Background", items: remainder }
+  ].filter((section) => section.items.length > 0);
+
+  return sections.flatMap((section) => [section.heading, ...section.items]);
+}
+
 function buildBodyParagraphs(input: SanitizedArticleInput, lead: string) {
-  const sourceText = normalizeWhitespace(input.content || input.body || "");
+  const sourceText = normalizeMultilineWhitespace(input.content || input.body || "");
   const sanitizedParagraphs = splitIntoEditorialParagraphs(sourceText);
 
   if (sanitizedParagraphs.length === 0) {
@@ -326,14 +380,24 @@ function buildBodyParagraphs(input: SanitizedArticleInput, lead: string) {
   }
 
   const deduped = sanitizedParagraphs.filter((paragraph, index) => {
-    if (index === 0) {
-      return normalizeWhitespace(paragraph).toLowerCase() !== lead.toLowerCase();
+    if (/^#\s+/.test(paragraph)) {
+      return false;
     }
 
-    return true;
+    const normalizedParagraph = normalizeWhitespace(paragraph).toLowerCase();
+    if (index === 0 && normalizedParagraph === lead.toLowerCase()) {
+      return false;
+    }
+
+    return normalizedParagraph !== normalizeWhitespace(input.title).toLowerCase();
   });
 
-  return dedupeParagraphs(deduped);
+  const structured = ensureEditorialSections(deduped, input.whyItMatters);
+  if (!/^##\s+/.test(structured[0] || "") && structured.slice(1).some((paragraph) => /^##\s+/.test(paragraph))) {
+    return dedupeParagraphs(structured.slice(1));
+  }
+
+  return dedupeParagraphs(structured);
 }
 
 export function sanitizeArticleForPublishing(input: SanitizedArticleInput): SanitizedArticleOutput {
@@ -403,3 +467,5 @@ export function normalizeVisibleCaption(caption: string | null | undefined, kind
 
   return normalized;
 }
+
+
