@@ -4,12 +4,14 @@ import { notFound } from "next/navigation";
 import { ArticleJsonLd } from "@/components/article-json-ld";
 import { ArticleBody } from "@/components/article-body";
 import { ArticleKeyFacts } from "@/components/article-key-facts";
+import { ArticleShareBar } from "@/components/article-share-bar";
 import { NewsletterCta } from "@/components/newsletter-cta";
 import { RelatedEntries } from "@/components/related-entries";
 import { getEntriesByType, getEntry } from "@/lib/content";
 import { shouldBypassImageOptimization } from "@/lib/image";
 import { buildRelatedEntries } from "@/lib/related-content";
 import { buildArticleMetadata } from "@/lib/seo";
+import { absoluteUrl } from "@/lib/site";
 import { getStoryFormatConfig } from "@/lib/story-format";
 
 type Props = {
@@ -39,6 +41,7 @@ export default async function BlogArticlePage({ params }: Props) {
   const related = buildRelatedEntries(entry, await getEntriesByType("blog"), 3);
   const unoptimizedImage = shouldBypassImageOptimization(entry.imageUrl);
   const formatConfig = getStoryFormatConfig(entry);
+  const shareUrl = absoluteUrl(`/blog/${entry.slug}`);
 
   return (
     <section className="container-shell py-8 sm:py-16">
@@ -58,6 +61,7 @@ export default async function BlogArticlePage({ params }: Props) {
             {entry.readingTimeMinutes ? <span>{entry.readingTimeMinutes} min read</span> : null}
             <time dateTime={entry.publishedAt}>{new Date(entry.publishedAt).toLocaleDateString("en-US")}</time>
           </div>
+          <ArticleShareBar title={entry.title} url={shareUrl} />
           {entry.imageUrl ? (
             <div className="mt-6 overflow-hidden rounded-3xl border border-line sm:mt-8">
               <Image

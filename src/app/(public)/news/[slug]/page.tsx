@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ArticleJsonLd } from "@/components/article-json-ld";
 import { ArticleBody } from "@/components/article-body";
 import { ArticleKeyFacts } from "@/components/article-key-facts";
+import { ArticleShareBar } from "@/components/article-share-bar";
 import { ArticleStatusBanner } from "@/components/article-status-banner";
 import { NewsletterCta } from "@/components/newsletter-cta";
 import { RelatedEntries } from "@/components/related-entries";
@@ -11,6 +12,7 @@ import { getEntriesByType, getEntry } from "@/lib/content";
 import { shouldBypassImageOptimization } from "@/lib/image";
 import { buildRelatedEntries } from "@/lib/related-content";
 import { buildArticleMetadata } from "@/lib/seo";
+import { absoluteUrl } from "@/lib/site";
 import { getStoryFormatConfig } from "@/lib/story-format";
 
 type Props = {
@@ -42,6 +44,7 @@ export default async function NewsArticlePage({ params }: Props) {
   const unoptimizedPreview = shouldBypassImageOptimization(entry.previewImageUrl);
   const unoptimizedGenerated = shouldBypassImageOptimization(entry.generatedImageUrl);
   const formatConfig = getStoryFormatConfig(entry);
+  const shareUrl = absoluteUrl(`/news/${entry.slug}`);
 
   return (
     <section className="container-shell py-8 sm:py-16">
@@ -62,6 +65,7 @@ export default async function NewsArticlePage({ params }: Props) {
             <time dateTime={entry.publishedAt}>{new Date(entry.publishedAt).toLocaleDateString("en-US")}</time>
             {entry.updatedAt ? <span>Updated {new Date(entry.updatedAt).toLocaleDateString("en-US")}</span> : null}
           </div>
+          <ArticleShareBar title={entry.title} url={shareUrl} />
           <ArticleStatusBanner entry={entry} />
           {entry.previewImageUrl ? (
             <div className="mt-6 overflow-hidden rounded-3xl border border-line sm:mt-8">
