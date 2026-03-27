@@ -14,7 +14,6 @@ import { getEnv } from "@/lib/env";
 import { ingestRssSources } from "@/lib/ingestion/rss";
 import { createLeonardoGeneration, getLeonardoGeneration } from "@/lib/leonardo/client";
 import { extractLeonardoWebhookData } from "@/lib/leonardo/webhook";
-import { absoluteUrl, siteConfig } from "@/lib/site";
 import {
   countPublishedNewsSince,
   completeNewsImage,
@@ -38,7 +37,7 @@ import {
   upsertTopic
 } from "@/lib/postgres-repository";
 import { slugify } from "@/lib/slug";
-import { saveRemoteImage } from "@/lib/storage";
+import { saveEditorialIllustration, saveRemoteImage } from "@/lib/storage";
 
 const SOURCE_PRIORITY: Record<string, number> = {
   "ukrinform en": 12,
@@ -520,7 +519,6 @@ export async function runGenerateImagesJob(limitOverride?: number) {
       requested += 1;
       await sleep(limits.imageRequestSpacingMs);
     } catch (error) {
-      failed += 1;
       const message = error instanceof Error ? error.message : "Unknown Leonardo error";
       const shouldFallback = shouldUseFallbackImage(message);
       errors.push({
@@ -528,19 +526,37 @@ export async function runGenerateImagesJob(limitOverride?: number) {
         message
       });
       if (shouldFallback) {
-        const fallbackImageUrl = absoluteUrl(siteConfig.defaultOgImage);
+        const fallback = await saveEditorialIllustration("fallback-" + item.id + "-" + Date.now(), {
+          title: item.title,
+          tags: item.tags,
+          sourceName: item.sourceName
+        });
+
         await updateNewsItemAssets(item.id, {
-          coverImageUrl: fallbackImageUrl,
-          ogImageUrl: fallbackImageUrl,
-          generatedImageUrl: fallbackImageUrl,
+          coverImageUrl: fallback.publicUrl,
+          ogImageUrl: fallback.publicUrl,
+          generatedImageUrl: fallback.publicUrl,
           generatedImageCaption: imagePackage.caption
         });
+
+        await upsertNewsImageRequest({
+          newsItemId: item.id,
+          prompt,
+          status: "failed",
+          attempts: limits.imageMaxAttempts,
+          lastError: message + " | fallback illustration generated"
+        });
+
+        completed += 1;
+        continue;
       }
+
+      failed += 1;
       await upsertNewsImageRequest({
         newsItemId: item.id,
         prompt,
         status: "failed",
-        attempts: shouldFallback ? limits.imageMaxAttempts : attempts,
+        attempts,
         lastError: message
       });
     }
