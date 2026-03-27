@@ -55,6 +55,18 @@ function pickDisplayTags(tags: string[]) {
   return uniqueTags(tags).slice(0, 3);
 }
 
+function normalizeStringArray(value: unknown, maxItems = 6) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .filter((item): item is string => typeof item === "string")
+    .map((item) => String(item).replace(/\s+/g, " ").trim())
+    .filter(Boolean)
+    .slice(0, maxItems);
+}
+
 function resolveTopicMatch<T extends { tag: string }>(topics: T[], tagOrSlug: string) {
   const normalized = String(tagOrSlug || "").trim().toLowerCase();
   return topics.find(
@@ -95,6 +107,8 @@ function mapNewsItemToContentEntry(newsItem: Awaited<ReturnType<typeof getNewsBy
     author: newsItem.sourceName || "Editorial Desk",
     tags: pickDisplayTags(newsItem.tags),
     body: sanitized.bodyParagraphs,
+    keyPoints: normalizeStringArray(newsItem.keyPoints),
+    whyItMatters: newsItem.whyItMatters || undefined,
     sourceAttribution: sanitized.sourceAttribution || undefined,
     sourceUrl: newsItem.sourceUrl || undefined,
     imageUrl: sanitized.primaryImageUrl,
@@ -138,6 +152,8 @@ function mapBlogPostToContentEntry(blogPost: Awaited<ReturnType<typeof getBlogBy
     author: "Editorial Desk",
     tags: pickDisplayTags(blogPost.tags),
     body: sanitized.bodyParagraphs,
+    keyPoints: [],
+    whyItMatters: undefined,
     imageUrl: sanitized.primaryImageUrl,
     imageAlt: sanitized.primaryImageAlt,
     previewImageUrl: sanitized.previewImageUrl,

@@ -1,10 +1,10 @@
-﻿function compactSentence(value: string) {
-  return value.replace(/^##\s+/, "").replace(/^###\s+/, "").trim();
+function compactSentence(value: string) {
+  return value.replace(/^##s+/, "").replace(/^###s+/, "").trim();
 }
 
 function extractFacts(paragraphs: string[]) {
   const facts = paragraphs
-    .filter((paragraph) => !/^##\s+/.test(paragraph) && !/^###\s+/.test(paragraph))
+    .filter((paragraph) => !/^##s+/.test(paragraph) && !/^###s+/.test(paragraph))
     .map(compactSentence)
     .filter(Boolean)
     .slice(0, 4);
@@ -15,17 +15,22 @@ function extractFacts(paragraphs: string[]) {
 export function ArticleKeyFacts({
   lead,
   body,
-  tags
+  tags,
+  keyPoints = [],
+  whyItMatters
 }: {
   lead?: string;
   body: string[];
   tags: string[];
+  keyPoints?: string[];
+  whyItMatters?: string;
 }) {
-  const facts = [lead, ...extractFacts(body)]
+  const explicitPoints = keyPoints.filter(Boolean).slice(0, 4);
+  const facts = (explicitPoints.length > 0 ? explicitPoints : [lead, ...extractFacts(body)])
     .filter((value): value is string => Boolean(value))
     .slice(0, 4);
 
-  if (facts.length === 0 && tags.length === 0) {
+  if (facts.length === 0 && tags.length === 0 && !whyItMatters) {
     return null;
   }
 
@@ -40,6 +45,12 @@ export function ArticleKeyFacts({
           </li>
         ))}
       </ul>
+      {whyItMatters ? (
+        <div className="mt-5 rounded-2xl border border-line bg-white/90 p-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand">Why it matters</p>
+          <p className="mt-2 text-sm leading-6 text-slate-700">{whyItMatters}</p>
+        </div>
+      ) : null}
       {tags.length > 0 ? (
         <div className="mt-5 flex flex-wrap gap-2">
           {tags.slice(0, 4).map((tag) => (

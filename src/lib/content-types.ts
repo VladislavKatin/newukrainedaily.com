@@ -13,6 +13,8 @@ export type ContentEntry = {
   author: string;
   tags: string[];
   body: string[];
+  keyPoints?: string[];
+  whyItMatters?: string;
   sourceAttribution?: string;
   sourceUrl?: string;
   imageUrl?: string;

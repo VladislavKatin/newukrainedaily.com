@@ -3,6 +3,7 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { ArticleJsonLd } from "@/components/article-json-ld";
 import { ArticleBody } from "@/components/article-body";
+import { ArticleOverview } from "@/components/article-overview";
 import { ArticleKeyFacts } from "@/components/article-key-facts";
 import { ArticleShareBar } from "@/components/article-share-bar";
 import { NewsletterCta } from "@/components/newsletter-cta";
@@ -79,6 +80,12 @@ export default async function BlogArticlePage({ params }: Props) {
           {entry.previewImageCaption ? (
             <p className="mt-3 text-xs text-slate-500">{entry.previewImageCaption}</p>
           ) : null}
+          <ArticleOverview
+            title="What this explainer covers"
+            keyPoints={entry.keyPoints}
+            whyItMatters={entry.whyItMatters || entry.lead}
+            sourceUrl={entry.sourceUrl}
+          />
           <ArticleBody paragraphs={entry.body} />
           <div className="mt-8">
             <NewsletterCta
@@ -91,7 +98,7 @@ export default async function BlogArticlePage({ params }: Props) {
           <RelatedEntries title="Related Posts" entries={related} />
         </div>
         <div className="grid gap-6 lg:sticky lg:top-24">
-          <ArticleKeyFacts lead={entry.lead} body={entry.body} tags={entry.tags} />
+          <ArticleKeyFacts lead={entry.lead} body={entry.body} tags={entry.tags} keyPoints={entry.keyPoints} whyItMatters={entry.whyItMatters} />
           <div className="panel p-5 sm:p-6">
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">{formatConfig.sidebarTitle}</p>
             <div className="mt-4 space-y-3 text-sm leading-7 text-slate-600">

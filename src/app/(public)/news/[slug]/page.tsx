@@ -3,6 +3,7 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { ArticleJsonLd } from "@/components/article-json-ld";
 import { ArticleBody } from "@/components/article-body";
+import { ArticleOverview } from "@/components/article-overview";
 import { ArticleKeyFacts } from "@/components/article-key-facts";
 import { ArticleShareBar } from "@/components/article-share-bar";
 import { ArticleStatusBanner } from "@/components/article-status-banner";
@@ -85,6 +86,11 @@ export default async function NewsArticlePage({ params }: Props) {
           {entry.previewImageCaption ? (
             <p className="mt-3 text-xs text-slate-500">{entry.previewImageCaption}</p>
           ) : null}
+          <ArticleOverview
+            keyPoints={entry.keyPoints}
+            whyItMatters={entry.whyItMatters}
+            sourceUrl={entry.sourceUrl}
+          />
           <ArticleBody
             paragraphs={entry.body}
             showGeneratedImageAfterIndex={0}
@@ -129,7 +135,7 @@ export default async function NewsArticlePage({ params }: Props) {
           <RelatedEntries title="Related News" entries={related} />
         </div>
         <div className="grid gap-6 lg:sticky lg:top-24">
-          <ArticleKeyFacts lead={entry.lead} body={entry.body} tags={entry.tags} />
+          <ArticleKeyFacts lead={entry.lead} body={entry.body} tags={entry.tags} keyPoints={entry.keyPoints} whyItMatters={entry.whyItMatters} />
           <div className="panel p-5 sm:p-6">
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">{formatConfig.sidebarTitle}</p>
             <div className="mt-4 space-y-3 text-sm leading-7 text-slate-600">
