@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArticleJsonLd } from "@/components/article-json-ld";
 import { ArticleBody } from "@/components/article-body";
@@ -13,6 +14,7 @@ import { getEntriesByType, getEntry } from "@/lib/content";
 import { shouldBypassImageOptimization } from "@/lib/image";
 import { buildRelatedEntries } from "@/lib/related-content";
 import { buildArticleMetadata } from "@/lib/seo";
+import { SUPPORTED_TOPICS, topicSlugFromLabel } from "@/lib/topic-taxonomy";
 import { absoluteUrl } from "@/lib/site";
 import { getStoryFormatConfig } from "@/lib/story-format";
 
@@ -47,6 +49,8 @@ export default async function NewsArticlePage({ params }: Props) {
   const formatConfig = getStoryFormatConfig(entry);
   const shareUrl = absoluteUrl(`/news/${entry.slug}`);
   const sourceLabel = entry.sourceAttribution || (entry.author ? `Source: ${entry.author}` : null);
+  const linkedTopics = new Set(SUPPORTED_TOPICS.map((topic) => topic.toLowerCase()));
+  const visibleTopicTags = entry.tags.filter((tag) => linkedTopics.has(tag.toLowerCase())).slice(0, 4);
 
   return (
     <section className="container-shell py-8 sm:py-16">
@@ -68,6 +72,19 @@ export default async function NewsArticlePage({ params }: Props) {
             {entry.updatedAt ? <span>Updated {new Date(entry.updatedAt).toLocaleDateString("en-US")}</span> : null}
           </div>
           <ArticleShareBar title={entry.title} url={shareUrl} />
+          {visibleTopicTags.length ? (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {visibleTopicTags.map((tag) => (
+                <Link
+                  key={tag}
+                  href={`/topic/${topicSlugFromLabel(tag)}`}
+                  className="rounded-full bg-sky px-3 py-1 text-xs font-medium text-slate-700 transition hover:bg-sky/70"
+                >
+                  #{tag}
+                </Link>
+              ))}
+            </div>
+          ) : null}
           <ArticleStatusBanner entry={entry} />
           {entry.previewImageUrl ? (
             <div className="mt-6 overflow-hidden rounded-3xl border border-line sm:mt-8">
