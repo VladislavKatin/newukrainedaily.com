@@ -1,18 +1,51 @@
 import type { ContentEntry } from "@/lib/content-types";
 
-const CURATED_LEAD_SLUGS = [
-  "eu-countries-discuss-new-rules-for-ukrainian-refugees-protection",
-  "delegations-from-100-countries-to-attend-ukraine-recovery-conference",
-  "zelensky-reports-increased-russian-missile-strikes-on-ukraine",
-  "ukraine-seeks-support-from-middle-east-allies-in-defense-and-recons"
+const SOURCE_PRIORITY: Record<string, number> = {
+  "ukrinform en": 12,
+  "ukrinform ua": 12,
+  "ukrainska pravda en": 11,
+  "ukrainska pravda en news": 11,
+  "ukrainska pravda ua": 11,
+  "interfax ukraine": 10,
+  "rbc ukraine": 9,
+  "radio svoboda": 8,
+  "tsn ukraine": 7,
+  "nv ukraine": 7,
+  obozrevatel: 5,
+  "european pravda ua": 5
+};
+
+const PREFERRED_TOPICS = new Set([
+  "ukraine",
+  "security",
+  "diplomacy",
+  "humanitarian",
+  "energy",
+  "economy",
+  "russia",
+  "us",
+  "eu",
+  "nato"
+]);
+
+const WEAK_MARKERS = [
+  "historian",
+  "artifacts",
+  "documentary",
+  "community in france",
+  "community in poland",
+  "conference set for may",
+  "weather forecast",
+  "mild temperatures",
+  "artist",
+  "book",
+  "ceremony",
+  "festival"
 ];
 
-const CURATED_TOP_STORY_SLUGS = [
-  "delegations-from-100-countries-to-attend-ukraine-recovery-conference",
-  "mild-weather-ahead-for-ukraine-with-possible-rain-and-snow",
-  "zelensky-reports-increased-russian-missile-strikes-on-ukraine",
-  "eu-countries-discuss-new-rules-for-ukrainian-refugees-protection"
-];
+function normalizeToken(value: string | null | undefined) {
+  return (value || "").replace(/s+/g, " ").trim().toLowerCase();
+}
 
 function uniqueBySlug(entries: ContentEntry[]) {
   const seen = new Set<string>();
@@ -26,9 +59,38 @@ function uniqueBySlug(entries: ContentEntry[]) {
   });
 }
 
-function pickBySlug(entries: ContentEntry[], slugs: string[]) {
-  const map = new Map(entries.map((entry) => [entry.slug, entry]));
-  return slugs.map((slug) => map.get(slug)).filter((entry): entry is ContentEntry => Boolean(entry));
+function scoreEntry(entry: ContentEntry) {
+  const text = normalizeToken([
+    entry.title,
+    entry.description,
+    entry.excerpt,
+    entry.lead || "",
+    entry.author,
+    ...(entry.tags || []),
+    entry.primaryTopic || "",
+    entry.storyFormat || ""
+  ].join(" "));
+  const sourcePriority = SOURCE_PRIORITY[normalizeToken(entry.author)] ?? 0;
+  const topicBonus = (entry.tags || []).reduce((total, tag) => total + (PREFERRED_TOPICS.has(normalizeToken(tag)) ? 2 : 0), 0);
+  let score = sourcePriority * 10 + topicBonus;
+
+  if (PREFERRED_TOPICS.has(normalizeToken(entry.primaryTopic))) {
+    score += 16;
+  }
+
+  if (entry.storyFormat === "Breaking" || entry.storyFormat === "Update") {
+    score += 12;
+  }
+
+  if (/\bdrone\b|\bmissile\b|\bstrike\b|\battack\b|\bcombat\b|\bfront(line)?\b|\bpower outage\b|\benergy\b|\bdefense\b|\bdefence\b|\bsanctions\b|\btalks\b|\balert\b|\bminister\b|\bambassador\b|\bnato\b|\beu\b/i.test(text)) {
+    score += 10;
+  }
+
+  if (WEAK_MARKERS.some((marker) => text.includes(marker))) {
+    score -= 24;
+  }
+
+  return score;
 }
 
 function pickBreaking(entries: ContentEntry[]) {
@@ -37,15 +99,15 @@ function pickBreaking(entries: ContentEntry[]) {
 
 export function curateHomepageNews(entries: ContentEntry[]) {
   const uniqueEntries = uniqueBySlug(entries);
-  const curatedLead = pickBySlug(uniqueEntries, CURATED_LEAD_SLUGS)[0];
-  const breakingEntries = pickBreaking(uniqueEntries);
-  const leadStory = curatedLead ?? breakingEntries[0] ?? uniqueEntries[0];
-
-  const remaining = uniqueEntries.filter((entry) => entry.slug !== leadStory?.slug);
-  const curatedTopStories = pickBySlug(remaining, CURATED_TOP_STORY_SLUGS);
+  const ranked = [...uniqueEntries].sort((left, right) => scoreEntry(right) - scoreEntry(left));
+  const breakingEntries = pickBreaking(ranked).sort((left, right) => scoreEntry(right) - scoreEntry(left));
+  const leadStory = breakingEntries[0] ?? ranked[0];
+  const remaining = ranked.filter((entry) => entry.slug !== leadStory?.slug);
   const developingNow = uniqueBySlug([...breakingEntries.filter((entry) => entry.slug !== leadStory?.slug), ...remaining]).slice(0, 4);
-  const topStories = uniqueBySlug([...curatedTopStories, ...remaining]).slice(0, 4);
-  const latestRail = uniqueBySlug(remaining.filter((entry) => !topStories.some((top) => top.slug === entry.slug))).slice(0, 4);
+  const topStories = remaining.slice(0, 4);
+  const latestRail = uniqueBySlug(entries)
+    .filter((entry) => entry.slug !== leadStory?.slug && !topStories.some((top) => top.slug === entry.slug))
+    .slice(0, 4);
 
   return {
     leadStory,

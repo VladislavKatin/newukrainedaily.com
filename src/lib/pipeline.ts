@@ -76,6 +76,86 @@ const NOISY_CONTENT_MARKERS = [
   "ukrainians abroad"
 ];
 
+const HOMEPAGE_WEAK_MARKERS = [
+  "historian",
+  "artifact",
+  "documentary",
+  "community in france",
+  "community in poland",
+  "conference set for may",
+  "weather forecast",
+  "mild temperatures",
+  "artist",
+  "book",
+  "ceremony"
+];
+
+function buildNewsSignalText(item: {
+  title: string;
+  summary?: string | null;
+  whyItMatters?: string | null;
+  sourceName?: string | null;
+  tags?: string[];
+  topics?: string[];
+  primaryTopic?: string | null;
+}) {
+  return normalizeToken([
+    item.title,
+    item.summary || "",
+    item.whyItMatters || "",
+    item.sourceName || "",
+    ...(item.tags || []),
+    ...(item.topics || []),
+    item.primaryTopic || ""
+  ].join(" "));
+}
+
+function scorePublishCandidate(item: {
+  title: string;
+  summary?: string | null;
+  whyItMatters?: string | null;
+  sourceName?: string | null;
+  tags: string[];
+  topics: string[];
+  primaryTopic?: string | null;
+  charCount?: number | null;
+  qualityScore?: number | null;
+  previewImageUrl?: string | null;
+  generatedImageUrl?: string | null;
+}) {
+  const normalizedPrimaryTopic = normalizeToken(item.primaryTopic);
+  const normalizedTags = item.tags.map(normalizeToken);
+  const normalizedTopics = item.topics.map(normalizeToken);
+  const signalText = buildNewsSignalText(item);
+  const sourcePriority = getSourcePriority(item.sourceName);
+
+  let score = sourcePriority * 12;
+  score += PREFERRED_TOPICS.has(normalizedPrimaryTopic) ? 18 : 0;
+  score += [...normalizedTags, ...normalizedTopics].reduce((total, token) => total + (PREFERRED_TOPICS.has(token) ? 3 : 0), 0);
+  score += Number(item.charCount || 0) >= 1800 ? 6 : Number(item.charCount || 0) >= 1500 ? 3 : 0;
+  score += Number(item.qualityScore || 0) * 10;
+  score += item.previewImageUrl ? 3 : 0;
+  score += item.generatedImageUrl ? 2 : 0;
+
+  if (/drone|missile|strike|attack|front(line)?|combat|air alert|power outage|energy|defense|defence|sanctions|ceasefire|talks|ambassador|minister|nato|eu/i.test(signalText)) {
+    score += 10;
+  }
+
+  if (/weather|artist|historians?|artifacts?|ceremony|concert|documentary|book|festival|community in/i.test(signalText)) {
+    score -= 20;
+  }
+
+  if (NOISY_CONTENT_MARKERS.some((marker) => signalText.includes(marker))) {
+    score -= 40;
+  }
+
+  if (HOMEPAGE_WEAK_MARKERS.some((marker) => signalText.includes(marker))) {
+    score -= 20;
+  }
+
+  return score;
+}
+
 function sleep(milliseconds: number) {
   if (milliseconds <= 0) {
     return Promise.resolve();
@@ -593,9 +673,10 @@ export async function runPublishJob(limit?: number) {
     };
   }
 
-  const readyItems = (await listPublishReadyNews(Math.max(availableSlots * 3, availableSlots))).filter(
-    isPublishEligible
-  ).slice(0, availableSlots);
+  const readyItems = (await listPublishReadyNews(Math.max(availableSlots * 4, availableSlots)))
+    .filter(isPublishEligible)
+    .sort((left, right) => scorePublishCandidate(right) - scorePublishCandidate(left))
+    .slice(0, availableSlots);
   let published = 0;
   let skipped = 0;
 
