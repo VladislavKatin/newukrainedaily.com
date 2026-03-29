@@ -59,18 +59,41 @@ const pool = new Pool({
   max: 4
 });
 
+function parseIntFlag(name, fallback) {
+  const match = process.argv.find((argument) => argument.startsWith(`--${name}=`));
+  if (!match) {
+    return fallback;
+  }
+
+  const value = Number.parseInt(match.slice(name.length + 3), 10);
+  return Number.isFinite(value) && value >= 0 ? value : fallback;
+}
+
+const BATCH_LIMIT = parseIntFlag("limit", 0);
+const BATCH_OFFSET = parseIntFlag("offset", 0);
+
 function getModel() {
   const [, configuredModel] = aiProvider.split(":", 2);
   return configuredModel || DEFAULT_MODEL;
 }
 
-function normalizeText(value) {
+function stripUnsafeJsonChars(value) {
   return String(value || "")
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "")
+    .replace(/[\uD800-\uDFFF]/g, "");
+}
+
+function normalizeText(value) {
+  return stripUnsafeJsonChars(value)
     .replace(/\r\n/g, "\n")
     .replace(/\s+\n/g, "\n")
     .replace(/\n{3,}/g, "\n\n")
     .replace(/[ \t]{2,}/g, " ")
     .trim();
+}
+
+function safeJsonStringify(value) {
+  return JSON.stringify(value, (_key, item) => (typeof item === "string" ? stripUnsafeJsonChars(item) : item), 2);
 }
 
 function countCharsNoSpaces(value) {
@@ -128,41 +151,59 @@ async function backup(newsRows, blogRows) {
 }
 
 async function callOpenAi(prompt) {
-  const response = await fetch(OPENAI_API_URL, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${openAiApiKey}`
-    },
-    body: JSON.stringify({
-      model: getModel(),
-      response_format: { type: "json_object" },
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a senior editor expanding and polishing published site content. Preserve facts. Output valid JSON only."
+  let lastError = null;
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      const response = await fetch(OPENAI_API_URL, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${openAiApiKey}`
         },
-        {
-          role: "user",
-          content: prompt
+        body: JSON.stringify({
+          model: getModel(),
+          response_format: { type: "json_object" },
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are a senior editor expanding and polishing published site content. Preserve facts. Output valid JSON only."
+            },
+            {
+              role: "user",
+              content: stripUnsafeJsonChars(prompt)
+            }
+          ]
+        })
+      });
+
+      if (!response.ok) {
+        const message = await response.text();
+        if (response.status >= 500 || response.status === 429) {
+          throw new Error(`OpenAI transient failure: ${response.status} ${message}`);
         }
-      ]
-    })
-  });
+        throw new Error(`OpenAI request failed: ${response.status} ${message}`);
+      }
 
-  if (!response.ok) {
-    const message = await response.text();
-    throw new Error(`OpenAI request failed: ${response.status} ${message}`);
+      const payload = await response.json();
+      const content = payload?.choices?.[0]?.message?.content?.trim();
+      if (!content) {
+        throw new Error("OpenAI returned empty content.");
+      }
+
+      return JSON.parse(content);
+    } catch (error) {
+      lastError = error;
+      const transient = /ECONNRESET|fetch failed|OpenAI transient failure/i.test(String(error?.message || error));
+      if (!transient || attempt === 2) {
+        throw error;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 1500 * (attempt + 1)));
+    }
   }
 
-  const payload = await response.json();
-  const content = payload?.choices?.[0]?.message?.content?.trim();
-  if (!content) {
-    throw new Error("OpenAI returned empty content.");
-  }
-
-  return JSON.parse(content);
+  throw lastError || new Error("OpenAI request failed.");
 }
 
 function buildNewsPrompt(row) {
@@ -184,7 +225,7 @@ function buildNewsPrompt(row) {
     "- why_it_matters should be specific",
     "",
     "Current article:",
-    JSON.stringify(row, null, 2)
+    safeJsonStringify(row)
   ].join("\n");
 }
 
@@ -203,7 +244,7 @@ function buildBlogPrompt(row) {
     "- opening paragraphs should be noticeably stronger",
     "",
     "Current article:",
-    JSON.stringify(row, null, 2)
+    safeJsonStringify(row)
   ].join("\n");
 }
 
@@ -222,7 +263,7 @@ function buildNewsExpansionPrompt(row, previousContent, currentCount) {
     "Strengthen 'what happened', 'why it matters', and the immediate context sections.",
     "",
     "Current article:",
-    JSON.stringify(row, null, 2),
+    safeJsonStringify(row),
     "",
     "Previous too-short rewrite body:",
     previousContent
@@ -278,7 +319,7 @@ async function loadShortNews() {
            source_name, source_url, char_count
     from news_items
     where status = 'published'
-      and length(regexp_replace(coalesce(content, ''), '\s+', '', 'g')) < $1
+      and length(regexp_replace(coalesce(content, ''), '\\s+', '', 'g')) < $1
     order by published_at desc nulls last, created_at desc
   `, [MIN_NEWS_CHARS_NO_SPACES]);
   return rows;
@@ -289,7 +330,7 @@ async function loadShortBlog() {
     select id, slug, title, excerpt, body, tags, meta_title, meta_description, og_image_alt, char_count
     from blog_posts
     where status = 'published'
-      and length(regexp_replace(coalesce(body, ''), '\s+', '', 'g')) < $1
+      and length(regexp_replace(coalesce(body, ''), '\\s+', '', 'g')) < $1
     order by published_at desc nulls last, created_at desc
   `, [MIN_BLOG_CHARS_NO_SPACES]);
   return rows;
@@ -413,9 +454,11 @@ async function rewriteShortBlog(rows) {
 
 async function main() {
   try {
-    const [shortNews, shortBlog] = await Promise.all([loadShortNews(), loadShortBlog()]);
+    const [shortNewsAll, shortBlogAll] = await Promise.all([loadShortNews(), loadShortBlog()]);
+    const shortNews = BATCH_LIMIT > 0 ? shortNewsAll.slice(BATCH_OFFSET, BATCH_OFFSET + BATCH_LIMIT) : shortNewsAll;
+    const shortBlog = BATCH_LIMIT > 0 ? shortBlogAll.slice(BATCH_OFFSET, BATCH_OFFSET + BATCH_LIMIT) : shortBlogAll;
     const backupFile = await backup(shortNews, shortBlog);
-    console.log(`[fix-short-published-content] backup=${backupFile} shortNews=${shortNews.length} shortBlog=${shortBlog.length}`);
+    console.log(`[fix-short-published-content] backup=${backupFile} shortNews=${shortNews.length}/${shortNewsAll.length} shortBlog=${shortBlog.length}/${shortBlogAll.length} offset=${BATCH_OFFSET} limit=${BATCH_LIMIT || 'all'}`);
 
     const updatedNews = await rewriteShortNews(shortNews);
     const updatedBlog = await rewriteShortBlog(shortBlog);
