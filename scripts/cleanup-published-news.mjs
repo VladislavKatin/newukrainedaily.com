@@ -49,6 +49,16 @@ const WEAK_MARKERS = [
   "cultural identity",
   "ukrainians abroad",
   "iranian fleet",
+  "community in france",
+  "community in poland",
+  "reported downed in finland",
+  "drones reported downed in finland",
+  "educational centers abroad",
+  "london book fair",
+  "book fair",
+  "world's wealthiest by forbes",
+  "wealthiest by forbes",
+  "mobile bank",
   "astrology",
   "horoscope",
   "sleeping head-first",
@@ -138,6 +148,7 @@ function buildAngleSignature(row) {
 
 function scoreDraft(row) {
   const text = buildText(row);
+  const signature = buildAngleSignature(row);
   const normalizedPrimaryTopic = normalizeToken(row.primary_topic);
   const sourcePriority = getSourcePriority(row.source_name);
   const tagBonus = [...(row.tags || []), ...(row.topics || [])]
@@ -156,6 +167,12 @@ function scoreDraft(row) {
 
   if (WEAK_MARKERS.some((marker) => text.includes(marker))) {
     score -= 50;
+  }
+
+  if (signature === "combat-summary" || signature === "losses-summary") {
+    score -= 24;
+  } else if (signature === "air-defense-summary") {
+    score -= 10;
   }
 
   return score;
