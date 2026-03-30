@@ -16,13 +16,13 @@ import {
   listBlogPage,
   listBlogByTag,
   listNews,
-  listNewsPage,
   listNewsByTag,
   listIndexableTopics
 } from "@/lib/postgres-repository";
 import { getPreviewEntries, getPreviewTopics } from "@/lib/local-preview-content";
 import { topicSlugFromLabel } from "@/lib/topic-taxonomy";
 import { inferStoryFormat } from "@/lib/story-format";
+import { curateNewsArchivePage } from "@/lib/homepage-curation";
 
 export type ContentRepository = {
   getAllEntries(): Promise<ContentEntry[]>;
@@ -287,13 +287,13 @@ function createDatabaseContentRepository(): ContentRepository {
     },
     async getEntriesByTypePage(type, options) {
       if (type === "news") {
-        const [entries, total] = await Promise.all([
-          listNewsPage(options.limit, options.offset),
-          countNews()
-        ]);
+        const total = await countNews();
+        const fetchLimit = Math.min(Math.max(total, options.offset + options.limit + 48, 120), 800);
+        const entries = await listNews(fetchLimit);
+        const curated = curateNewsArchivePage(entries.map(mapNewsItemToContentEntry), options);
 
         return {
-          entries: entries.map(mapNewsItemToContentEntry),
+          entries: curated.entries,
           total
         };
       }

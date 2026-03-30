@@ -96,6 +96,28 @@ function angleSignature(entry: ContentEntry) {
   return entry.slug;
 }
 
+function getRecencyBoost(entry: ContentEntry) {
+  const publishedAt = new Date(entry.publishedAt).getTime();
+  if (Number.isNaN(publishedAt)) {
+    return 0;
+  }
+
+  const ageHours = Math.max(0, (Date.now() - publishedAt) / (1000 * 60 * 60));
+  if (ageHours <= 12) {
+    return 18;
+  }
+  if (ageHours <= 24) {
+    return 12;
+  }
+  if (ageHours <= 48) {
+    return 7;
+  }
+  if (ageHours <= 96) {
+    return 3;
+  }
+  return 0;
+}
+
 function scoreEntry(entry: ContentEntry) {
   const text = buildSignalText(entry);
   const sourcePriority = SOURCE_PRIORITY[normalizeToken(entry.author)] ?? 0;
@@ -103,7 +125,8 @@ function scoreEntry(entry: ContentEntry) {
     (total, tag) => total + (PREFERRED_TOPICS.has(normalizeToken(tag)) ? 2 : 0),
     0
   );
-  let score = sourcePriority * 10 + topicBonus;
+
+  let score = sourcePriority * 10 + topicBonus + getRecencyBoost(entry);
 
   if (PREFERRED_TOPICS.has(normalizeToken(entry.primaryTopic))) {
     score += 16;
@@ -135,17 +158,27 @@ function uniqueByAngle(entries: ContentEntry[]) {
     if (seen.has(signature)) {
       return false;
     }
+
     seen.add(signature);
     return true;
   });
 }
 
+function rankEntries(entries: ContentEntry[]) {
+  return [...entries].sort((left, right) => {
+    const scoreDiff = scoreEntry(right) - scoreEntry(left);
+    if (scoreDiff !== 0) {
+      return scoreDiff;
+    }
+
+    return new Date(right.publishedAt).getTime() - new Date(left.publishedAt).getTime();
+  });
+}
+
 export function curateHomepageNews(entries: ContentEntry[]) {
   const uniqueEntries = uniqueBySlug(entries);
-  const ranked = uniqueByAngle([...uniqueEntries].sort((left, right) => scoreEntry(right) - scoreEntry(left)));
-  const breakingEntries = uniqueByAngle(
-    pickBreaking(ranked).sort((left, right) => scoreEntry(right) - scoreEntry(left))
-  );
+  const ranked = uniqueByAngle(rankEntries(uniqueEntries));
+  const breakingEntries = uniqueByAngle(rankEntries(pickBreaking(ranked)));
   const leadStory = breakingEntries[0] ?? ranked[0];
   const remaining = ranked.filter((entry) => entry.slug !== leadStory?.slug);
   const developingNow = uniqueByAngle([
@@ -162,5 +195,19 @@ export function curateHomepageNews(entries: ContentEntry[]) {
     developingNow,
     topStories,
     latestRail
+  };
+}
+
+export function curateNewsArchivePage(
+  entries: ContentEntry[],
+  options: { limit: number; offset: number }
+) {
+  const uniqueEntries = uniqueBySlug(entries);
+  const ranked = uniqueByAngle(rankEntries(uniqueEntries));
+  const pageEntries = ranked.slice(options.offset, options.offset + options.limit);
+
+  return {
+    entries: pageEntries,
+    total: ranked.length
   };
 }
