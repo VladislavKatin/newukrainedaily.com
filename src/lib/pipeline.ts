@@ -110,6 +110,32 @@ function buildNewsSignalText(item: {
   ].join(" "));
 }
 
+function buildPublishAngleSignature(item: {
+  title: string;
+  summary?: string | null;
+  whyItMatters?: string | null;
+  sourceName?: string | null;
+  tags?: string[];
+  topics?: string[];
+  primaryTopic?: string | null;
+}) {
+  const signalText = buildNewsSignalText(item);
+
+  if (/\b(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|\d,?\d*)\b[^\n]*\b(combat|clashes|engagements|front line|frontline)\b/i.test(signalText)) {
+    return "combat-summary";
+  }
+
+  if (/\b(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|\d,?\d*)\b[^\n]*\b(troops|casualties|losses|personnel)\b/i.test(signalText)) {
+    return "losses-summary";
+  }
+
+  if (/\bair defense\b|\bdowns?\b[^\n]*\bdrones?\b|\bintercepts?\b[^\n]*\bdrones?\b/i.test(signalText)) {
+    return "air-defense-summary";
+  }
+
+  return normalizeToken(item.title);
+}
+
 function scorePublishCandidate(item: {
   title: string;
   summary?: string | null;
@@ -137,11 +163,11 @@ function scorePublishCandidate(item: {
   score += item.previewImageUrl ? 3 : 0;
   score += item.generatedImageUrl ? 2 : 0;
 
-  if (/drone|missile|strike|attack|front(line)?|combat|air alert|power outage|energy|defense|defence|sanctions|ceasefire|talks|ambassador|minister|nato|eu/i.test(signalText)) {
+  if (/\bdrone\b|\bmissile\b|\bstrike\b|\battack\b|\bfront(line)?\b|\bcombat\b|\bair alert\b|\bpower outage\b|\benergy\b|\bdefense\b|\bdefence\b|\bsanctions\b|\bceasefire\b|\btalks\b|\bambassador\b|\bminister\b|\bnato\b|\beu\b/i.test(signalText)) {
     score += 10;
   }
 
-  if (/weather|artist|historians?|artifacts?|ceremony|concert|documentary|book|festival|community in/i.test(signalText)) {
+  if (/\bweather\b|\bartist\b|\bhistorians?\b|\bartifacts?\b|\bceremony\b|\bconcert\b|\bdocumentary\b|\bbook\b|\bfestival\b|\bcommunity in\b/i.test(signalText)) {
     score -= 20;
   }
 
@@ -673,9 +699,21 @@ export async function runPublishJob(limit?: number) {
     };
   }
 
-  const readyItems = (await listPublishReadyNews(Math.max(availableSlots * 4, availableSlots)))
+  const rankedReadyItems = (await listPublishReadyNews(Math.max(availableSlots * 4, availableSlots)))
     .filter(isPublishEligible)
-    .sort((left, right) => scorePublishCandidate(right) - scorePublishCandidate(left))
+    .map((item) => ({ item, score: scorePublishCandidate(item), signature: buildPublishAngleSignature(item) }))
+    .sort((left, right) => right.score - left.score);
+
+  const seenSignatures = new Set<string>();
+  const readyItems = rankedReadyItems
+    .filter(({ signature }) => {
+      if (seenSignatures.has(signature)) {
+        return false;
+      }
+      seenSignatures.add(signature);
+      return true;
+    })
+    .map(({ item }) => item)
     .slice(0, availableSlots);
   let published = 0;
   let skipped = 0;

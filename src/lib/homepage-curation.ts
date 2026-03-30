@@ -30,6 +30,7 @@ const PREFERRED_TOPICS = new Set([
 
 const WEAK_MARKERS = [
   "historian",
+  "artifact",
   "artifacts",
   "documentary",
   "community in france",
@@ -43,8 +44,13 @@ const WEAK_MARKERS = [
   "festival"
 ];
 
+const COMBAT_SUMMARY_PATTERN = new RegExp(String.raw`\b(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|\d,?\d*)\b[^\n]*\b(combat|clashes|engagements|front line|frontline)\b`, "i");
+const LOSSES_SUMMARY_PATTERN = new RegExp(String.raw`\b(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|\d,?\d*)\b[^\n]*\b(troops|casualties|losses|personnel)\b`, "i");
+const AIR_DEFENSE_SUMMARY_PATTERN = new RegExp(String.raw`\bair defense\b|\bdowns?\b[^\n]*\bdrones?\b|\bintercepts?\b[^\n]*\bdrones?\b`, "i");
+const STRONG_NEWS_PATTERN = new RegExp(String.raw`\bdrone\b|\bmissile\b|\bstrike\b|\battack\b|\bcombat\b|\bfront(line)?\b|\bpower outage\b|\benergy\b|\bdefense\b|\bdefence\b|\bsanctions\b|\btalks\b|\balert\b|\bminister\b|\bambassador\b|\bnato\b|\beu\b`, "i");
+
 function normalizeToken(value: string | null | undefined) {
-  return (value || "").replace(/s+/g, " ").trim().toLowerCase();
+  return (value || "").replace(/\s+/g, " ").trim().toLowerCase();
 }
 
 function uniqueBySlug(entries: ContentEntry[]) {
@@ -59,8 +65,8 @@ function uniqueBySlug(entries: ContentEntry[]) {
   });
 }
 
-function scoreEntry(entry: ContentEntry) {
-  const text = normalizeToken([
+function buildSignalText(entry: ContentEntry) {
+  return normalizeToken([
     entry.title,
     entry.description,
     entry.excerpt,
@@ -70,8 +76,33 @@ function scoreEntry(entry: ContentEntry) {
     entry.primaryTopic || "",
     entry.storyFormat || ""
   ].join(" "));
+}
+
+function angleSignature(entry: ContentEntry) {
+  const text = buildSignalText(entry);
+
+  if (COMBAT_SUMMARY_PATTERN.test(text)) {
+    return "combat-summary";
+  }
+
+  if (LOSSES_SUMMARY_PATTERN.test(text)) {
+    return "losses-summary";
+  }
+
+  if (AIR_DEFENSE_SUMMARY_PATTERN.test(text)) {
+    return "air-defense-summary";
+  }
+
+  return entry.slug;
+}
+
+function scoreEntry(entry: ContentEntry) {
+  const text = buildSignalText(entry);
   const sourcePriority = SOURCE_PRIORITY[normalizeToken(entry.author)] ?? 0;
-  const topicBonus = (entry.tags || []).reduce((total, tag) => total + (PREFERRED_TOPICS.has(normalizeToken(tag)) ? 2 : 0), 0);
+  const topicBonus = (entry.tags || []).reduce(
+    (total, tag) => total + (PREFERRED_TOPICS.has(normalizeToken(tag)) ? 2 : 0),
+    0
+  );
   let score = sourcePriority * 10 + topicBonus;
 
   if (PREFERRED_TOPICS.has(normalizeToken(entry.primaryTopic))) {
@@ -82,7 +113,7 @@ function scoreEntry(entry: ContentEntry) {
     score += 12;
   }
 
-  if (/\bdrone\b|\bmissile\b|\bstrike\b|\battack\b|\bcombat\b|\bfront(line)?\b|\bpower outage\b|\benergy\b|\bdefense\b|\bdefence\b|\bsanctions\b|\btalks\b|\balert\b|\bminister\b|\bambassador\b|\bnato\b|\beu\b/i.test(text)) {
+  if (STRONG_NEWS_PATTERN.test(text)) {
     score += 10;
   }
 
@@ -97,15 +128,32 @@ function pickBreaking(entries: ContentEntry[]) {
   return entries.filter((entry) => entry.storyFormat === "Breaking" || entry.storyFormat === "Update");
 }
 
+function uniqueByAngle(entries: ContentEntry[]) {
+  const seen = new Set<string>();
+  return entries.filter((entry) => {
+    const signature = angleSignature(entry);
+    if (seen.has(signature)) {
+      return false;
+    }
+    seen.add(signature);
+    return true;
+  });
+}
+
 export function curateHomepageNews(entries: ContentEntry[]) {
   const uniqueEntries = uniqueBySlug(entries);
-  const ranked = [...uniqueEntries].sort((left, right) => scoreEntry(right) - scoreEntry(left));
-  const breakingEntries = pickBreaking(ranked).sort((left, right) => scoreEntry(right) - scoreEntry(left));
+  const ranked = uniqueByAngle([...uniqueEntries].sort((left, right) => scoreEntry(right) - scoreEntry(left)));
+  const breakingEntries = uniqueByAngle(
+    pickBreaking(ranked).sort((left, right) => scoreEntry(right) - scoreEntry(left))
+  );
   const leadStory = breakingEntries[0] ?? ranked[0];
   const remaining = ranked.filter((entry) => entry.slug !== leadStory?.slug);
-  const developingNow = uniqueBySlug([...breakingEntries.filter((entry) => entry.slug !== leadStory?.slug), ...remaining]).slice(0, 4);
-  const topStories = remaining.slice(0, 4);
-  const latestRail = uniqueBySlug(entries)
+  const developingNow = uniqueByAngle([
+    ...breakingEntries.filter((entry) => entry.slug !== leadStory?.slug),
+    ...remaining
+  ]).slice(0, 4);
+  const topStories = uniqueByAngle(remaining).slice(0, 4);
+  const latestRail = uniqueByAngle(uniqueEntries)
     .filter((entry) => entry.slug !== leadStory?.slug && !topStories.some((top) => top.slug === entry.slug))
     .slice(0, 4);
 
