@@ -37,6 +37,10 @@ const PREFERRED_TOPICS = new Set([
   "nato"
 ]);
 
+const COMBAT_SUMMARY_PATTERN = new RegExp(String.raw`\b(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|\d,?\d*)\b[^\n]*\b(combat|clashes|engagements|front line|frontline)\b`, "i");
+const LOSSES_SUMMARY_PATTERN = new RegExp(String.raw`\b(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|\d,?\d*)\b[^\n]*\b(troops|casualties|losses|personnel)\b`, "i");
+const AIR_DEFENSE_SUMMARY_PATTERN = new RegExp(String.raw`\bair defense\b|\bdowns?\b[^\n]*\bdrones?\b|\bintercepts?\b[^\n]*\bdrones?\b`, "i");
+
 const WEAK_MARKERS = [
   "airport safety",
   "global challenges",
@@ -114,6 +118,24 @@ function buildText(row) {
   );
 }
 
+function buildAngleSignature(row) {
+  const text = buildText(row);
+
+  if (COMBAT_SUMMARY_PATTERN.test(text)) {
+    return "combat-summary";
+  }
+
+  if (LOSSES_SUMMARY_PATTERN.test(text)) {
+    return "losses-summary";
+  }
+
+  if (AIR_DEFENSE_SUMMARY_PATTERN.test(text)) {
+    return "air-defense-summary";
+  }
+
+  return row.slug;
+}
+
 function scoreDraft(row) {
   const text = buildText(row);
   const normalizedPrimaryTopic = normalizeToken(row.primary_topic);
@@ -139,7 +161,8 @@ function scoreDraft(row) {
   return score;
 }
 
-function scoreWeakPublished(row) {
+function scoreWeakPublished(row, options = {}) {
+  const duplicatePenalty = options.duplicatePenalty || 0;
   const text = buildText(row);
   const normalizedPrimaryTopic = normalizeToken(row.primary_topic);
   const sourcePriority = getSourcePriority(row.source_name);
@@ -162,6 +185,8 @@ function scoreWeakPublished(row) {
       score += 25;
     }
   }
+
+  score += duplicatePenalty;
 
   return score;
 }
@@ -213,8 +238,24 @@ async function fetchCandidates() {
 }
 
 function selectSwaps(publishedRows, draftRows, limit) {
+  const signatureCounts = new Map();
+  const signatureSeen = new Set();
+
+  for (const row of publishedRows) {
+    const signature = buildAngleSignature(row);
+    signatureCounts.set(signature, (signatureCounts.get(signature) || 0) + 1);
+  }
+
   const weakPublished = publishedRows
-    .map((row) => ({ ...row, weakScore: scoreWeakPublished(row) }))
+    .map((row) => {
+      const signature = buildAngleSignature(row);
+      const count = signatureCounts.get(signature) || 0;
+      const alreadySeen = signatureSeen.has(signature);
+      signatureSeen.add(signature);
+      const duplicatePenalty = count > 1 && alreadySeen ? 32 : 0;
+
+      return { ...row, signature, weakScore: scoreWeakPublished(row, { duplicatePenalty }) };
+    })
     .filter((row) => row.weakScore >= 22)
     .sort((left, right) => right.weakScore - left.weakScore);
 

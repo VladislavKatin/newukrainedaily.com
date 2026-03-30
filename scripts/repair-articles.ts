@@ -84,13 +84,20 @@ function readingTimeMinutes(value: string) {
   return Math.max(1, Math.ceil(countWords(value) / 220));
 }
 
+function stripUnsafeJsonChars(value: unknown) {
+  return typeof value === "string"
+    ? value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "").replace(/[\uD800-\uDFFF]/g, "")
+    : "";
+}
+
 function normalizeText(value: unknown) {
-  return typeof value === "string" ? value.replace(/\s+/g, " ").trim() : "";
+  return stripUnsafeJsonChars(value).replace(/\s+/g, " ").trim();
 }
 
 function normalizeMultiline(value: unknown) {
-  if (typeof value !== "string") return "";
-  return value
+  const cleaned = stripUnsafeJsonChars(value);
+  if (!cleaned) return "";
+  return cleaned
     .replace(/\r\n/g, "\n")
     .split("\n")
     .map((line) => line.replace(/[ \t]+/g, " ").trim())
@@ -233,7 +240,7 @@ async function rewriteWithOpenAi(prompt: string, flags: Flags): Promise<RewriteP
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: "You are a strict editor. Output valid JSON only." },
-        { role: "user", content: prompt }
+        { role: "user", content: stripUnsafeJsonChars(prompt) }
       ]
     })
   });
