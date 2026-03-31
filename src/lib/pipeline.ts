@@ -86,6 +86,11 @@ const HOMEPAGE_WEAK_MARKERS = [
   "weather forecast",
   "mild temperatures",
   "artist",
+  "permanent residency",
+  "asylum seekers",
+  "refugees in lithuania",
+  "exhibition honors",
+  "mothers and wives of mariupol defenders",
   "book",
   "ceremony"
 ];
@@ -100,7 +105,12 @@ const SOFT_PUBLISH_MARKERS = [
   "community in poland",
   "commemoration",
   "schools",
-  "develop ukrainian in schools"
+  "develop ukrainian in schools",
+  "permanent residency",
+  "asylum seekers",
+  "refugees in lithuania",
+  "exhibition honors",
+  "mothers and wives of mariupol defenders"
 ];
 
 function buildNewsSignalText(item: {
