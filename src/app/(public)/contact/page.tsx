@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { CopyableValue } from "@/components/copyable-value";
 import { PageShell } from "@/components/page-shell";
 import { buildMetadata } from "@/lib/seo";
 
@@ -12,6 +11,8 @@ export const metadata = buildMetadata({
 
 const GOOGLE_MAPS_URL =
   "https://www.google.com/maps/place/Zaporizhzhia,+Zaporizhia+Oblast,+Ukraine";
+const GOOGLE_MAPS_EMBED_URL =
+  "https://www.google.com/maps?q=Zaporizhzhia,+Ukraine&z=8&output=embed";
 
 function ZaporizhzhiaFrontlineMap() {
   return (
@@ -144,7 +145,7 @@ export default function ContactPage() {
                   Email
                 </p>
                 <p className="mt-3 break-all text-lg font-semibold text-ink">
-                  vladkatintam@gmail.com
+                  <a href="mailto:vladkatintam@gmail.com" rel="nofollow">vladkatintam@gmail.com</a>
                 </p>
                 <p className="mt-4 text-sm leading-7 text-slate-600">
                   For the fastest review, include the article URL and a direct description of the issue or request.
@@ -166,20 +167,32 @@ export default function ContactPage() {
 
           <aside className="panel p-5 sm:p-8">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand">
-              Map Reference
+              Open The Map
             </p>
             <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ink">
-              Copy the Zaporizhzhia map URL if you want to open it manually
+              See where Zaporizhzhia is located
             </h2>
             <p className="mt-4 text-sm leading-7 text-slate-600">
-              External links are intentionally not active on this site. If you want to open Google Maps, copy the URL below and paste it into your browser.
+              You can open Zaporizhzhia directly in Google Maps to view the city, surrounding region, and its position in southern Ukraine.
             </p>
-            <CopyableValue
-              value={GOOGLE_MAPS_URL}
-              buttonLabel="Copy Google Maps URL"
-              className="mt-5"
-            />
+            <div className="mt-5 overflow-hidden rounded-[28px] border border-line">
+              <iframe
+                src={GOOGLE_MAPS_EMBED_URL}
+                title="Map of Zaporizhzhia, Ukraine"
+                className="h-[320px] w-full border-0"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
             <div className="mt-5 flex flex-wrap gap-3">
+              <a
+                href={GOOGLE_MAPS_URL}
+                target="_blank"
+                rel="nofollow noopener noreferrer"
+                className="inline-flex items-center justify-center rounded-full bg-brand px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand/90"
+              >
+                Open In Google Maps
+              </a>
               <Link
                 href="/about"
                 className="inline-flex items-center justify-center rounded-full border border-line bg-white px-5 py-3 text-sm font-semibold text-ink transition hover:bg-mist"
