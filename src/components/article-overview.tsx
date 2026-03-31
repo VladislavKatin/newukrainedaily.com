@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { CopyableValue } from "@/components/copyable-value";
 
 type ArticleOverviewProps = {
   title?: string;
@@ -41,11 +41,11 @@ export function ArticleOverview({
             {whyItMatters || "This report is structured to surface the main facts quickly and keep the supporting context easy to scan."}
           </p>
           {sourceUrl ? (
-            <div className="mt-4">
-              <Link href={sourceUrl} className="text-sm font-semibold text-brand underline decoration-brand/40 underline-offset-4">
-                View source reporting reference
-              </Link>
-            </div>
+            <CopyableValue
+              value={sourceUrl}
+              buttonLabel="Copy source URL"
+              className="mt-4"
+            />
           ) : null}
         </div>
       </div>

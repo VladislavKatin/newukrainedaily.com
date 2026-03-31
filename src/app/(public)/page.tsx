@@ -13,9 +13,15 @@ export const revalidate = 0;
 export const metadata = buildMetadata({
   title: "Home",
   description:
-    "Latest Ukraine news, explainers, analysis, and practical support coverage organized for readers who need fast facts and clear context.",
+    "Latest Ukraine news, explainers, analysis, and practical support coverage organized for readers who need fast facts, clear context, and visible trust signals.",
   path: "/"
 });
+
+const trustHighlights = [
+  "Edited from Zaporizhzhia, Ukraine",
+  "Roughly 20 km from active fighting",
+  "Visible corrections and newsroom standards"
+];
 
 export default async function HomePage() {
   const [latestNewsPage, latestBlogPage, topics] = await Promise.all([
@@ -42,7 +48,38 @@ export default async function HomePage() {
 
   return (
     <div className="container-shell py-8 sm:py-16">
-      <section className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
+      <section className="grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
+        <div className="rounded-[28px] border border-line bg-[#f8fbff] px-5 py-4 sm:px-6">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600 sm:text-xs">
+            {trustHighlights.map((item) => (
+              <span key={item} className="inline-flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-brand" aria-hidden="true" />
+                {item}
+              </span>
+            ))}
+          </div>
+        </div>
+        <div className="rounded-[28px] border border-line bg-white px-5 py-4 sm:px-6">
+          <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600">
+            <p className="max-w-xl leading-7">
+              New Ukraine Daily is built as a maintained newsroom product, not just a news feed.
+            </p>
+            <div className="flex flex-wrap gap-3 text-sm font-semibold">
+              <Link href="/newsroom" className="text-brand transition hover:text-ink">
+                Newsroom
+              </Link>
+              <Link href="/editorial-policy" className="text-brand transition hover:text-ink">
+                Editorial Policy
+              </Link>
+              <Link href="/contact" className="text-brand transition hover:text-ink">
+                Contact
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="mt-6 grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
         <div className="panel p-5 sm:p-8">
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">Lead Story</p>
           {leadStory ? (
@@ -87,6 +124,25 @@ export default async function HomePage() {
               <li>Topic hubs for diplomacy, aid, energy, security, and recovery.</li>
               <li>Support reporting that explains where help matters most.</li>
             </ul>
+          </div>
+          <div className="panel p-5 sm:p-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">Why trust this site</p>
+            <div className="mt-4 space-y-3 text-sm leading-7 text-slate-700">
+              <p>
+                The newsroom publishes from Zaporizhzhia, maintains visible corrections, and keeps sourcing and image treatment open to readers.
+              </p>
+              <div className="flex flex-wrap gap-3 text-sm font-semibold">
+                <Link href="/about" className="text-brand transition hover:text-ink">
+                  About
+                </Link>
+                <Link href="/corrections" className="text-brand transition hover:text-ink">
+                  Corrections
+                </Link>
+                <Link href="/contact" className="text-brand transition hover:text-ink">
+                  Zaporizhzhia contact
+                </Link>
+              </div>
+            </div>
           </div>
           <NewsletterCta compact sourcePage="home" />
         </div>

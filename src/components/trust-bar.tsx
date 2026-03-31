@@ -1,19 +1,22 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 
 const trustItems = [
   {
-    title: "Editorial standards",
-    description: "Clear sourcing, attribution, updates, and corrections across every article.",
+    eyebrow: "Newsroom",
+    title: "Edited from Zaporizhzhia",
+    description: "See where the newsroom works in southern Ukraine and how proximity to the war shapes coverage.",
+    href: "/contact"
+  },
+  {
+    eyebrow: "Standards",
+    title: "Editorial policy",
+    description: "Review sourcing, image, correction, and archive-maintenance rules across the site.",
     href: "/editorial-policy"
   },
   {
-    title: "Newsroom and masthead",
-    description: "See how the publication is structured and where editorial requests are handled.",
-    href: "/newsroom"
-  },
-  {
+    eyebrow: "Trust",
     title: "Corrections and updates",
-    description: "Report an issue, request a correction, or review how updates are handled.",
+    description: "Check how factual corrections, clarifications, and article repairs are handled.",
     href: "/corrections"
   }
 ];
@@ -27,7 +30,7 @@ export function TrustBar() {
           href={item.href}
           className="panel p-5 transition hover:border-brand hover:bg-white sm:p-6"
         >
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand">Trust</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand">{item.eyebrow}</p>
           <h2 className="mt-3 text-xl font-semibold tracking-tight text-ink">{item.title}</h2>
           <p className="mt-3 text-sm leading-7 text-slate-600">{item.description}</p>
         </Link>
