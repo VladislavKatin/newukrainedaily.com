@@ -144,8 +144,43 @@ function dedupeParagraphs(paragraphs: string[]) {
   return result;
 }
 
+const INLINE_SECTION_HEADINGS = [
+  "Introduction",
+  "Overview",
+  "What Happened",
+  "Key Details",
+  "Why It Matters",
+  "Background",
+  "Context",
+  "In Context",
+  "What to Watch",
+  "What To Watch"
+];
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&");
+}
+
+function normalizeInlineSectionHeadings(value: string) {
+  let normalized = value;
+
+  for (const heading of INLINE_SECTION_HEADINGS) {
+    const escapedHeading = escapeRegExp(heading);
+    const patterns = [
+      new RegExp(`(^|\\s)(##\\s+${escapedHeading})(?=\\s+[A-Z0-9\"'])`, "g"),
+      new RegExp(`(^|\\s)(###\\s+${escapedHeading})(?=\\s+[A-Z0-9\"'])`, "g")
+    ];
+
+    for (const pattern of patterns) {
+      normalized = normalized.replace(pattern, (_match, prefix, token) => `${prefix ? "\n\n" : ""}${token}\n\n`);
+    }
+  }
+
+  return normalized;
+}
+
 function splitContentBlocks(value: string) {
-  const normalized = normalizeMultilineWhitespace(value);
+  const normalized = normalizeInlineSectionHeadings(normalizeMultilineWhitespace(value));
   const rawBlocks = normalized
     .split(/\n{2,}|(?=^#{1,3}\s+)/m)
     .map((block) => block.trim())

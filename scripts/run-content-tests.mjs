@@ -14,8 +14,43 @@ const fillerPatterns = [
   /this highlights[^.!?]*[.!?]/gi
 ];
 
+const INLINE_SECTION_HEADINGS = [
+  "Introduction",
+  "Overview",
+  "What Happened",
+  "Key Details",
+  "Why It Matters",
+  "Background",
+  "Context",
+  "In Context",
+  "What to Watch",
+  "What To Watch"
+];
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function normalizeInlineSectionHeadings(value) {
+  let normalized = value;
+
+  for (const heading of INLINE_SECTION_HEADINGS) {
+    const escapedHeading = escapeRegExp(heading);
+    const patterns = [
+      new RegExp(`(^|\\s)(##\\s+${escapedHeading})(?=\\s+[A-Z0-9"'])`, "g"),
+      new RegExp(`(^|\\s)(###\\s+${escapedHeading})(?=\\s+[A-Z0-9"'])`, "g")
+    ];
+
+    for (const pattern of patterns) {
+      normalized = normalized.replace(pattern, (_match, prefix, token) => `${prefix ? "\n\n" : ""}${token}\n\n`);
+    }
+  }
+
+  return normalized;
+}
+
 function splitContentBlocks(value) {
-  const rawBlocks = normalizeWhitespace(value)
+  const rawBlocks = normalizeInlineSectionHeadings(normalizeWhitespace(value))
     .split(/\n{2,}|(?=^#{1,3}\s+)/m)
     .map((block) => block.trim())
     .filter(Boolean);
@@ -162,6 +197,13 @@ function run() {
   assert.equal(headingParagraphs[0], "## Introduction");
   assert.equal(headingParagraphs[1].includes("Ukraine support remains essential."), true);
   assert.equal(headingParagraphs[2], "## Why It Matters");
+
+  const inlineHeadingParagraphs = splitIntoEditorialParagraphs(
+    "## What Happened On March 30, 2026, officials described the latest maritime-security talks. ## Key Details Ukraine said it could share Black Sea navigation experience with partners."
+  );
+  assert.equal(inlineHeadingParagraphs[0], "## What Happened");
+  assert.equal(inlineHeadingParagraphs[1].startsWith("On March 30, 2026"), true);
+  assert.equal(inlineHeadingParagraphs[2], "## Key Details");
 
   assert.equal(buildImageCaption("preview", "Ukrinform EN"), "Photo: Ukrinform EN");
 
