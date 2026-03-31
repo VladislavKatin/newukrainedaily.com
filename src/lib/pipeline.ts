@@ -90,6 +90,19 @@ const HOMEPAGE_WEAK_MARKERS = [
   "ceremony"
 ];
 
+const SOFT_PUBLISH_MARKERS = [
+  "concert",
+  "happy birthday, bach",
+  "book fair",
+  "educational centers abroad",
+  "artist passes away",
+  "community in france",
+  "community in poland",
+  "commemoration",
+  "schools",
+  "develop ukrainian in schools"
+];
+
 function buildNewsSignalText(item: {
   title: string;
   summary?: string | null;
@@ -171,6 +184,17 @@ function scorePublishCandidate(item: {
     score -= 20;
   }
 
+  const signature = buildPublishAngleSignature(item);
+  if (signature === "combat-summary" || signature === "losses-summary") {
+    score -= 18;
+  } else if (signature === "air-defense-summary") {
+    score -= 6;
+  }
+
+  if (SOFT_PUBLISH_MARKERS.some((marker) => signalText.includes(marker))) {
+    score -= 32;
+  }
+
   if (NOISY_CONTENT_MARKERS.some((marker) => signalText.includes(marker))) {
     score -= 40;
   }
@@ -244,7 +268,17 @@ function isPublishEligible(item: {
     return false;
   }
 
-  if (getSourcePriority(item.sourceName) >= 7) {
+  if (SOFT_PUBLISH_MARKERS.some((marker) => normalizedText.includes(marker))) {
+    return false;
+  }
+
+  const signature = buildPublishAngleSignature(item);
+  const sourcePriority = getSourcePriority(item.sourceName);
+  if ((signature === "combat-summary" || signature === "losses-summary") && sourcePriority < 11) {
+    return false;
+  }
+
+  if (sourcePriority >= 7 && !HOMEPAGE_WEAK_MARKERS.some((marker) => normalizedText.includes(marker))) {
     return true;
   }
 
