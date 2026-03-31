@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ExternalLink } from "@/components/external-link";
 import { PageShell } from "@/components/page-shell";
 import { buildMetadata } from "@/lib/seo";
 
@@ -145,7 +146,9 @@ export default function ContactPage() {
                   Email
                 </p>
                 <p className="mt-3 break-all text-lg font-semibold text-ink">
-                  <a href="mailto:vladkatintam@gmail.com" rel="nofollow">vladkatintam@gmail.com</a>
+                  <ExternalLink href="mailto:vladkatintam@gmail.com" target="_self">
+                    vladkatintam@gmail.com
+                  </ExternalLink>
                 </p>
                 <p className="mt-4 text-sm leading-7 text-slate-600">
                   For the fastest review, include the article URL and a direct description of the issue or request.
@@ -185,14 +188,12 @@ export default function ContactPage() {
               />
             </div>
             <div className="mt-5 flex flex-wrap gap-3">
-              <a
+              <ExternalLink
                 href={GOOGLE_MAPS_URL}
-                target="_blank"
-                rel="nofollow noopener noreferrer"
                 className="inline-flex items-center justify-center rounded-full bg-brand px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand/90"
               >
                 Open In Google Maps
-              </a>
+              </ExternalLink>
               <Link
                 href="/about"
                 className="inline-flex items-center justify-center rounded-full border border-line bg-white px-5 py-3 text-sm font-semibold text-ink transition hover:bg-mist"
