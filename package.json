@@ -32,7 +32,8 @@
     "local:stop": "powershell -ExecutionPolicy Bypass -File .\\scripts\\stop-local-site.ps1",
     "content:migrate-generated-images-r2": "node --import tsx scripts/migrate-generated-images-to-r2.ts",
     "test:external-links": "node scripts/check-external-links.mjs",
-    "test:frontend": "playwright test tests/frontend-smoke.spec.ts"
+    "test:frontend": "playwright test tests/frontend-smoke.spec.ts",
+    "test:frontend:visual": "playwright test tests/frontend-visual.spec.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1009.0",

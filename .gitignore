@@ -22,3 +22,5 @@ pnpm-debug.log*
 scripts/backups/
 
 .vercel
+test-results/
+playwright-report/
