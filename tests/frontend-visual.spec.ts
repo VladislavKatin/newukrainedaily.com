@@ -22,6 +22,14 @@ test.describe("frontend visual baselines", () => {
     });
   });
 
+  test("news hub cards grid visual baseline", async ({ page }) => {
+    await openPage(page, "/news");
+    const recentReportsSection = page.getByText("Recent reports", { exact: true }).locator("..").locator("..");
+    await expect(recentReportsSection).toHaveScreenshot("news-hub-grid.png", {
+      animations: "disabled"
+    });
+  });
+
   test("blog hub top visual baseline", async ({ page }) => {
     await openPage(page, "/blog");
     const blogTop = page.getByRole("heading", { name: "Analysis and explainers" }).locator("..").locator("..");
