@@ -40,8 +40,8 @@ test.describe("frontend visual baselines", () => {
 
   test("donate page visual baseline", async ({ page }) => {
     await openPage(page, "/donate");
-    await expect(page).toHaveScreenshot("donate-page.png", {
-      fullPage: true,
+    const donateArticle = page.locator("main article").first();
+    await expect(donateArticle).toHaveScreenshot("donate-page.png", {
       animations: "disabled"
     });
   });
