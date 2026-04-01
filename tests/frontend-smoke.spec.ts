@@ -51,6 +51,14 @@ test("blog hub renders cards cleanly", async ({ page }) => {
   await expectStablePageChrome(page);
 });
 
+test("donate page renders support guide cleanly", async ({ page }) => {
+  await openPage(page, "/donate");
+  await expect(page.getByRole("heading", { name: /How to Support Ukraine Effectively/i })).toBeVisible();
+  await expect(page.getByText("What Makes a Donation Effective", { exact: true })).toBeVisible();
+  await expect(page.getByText(/PayPal \/ Contact Email/i)).toBeVisible();
+  await expectStablePageChrome(page);
+});
+
 test("contact page renders map and newsroom context", async ({ page }) => {
   await openPage(page, "/contact");
   await expect(page.getByRole("heading", { name: /New Ukraine Daily is edited from Zaporizhzhia/i })).toBeVisible();
@@ -91,4 +99,3 @@ test("blog article page renders full article chrome", async ({ page }) => {
   await expect(page.locator("text=At a glance").or(page.locator("text=Why it matters")).first()).toBeVisible();
   await expectStablePageChrome(page);
 });
-

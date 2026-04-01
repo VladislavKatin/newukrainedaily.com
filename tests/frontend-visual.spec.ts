@@ -6,6 +6,30 @@ async function openPage(page: import("@playwright/test").Page, path: string) {
 }
 
 test.describe("frontend visual baselines", () => {
+  test("home page hero visual baseline", async ({ page }) => {
+    await openPage(page, "/");
+    const leadSection = page.getByText("Lead Story", { exact: true }).locator("..").locator("..");
+    await expect(leadSection).toHaveScreenshot("home-hero.png", {
+      animations: "disabled"
+    });
+  });
+
+  test("news hub top visual baseline", async ({ page }) => {
+    await openPage(page, "/news");
+    const leadSection = page.getByText("Lead report", { exact: true }).locator("..").locator("..");
+    await expect(leadSection).toHaveScreenshot("news-hub-top.png", {
+      animations: "disabled"
+    });
+  });
+
+  test("donate page visual baseline", async ({ page }) => {
+    await openPage(page, "/donate");
+    await expect(page).toHaveScreenshot("donate-page.png", {
+      fullPage: true,
+      animations: "disabled"
+    });
+  });
+
   test("contact page visual baseline", async ({ page }) => {
     await openPage(page, "/contact");
     await expect(page).toHaveScreenshot("contact-page.png", {
@@ -36,6 +60,18 @@ test.describe("frontend visual baselines", () => {
     await expect(page).toHaveScreenshot("editorial-policy-page.png", {
       fullPage: true,
       animations: "disabled"
+    });
+  });
+
+  test("news article hero visual baseline", async ({ page }) => {
+    await openPage(page, "/news/ukraine-discusses-maritime-security-collaboration-with-partners");
+    const articleTop = page.locator("main article").first();
+    await expect(articleTop).toHaveScreenshot("news-article-top.png", {
+      animations: "disabled",
+      mask: [
+        page.getByText("Related News", { exact: true }),
+        page.getByText("Get the next major Ukraine report", { exact: true })
+      ]
     });
   });
 });
