@@ -15,8 +15,10 @@ import {
   listBlog,
   listBlogPage,
   listBlogByTag,
+  listBlogSlugs,
   listNews,
   listNewsByTag,
+  listNewsSlugs,
   listIndexableTopics
 } from "@/lib/postgres-repository";
 import { getPreviewEntries, getPreviewTopics } from "@/lib/local-preview-content";
@@ -31,6 +33,7 @@ export type ContentRepository = {
     type: ContentEntry["type"],
     options: { limit: number; offset: number }
   ): Promise<{ entries: ContentEntry[]; total: number }>;
+  getEntrySlugsByType(type: ContentEntry["type"], limit: number): Promise<string[]>;
   getEntry(type: ContentEntry["type"], slug: string): Promise<ContentEntry | undefined>;
   getAllTags(): Promise<string[]>;
   getEntriesByTag(tag: string): Promise<ContentEntry[]>;
@@ -212,6 +215,9 @@ function createEmptyContentRepository(): ContentRepository {
     async getEntry() {
       return undefined;
     },
+    async getEntrySlugsByType() {
+      return [];
+    },
     async getAllTags() {
       return [];
     },
@@ -247,6 +253,9 @@ function createPreviewContentRepository(): ContentRepository {
     },
     async getEntry(type, slug) {
       return entries.find((entry) => entry.type === type && entry.slug === slug);
+    },
+    async getEntrySlugsByType(type, limit) {
+      return entries.filter((entry) => entry.type === type).slice(0, limit).map((entry) => entry.slug);
     },
     async getAllTags() {
       return topics.map((topic) => topic.tag);
@@ -316,6 +325,13 @@ function createDatabaseContentRepository(): ContentRepository {
 
       const entry = await getBlogBySlug(slug);
       return entry ? mapBlogPostToContentEntry(entry) : undefined;
+    },
+    async getEntrySlugsByType(type, limit) {
+      if (type === "news") {
+        return listNewsSlugs(limit);
+      }
+
+      return listBlogSlugs(limit);
     },
     async getAllTags() {
       const topics = await listIndexableTopics(5000);

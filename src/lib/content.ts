@@ -42,6 +42,15 @@ const getEntryCached = unstable_cache(
   { revalidate: 300 }
 );
 
+const getEntrySlugsByTypeCached = unstable_cache(
+  async (type: EntryType, limit: number) => {
+    const repository = await getContentRepository();
+    return repository.getEntrySlugsByType(type, limit);
+  },
+  [CONTENT_CACHE_VERSION, "content-entry-slugs-by-type"],
+  { revalidate: 300 }
+);
+
 const getRelatedEntriesCached = unstable_cache(
   async (type: EntryType, slug: string, limit: number) => {
     const repository = await getContentRepository();
@@ -112,6 +121,10 @@ export async function getEntriesByTypePage(
 
 export async function getEntry(type: EntryType, slug: string) {
   return getEntryCached(type, slug);
+}
+
+export async function getEntrySlugsByType(type: EntryType, limit: number) {
+  return getEntrySlugsByTypeCached(type, limit);
 }
 
 export async function getRelatedEntries(type: EntryType, slug: string, limit = 3) {

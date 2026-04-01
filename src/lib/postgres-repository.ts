@@ -805,6 +805,21 @@ export async function listNews(limit = 20, status: NewsItemRecord["status"] | "a
   return result.rows.map(mapNewsItem);
 }
 
+export async function listNewsSlugs(limit = 1000, status: NewsItemRecord["status"] | "all" = "published") {
+  const result = await query<{ slug: string }>(
+    `
+      select slug
+      from news_items
+      where ($1::text = 'all' or status = $1::content_status)
+      order by published_at desc nulls last, created_at desc
+      limit $2
+    `,
+    [status, limit]
+  );
+
+  return result.rows.map((row) => String(row.slug));
+}
+
 export async function listRecentPublishedNews(limit = 200) {
   const result = await query(
     `
@@ -1241,6 +1256,21 @@ export async function listBlog(limit = 20, status: BlogPostRecord["status"] | "a
   );
 
   return result.rows.map(mapBlogPost);
+}
+
+export async function listBlogSlugs(limit = 200, status: BlogPostRecord["status"] | "all" = "published") {
+  const result = await query<{ slug: string }>(
+    `
+      select slug
+      from blog_posts
+      where ($1::text = 'all' or status = $1::content_status)
+      order by published_at desc nulls last, created_at desc
+      limit $2
+    `,
+    [status, limit]
+  );
+
+  return result.rows.map((row) => String(row.slug));
 }
 
 export async function listBlogPage(
