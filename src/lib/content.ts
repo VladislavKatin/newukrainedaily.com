@@ -2,6 +2,7 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 import type { ContentEntry, EntryType } from "@/lib/content-types";
 import { getContentRepository } from "@/lib/content-source";
+import { buildRelatedEntries } from "@/lib/related-content";
 
 const CONTENT_CACHE_VERSION = "2026-03-08-v3";
 
@@ -38,6 +39,23 @@ const getEntryCached = unstable_cache(
     return repository.getEntry(type, slug);
   },
   [CONTENT_CACHE_VERSION, "content-entry"],
+  { revalidate: 300 }
+);
+
+const getRelatedEntriesCached = unstable_cache(
+  async (type: EntryType, slug: string, limit: number) => {
+    const repository = await getContentRepository();
+    const entry = await repository.getEntry(type, slug);
+
+    if (!entry) {
+      return [] satisfies ContentEntry[];
+    }
+
+    const poolLimit = type === "news" ? 140 : 60;
+    const { entries } = await repository.getEntriesByTypePage(type, { limit: poolLimit, offset: 0 });
+    return buildRelatedEntries(entry, entries, limit);
+  },
+  [CONTENT_CACHE_VERSION, "content-related-entries"],
   { revalidate: 300 }
 );
 
@@ -94,6 +112,10 @@ export async function getEntriesByTypePage(
 
 export async function getEntry(type: EntryType, slug: string) {
   return getEntryCached(type, slug);
+}
+
+export async function getRelatedEntries(type: EntryType, slug: string, limit = 3) {
+  return getRelatedEntriesCached(type, slug, limit);
 }
 
 export async function getAllTags() {

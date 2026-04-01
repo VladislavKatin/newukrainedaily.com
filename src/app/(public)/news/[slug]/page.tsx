@@ -10,9 +10,8 @@ import { ArticleShareBar } from "@/components/article-share-bar";
 import { ArticleStatusBanner } from "@/components/article-status-banner";
 import { NewsletterCta } from "@/components/newsletter-cta";
 import { RelatedEntries } from "@/components/related-entries";
-import { getEntriesByType, getEntry } from "@/lib/content";
+import { getEntry, getRelatedEntries } from "@/lib/content";
 import { shouldBypassImageOptimization } from "@/lib/image";
-import { buildRelatedEntries } from "@/lib/related-content";
 import { buildArticleMetadata } from "@/lib/seo";
 import { SUPPORTED_TOPICS, topicSlugFromLabel } from "@/lib/topic-taxonomy";
 import { absoluteUrl } from "@/lib/site";
@@ -43,7 +42,7 @@ export default async function NewsArticlePage({ params }: Props) {
     notFound();
   }
 
-  const related = buildRelatedEntries(entry, await getEntriesByType("news"), 3);
+  const related = await getRelatedEntries("news", entry.slug, 3);
   const unoptimizedPreview = shouldBypassImageOptimization(entry.previewImageUrl);
   const unoptimizedGenerated = shouldBypassImageOptimization(entry.generatedImageUrl);
   const formatConfig = getStoryFormatConfig(entry);

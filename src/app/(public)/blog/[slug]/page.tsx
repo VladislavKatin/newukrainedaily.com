@@ -9,9 +9,8 @@ import { ArticleKeyFacts } from "@/components/article-key-facts";
 import { ArticleShareBar } from "@/components/article-share-bar";
 import { NewsletterCta } from "@/components/newsletter-cta";
 import { RelatedEntries } from "@/components/related-entries";
-import { getEntriesByType, getEntry } from "@/lib/content";
+import { getEntry, getRelatedEntries } from "@/lib/content";
 import { shouldBypassImageOptimization } from "@/lib/image";
-import { buildRelatedEntries } from "@/lib/related-content";
 import { buildArticleMetadata } from "@/lib/seo";
 import { SUPPORTED_TOPICS, topicSlugFromLabel } from "@/lib/topic-taxonomy";
 import { absoluteUrl } from "@/lib/site";
@@ -41,7 +40,7 @@ export default async function BlogArticlePage({ params }: Props) {
     notFound();
   }
 
-  const related = buildRelatedEntries(entry, await getEntriesByType("blog"), 3);
+  const related = await getRelatedEntries("blog", entry.slug, 3);
   const unoptimizedImage = shouldBypassImageOptimization(entry.imageUrl);
   const formatConfig = getStoryFormatConfig(entry);
   const shareUrl = absoluteUrl(`/blog/${entry.slug}`);
