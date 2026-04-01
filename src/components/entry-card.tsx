@@ -26,7 +26,7 @@ export function EntryCard({ entry, compact = false }: EntryCardProps) {
   const compactImageClass = entry.type === "blog" ? "h-40 sm:h-44" : "h-44 sm:h-48";
 
   return (
-    <article className={`panel overflow-hidden ${compact ? "p-4 sm:p-5" : "p-5 sm:p-6"}`}>
+    <article className={`panel safe-grid-child overflow-hidden ${compact ? "p-4 sm:p-5" : "p-5 sm:p-6"}`}>
       {previewUrl ? (
         <Link
           href={`/${entry.type}/${entry.slug}`}
@@ -57,14 +57,14 @@ export function EntryCard({ entry, compact = false }: EntryCardProps) {
         <time dateTime={entry.publishedAt}>{formatDate(entry.publishedAt)}</time>
       </div>
       <h2
-        className={`mt-3 font-semibold tracking-tight text-ink ${
+        className={`safe-grid-child mt-3 break-words font-semibold tracking-tight text-ink ${
           compact ? "line-clamp-2 text-base leading-6 sm:text-lg sm:leading-7" : "text-lg leading-7 sm:text-2xl"
         }`}
       >
         {entry.title}
       </h2>
       <p
-        className={`mt-2 text-sm text-slate-600 ${
+        className={`safe-grid-child mt-2 break-words text-sm text-slate-600 ${
           compact ? "line-clamp-2 leading-[1.35rem]" : "line-clamp-4 leading-6"
         }`}
       >

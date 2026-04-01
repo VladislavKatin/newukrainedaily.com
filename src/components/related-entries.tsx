@@ -43,15 +43,15 @@ export function RelatedEntries({
                   />
                 </div>
               ) : null}
-              <div className="p-4 sm:p-5">
+              <div className="safe-grid-child p-4 sm:p-5">
                 <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-brand">
                   <span>{entry.storyFormat || entry.type}</span>
                   {entry.readingTimeMinutes ? <span className="text-slate-500">{entry.readingTimeMinutes} min</span> : null}
                 </div>
-                <h3 className="mt-2 text-base font-semibold leading-6 text-ink sm:text-lg">
+                <h3 className="mt-2 break-words text-base font-semibold leading-6 text-ink sm:text-lg">
                   {entry.title}
                 </h3>
-                <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-600">{entryExcerpt}</p>
+                <p className="mt-2 line-clamp-3 break-words text-sm leading-6 text-slate-600">{entryExcerpt}</p>
               </div>
             </Link>
           );

@@ -8,11 +8,13 @@
 
 html {
   scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   margin: 0;
   min-height: 100vh;
+  min-height: 100dvh;
   background:
     radial-gradient(circle at top left, rgba(15, 91, 216, 0.12), transparent 24%),
     radial-gradient(circle at right top, rgba(245, 158, 11, 0.12), transparent 20%),
@@ -27,6 +29,30 @@ a {
 
 * {
   box-sizing: border-box;
+}
+
+img,
+picture,
+svg,
+video,
+canvas,
+iframe {
+  display: block;
+  max-width: 100%;
+}
+
+iframe {
+  border: 0;
+}
+
+button,
+a,
+p,
+h1,
+h2,
+h3,
+h4 {
+  overflow-wrap: anywhere;
 }
 
 @layer components {
@@ -48,10 +74,12 @@ a {
 
   .article-paragraph {
     @apply max-w-[72ch] text-[15px] leading-8 text-slate-700 sm:text-[1.02rem];
+    word-break: normal;
   }
 
   .article-heading {
     @apply max-w-[28ch] tracking-tight text-ink;
+    text-wrap: balance;
   }
 
   .article-heading-lg {
@@ -109,6 +137,10 @@ a {
 
   .meta-row {
     @apply flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-500;
+  }
+
+  .safe-grid-child {
+    min-width: 0;
   }
 }
 
