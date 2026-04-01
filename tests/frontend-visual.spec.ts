@@ -22,6 +22,14 @@ test.describe("frontend visual baselines", () => {
     });
   });
 
+  test("blog hub top visual baseline", async ({ page }) => {
+    await openPage(page, "/blog");
+    const blogTop = page.getByRole("heading", { name: "Analysis and explainers" }).locator("..").locator("..");
+    await expect(blogTop).toHaveScreenshot("blog-hub-top.png", {
+      animations: "disabled"
+    });
+  });
+
   test("donate page visual baseline", async ({ page }) => {
     await openPage(page, "/donate");
     await expect(page).toHaveScreenshot("donate-page.png", {
@@ -70,6 +78,18 @@ test.describe("frontend visual baselines", () => {
       animations: "disabled",
       mask: [
         page.getByText("Related News", { exact: true }),
+        page.getByText("Get the next major Ukraine report", { exact: true })
+      ]
+    });
+  });
+
+  test("blog article hero visual baseline", async ({ page }) => {
+    await openPage(page, "/blog/how-global-support-helps-ukrainian-families-rebuild-daily-life");
+    const articleTop = page.locator("main article").first();
+    await expect(articleTop).toHaveScreenshot("blog-article-top.png", {
+      animations: "disabled",
+      mask: [
+        page.getByText("Related Posts", { exact: true }),
         page.getByText("Get the next major Ukraine report", { exact: true })
       ]
     });
