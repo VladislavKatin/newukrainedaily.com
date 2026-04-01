@@ -31,7 +31,8 @@
     "local:start": "powershell -ExecutionPolicy Bypass -File .\\scripts\\start-local-site.ps1",
     "local:stop": "powershell -ExecutionPolicy Bypass -File .\\scripts\\stop-local-site.ps1",
     "content:migrate-generated-images-r2": "node --import tsx scripts/migrate-generated-images-to-r2.ts",
-    "test:external-links": "node scripts/check-external-links.mjs"
+    "test:external-links": "node scripts/check-external-links.mjs",
+    "test:frontend": "playwright test tests/frontend-smoke.spec.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1009.0",
@@ -46,6 +47,7 @@
     "zod": "3.24.2"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.0",
     "@types/node": "22.13.10",
     "@types/pg": "8.11.11",
     "@types/react": "19.0.10",
