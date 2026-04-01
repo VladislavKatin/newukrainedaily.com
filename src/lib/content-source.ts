@@ -288,7 +288,7 @@ function createDatabaseContentRepository(): ContentRepository {
     async getEntriesByTypePage(type, options) {
       if (type === "news") {
         const total = await countNews();
-        const fetchLimit = Math.min(Math.max(total, options.offset + options.limit + 48, 120), 800);
+        const fetchLimit = Math.min(Math.max(options.offset + options.limit + 48, 120), 180);
         const entries = await listNews(fetchLimit);
         const curated = curateNewsArchivePage(entries.map(mapNewsItemToContentEntry), options);
 

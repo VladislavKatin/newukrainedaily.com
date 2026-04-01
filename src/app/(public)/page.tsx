@@ -7,8 +7,7 @@ import { curateHomepageNews } from "@/lib/homepage-curation";
 import { buildMetadata } from "@/lib/seo";
 import { SUPPORTED_TOPICS, topicSlugFromLabel } from "@/lib/topic-taxonomy";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+export const revalidate = 300;
 
 export const metadata = buildMetadata({
   title: "Home",

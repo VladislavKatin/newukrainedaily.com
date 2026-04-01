@@ -2,8 +2,7 @@ import type { MetadataRoute } from "next";
 import { absoluteUrl } from "@/lib/site";
 
 type ChangeFrequency = NonNullable<MetadataRoute.Sitemap[number]["changeFrequency"]>;
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+export const revalidate = 3600;
 
 const staticRoutes = [
   "/",
