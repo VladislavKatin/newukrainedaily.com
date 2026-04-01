@@ -34,7 +34,9 @@
     "test:external-links": "node scripts/check-external-links.mjs",
     "test:frontend": "playwright test tests/frontend-smoke.spec.ts",
     "test:frontend:visual": "playwright test tests/frontend-visual.spec.ts",
-    "release:check": "node scripts/release-check.mjs"
+    "release:check": "node scripts/release-check.mjs",
+    "blog:images:manifest": "node scripts/build-blog-image-manifest.mjs",
+    "blog:images:import": "node scripts/import-blog-images.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1009.0",
