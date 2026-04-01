@@ -37,7 +37,8 @@
     "release:check": "node scripts/release-check.mjs",
     "blog:images:manifest": "node scripts/build-blog-image-manifest.mjs",
     "blog:images:import": "node scripts/import-blog-images.mjs",
-    "blog:images:generate:replicate": "node scripts/generate-blog-images-replicate.mjs"
+    "blog:images:generate:replicate": "node scripts/generate-blog-images-replicate.mjs",
+    "warm:production": "node scripts/warm-production.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1009.0",
