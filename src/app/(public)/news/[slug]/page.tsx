@@ -10,7 +10,7 @@ import { ArticleShareBar } from "@/components/article-share-bar";
 import { ArticleStatusBanner } from "@/components/article-status-banner";
 import { NewsletterCta } from "@/components/newsletter-cta";
 import { RelatedEntries } from "@/components/related-entries";
-import { getEntry, getRelatedEntries } from "@/lib/content";
+import { getEntriesByTypePage, getEntry, getRelatedEntries } from "@/lib/content";
 import { shouldBypassImageOptimization } from "@/lib/image";
 import { buildArticleMetadata } from "@/lib/seo";
 import { SUPPORTED_TOPICS, topicSlugFromLabel } from "@/lib/topic-taxonomy";
@@ -22,6 +22,11 @@ type Props = {
 };
 
 export const revalidate = 300;
+
+export async function generateStaticParams() {
+  const { entries } = await getEntriesByTypePage("news", { limit: 48, offset: 0 });
+  return entries.map((entry) => ({ slug: entry.slug }));
+}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
