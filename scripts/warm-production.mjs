@@ -3,9 +3,27 @@ import { loadLocalEnv } from "./load-local-env.mjs";
 
 loadLocalEnv(process.cwd());
 
+function resolveDefaultBaseUrl() {
+  const configured = (process.env.PUBLIC_BASE_URL || "").trim();
+
+  if (!configured) {
+    return "https://www.newukrainedaily.com";
+  }
+
+  try {
+    const url = new URL(configured);
+    if (url.hostname === "localhost" || url.hostname === "127.0.0.1") {
+      return "https://www.newukrainedaily.com";
+    }
+    return url.origin;
+  } catch {
+    return "https://www.newukrainedaily.com";
+  }
+}
+
 function parseArgs(argv) {
   const options = {
-    baseUrl: process.env.PUBLIC_BASE_URL || "https://www.newukrainedaily.com",
+    baseUrl: resolveDefaultBaseUrl(),
     newsLimit: 12,
     blogLimit: 8,
     concurrency: 1
