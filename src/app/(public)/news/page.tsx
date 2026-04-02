@@ -21,7 +21,9 @@ export async function generateMetadata({ searchParams }: Props) {
     title: currentPage > 1 ?             `News - Page ${currentPage}` : "News",
     description: "Published Ukraine news archive with stronger editorial curation, fast updates, and structured story discovery.",
     path: currentPage > 1 ? `/news?page=${currentPage}` : "/news",
-    keywords: ["Ukraine news", "latest Ukraine updates", "Ukraine war news"]
+    keywords: ["Ukraine news", "latest Ukraine updates", "Ukraine war news"],
+    imagePath: "/og-news-hub.svg",
+    imageAlt: "Latest Ukraine news"
   });
 }
 

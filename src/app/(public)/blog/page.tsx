@@ -19,7 +19,9 @@ export async function generateMetadata({ searchParams }: Props) {
     title: currentPage > 1 ? `Blog - Page ${currentPage}` : "Blog",
     description: "Published blog archive with explainers, editorial analysis, and practical support coverage related to Ukraine.",
     path: currentPage > 1 ? `/blog?page=${currentPage}` : "/blog",
-    keywords: ["Ukraine blog", "reports", "editorial analysis"]
+    keywords: ["Ukraine blog", "reports", "editorial analysis"],
+    imagePath: "/og-blog-hub.svg",
+    imageAlt: "Ukraine analysis and explainers"
   });
 }
 
