@@ -34,7 +34,7 @@ jobs:
             -X POST "https://www.newukrainedaily.com/api/internal/telegram" \
             -H "Authorization: Bearer $CRON_SECRET" \
             -H "Content-Type: application/json" \
-            --data '{"status":"error","title":"Production health failed","text":"Production health monitor failed."}'
+            --data '{"status":"error","title":"Проблема с production","text":"Health-check сайта не прошел. Проверьте главную, /news, /blog, sitemap и feed."}'
 
   publishing-freshness:
     runs-on: ubuntu-latest
@@ -64,4 +64,36 @@ jobs:
             -X POST "https://www.newukrainedaily.com/api/internal/telegram" \
             -H "Authorization: Bearer $CRON_SECRET" \
             -H "Content-Type: application/json" \
-            --data '{"status":"error","title":"Publishing freshness failed","text":"No fresh published news within threshold."}'
+            --data '{"status":"error","title":"Остановились публикации","text":"В ленте нет свежих новостей в пределах порога. Проверьте fetch, rewrite, generate-images и publish pipeline."}'
+
+  source-health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check RSS source health
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: npm run check:production-source-health -- --min-healthy-sources=3
+
+      - name: Telegram failure
+        if: failure() && secrets.CRON_SECRET != ''
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl --fail-with-body --show-error --silent \
+            -X POST "https://www.newukrainedaily.com/api/internal/telegram" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -H "Content-Type: application/json" \
+            --data '{"status":"error","title":"Проблема с источниками","text":"Мониторинг RSS-источников не прошел. Проверьте source-health и доступность внешних источников."}'

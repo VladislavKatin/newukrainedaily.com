@@ -29,17 +29,6 @@ jobs:
       - name: Run release check
         run: npm run release:check
 
-      - name: Telegram success
-        if: success() && github.event_name != 'pull_request' && secrets.CRON_SECRET != ''
-        env:
-          CRON_SECRET: ${{ secrets.CRON_SECRET }}
-        run: |
-          curl --fail-with-body --show-error --silent \
-            -X POST "https://www.newukrainedaily.com/api/internal/telegram" \
-            -H "Authorization: Bearer $CRON_SECRET" \
-            -H "Content-Type: application/json" \
-            --data '{"status":"success","title":"Release check passed","text":"release:check completed successfully on main."}'
-
       - name: Telegram failure
         if: failure() && github.event_name != 'pull_request' && secrets.CRON_SECRET != ''
         env:
@@ -49,4 +38,4 @@ jobs:
             -X POST "https://www.newukrainedaily.com/api/internal/telegram" \
             -H "Authorization: Bearer $CRON_SECRET" \
             -H "Content-Type: application/json" \
-            --data '{"status":"error","title":"Release check failed","text":"release:check failed on main."}'
+            --data '{"status":"error","title":"Сбой release-check","text":"Не прошли проверки релиза. Проверьте lint, build, smoke и visual тесты в GitHub Actions."}'

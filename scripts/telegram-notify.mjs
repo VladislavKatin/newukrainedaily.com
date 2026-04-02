@@ -5,7 +5,7 @@ loadLocalEnv(process.cwd());
 
 function parseArgs(argv) {
   const options = {
-    title: "Notification",
+    title: "Уведомление",
     text: "",
     status: "info",
     disableLinkPreview: true,
@@ -36,13 +36,13 @@ function requireEnv(name) {
 function buildPrefix(status) {
   switch (status) {
     case "success":
-      return "[SUCCESS]";
+      return "[УСПЕХ]";
     case "warning":
-      return "[WARNING]";
+      return "[ПРЕДУПРЕЖДЕНИЕ]";
     case "error":
-      return "[ERROR]";
+      return "[ОШИБКА]";
     default:
-      return "[INFO]";
+      return "[ИНФО]";
   }
 }
 
@@ -70,7 +70,7 @@ async function main() {
 
   if (process.env.GITHUB_SERVER_URL && process.env.GITHUB_REPOSITORY && process.env.GITHUB_RUN_ID) {
     const runUrl = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
-    lines.push(`<a href="${runUrl}">Open workflow run</a>`);
+    lines.push(`Логи workflow: <a href="${runUrl}">открыть</a>`);
   }
 
   const body = {
