@@ -92,7 +92,14 @@ const HOMEPAGE_WEAK_MARKERS = [
   "exhibition honors",
   "mothers and wives of mariupol defenders",
   "book",
-  "ceremony"
+  "ceremony",
+  "theater",
+  "cabaret",
+  "literature",
+  "philosophy",
+  "judicial council",
+  "bilingual",
+  "festival"
 ];
 
 const SOFT_PUBLISH_MARKERS = [
@@ -110,7 +117,25 @@ const SOFT_PUBLISH_MARKERS = [
   "asylum seekers",
   "refugees in lithuania",
   "exhibition honors",
-  "mothers and wives of mariupol defenders"
+  "mothers and wives of mariupol defenders",
+  "theater",
+  "cabaret",
+  "literature",
+  "philosophy",
+  "judicial council",
+  "bilingual book",
+  "children's book",
+  "festival"
+];
+
+const DUPLICATE_STORY_PATTERNS = [
+  /\b(\d{2,4})\b[^\n]*\b(clashes|combat|engagements|frontline|front line)\b/i,
+  /\b(\d{2,4})\b[^\n]*\b(drones?|missiles?)\b[^\n]*\b(attack|launched|intercepted|neutralized|downed)\b/i,
+  /\bpower\b[^\n]*\b(restrictions|outages|schedules)\b/i,
+  /\bredirecting drones toward baltic states\b/i,
+  /\bdrone diversions to baltic states\b/i,
+  /\bforces strike dnipro and kryvyi rih\b/i,
+  /\bforces attack dnipropetrovsk region\b/i
 ];
 
 function buildNewsSignalText(item: {
@@ -156,7 +181,18 @@ function buildPublishAngleSignature(item: {
     return "air-defense-summary";
   }
 
-  return normalizeToken(item.title);
+  for (const pattern of DUPLICATE_STORY_PATTERNS) {
+    if (pattern.test(signalText)) {
+      return pattern.source;
+    }
+  }
+
+  return normalizeToken(item.title)
+    .replace(/\b\d{2,4}\b/g, "")
+    .replace(/\b(april|march|may|june|july|august|september|october|november|december|january|february)\b/g, "")
+    .replace(/\b(today|yesterday|overnight|amid ongoing conflict|in one day|in march|on april \d{1,2})\b/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function scorePublishCandidate(item: {

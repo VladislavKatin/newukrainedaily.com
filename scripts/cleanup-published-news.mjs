@@ -71,7 +71,25 @@ const WEAK_MARKERS = [
   "astrology",
   "horoscope",
   "sleeping head-first",
-  "blackcurrants"
+  "blackcurrants",
+  "theater",
+  "cabaret",
+  "literature",
+  "philosophy",
+  "judicial council",
+  "bilingual book",
+  "children's book",
+  "festival"
+];
+
+const DUPLICATE_STORY_PATTERNS = [
+  /\b(\d{2,4})\b[^\n]*\b(clashes|combat|engagements|frontline|front line)\b/i,
+  /\b(\d{2,4})\b[^\n]*\b(drones?|missiles?)\b[^\n]*\b(attack|launched|intercepted|neutralized|downed)\b/i,
+  /\bpower\b[^\n]*\b(restrictions|outages|schedules)\b/i,
+  /\bredirecting drones toward baltic states\b/i,
+  /\bdrone diversions to baltic states\b/i,
+  /\bforces strike dnipro and kryvyi rih\b/i,
+  /\bforces attack dnipropetrovsk region\b/i
 ];
 
 loadLocalEnv(process.cwd());
@@ -152,7 +170,18 @@ function buildAngleSignature(row) {
     return "air-defense-summary";
   }
 
-  return row.slug;
+  for (const pattern of DUPLICATE_STORY_PATTERNS) {
+    if (pattern.test(text)) {
+      return pattern.source;
+    }
+  }
+
+  return normalizeToken(row.title)
+    .replace(/\b\d{2,4}\b/g, "")
+    .replace(/\b(april|march|may|june|july|august|september|october|november|december|january|february)\b/g, "")
+    .replace(/\b(today|yesterday|overnight|amid ongoing conflict|in one day|in march|on april \d{1,2})\b/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function scoreDraft(row) {
@@ -175,7 +204,7 @@ function scoreDraft(row) {
   score += Number(row.word_count || 0) >= 300 ? 2 : 0;
 
   if (WEAK_MARKERS.some((marker) => text.includes(marker))) {
-    score -= 50;
+    score -= 120;
   }
 
   if (signature === "combat-summary" || signature === "losses-summary") {
