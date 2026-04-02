@@ -6,7 +6,9 @@ export const metadata = buildMetadata({
   title: "About",
   description:
     "About New Ukraine Daily, an English-language newsroom edited from Zaporizhzhia, Ukraine, with a focus on factual reporting, accountability, and useful coverage.",
-  path: "/about"
+  path: "/about",
+  imagePath: "/og-about.svg",
+  imageAlt: "About New Ukraine Daily"
 });
 
 const coverageAreas = [

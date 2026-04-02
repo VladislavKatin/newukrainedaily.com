@@ -6,7 +6,9 @@ export const metadata = buildMetadata({
   title: "Editorial Policy",
   description:
     "Editorial policy for sourcing, attribution, corrections, AI disclosures, image standards, and article maintenance at New Ukraine Daily.",
-  path: "/editorial-policy"
+  path: "/editorial-policy",
+  imagePath: "/og-editorial-policy.svg",
+  imageAlt: "New Ukraine Daily editorial policy"
 });
 
 const principles = [

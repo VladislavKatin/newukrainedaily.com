@@ -6,7 +6,9 @@ export const metadata = buildMetadata({
   title: "Newsroom",
   description:
     "Newsroom structure, editorial desks, standards, and contact paths for New Ukraine Daily in Zaporizhzhia, Ukraine.",
-  path: "/newsroom"
+  path: "/newsroom",
+  imagePath: "/og-newsroom.svg",
+  imageAlt: "New Ukraine Daily newsroom"
 });
 
 const desks = [

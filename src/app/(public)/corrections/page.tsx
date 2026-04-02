@@ -4,7 +4,9 @@ import { buildMetadata } from "@/lib/seo";
 export const metadata = buildMetadata({
   title: "Corrections",
   description: "How New Ukraine Daily handles corrections, clarifications, and visible article updates.",
-  path: "/corrections"
+  path: "/corrections",
+  imagePath: "/og-corrections.svg",
+  imageAlt: "Corrections at New Ukraine Daily"
 });
 
 export default function CorrectionsPage() {

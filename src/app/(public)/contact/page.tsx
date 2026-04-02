@@ -7,7 +7,9 @@ export const metadata = buildMetadata({
   title: "Contact",
   description:
     "Contact New Ukraine Daily in Zaporizhzhia, Ukraine for editorial inquiries, corrections, partnerships, and newsroom communication.",
-  path: "/contact"
+  path: "/contact",
+  imagePath: "/og-contact.svg",
+  imageAlt: "Contact the New Ukraine Daily newsroom"
 });
 
 const GOOGLE_MAPS_URL =
