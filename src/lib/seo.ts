@@ -49,13 +49,10 @@ export function buildMetadata({ title, description, path, keywords, imagePath, i
 
 export function buildArticleMetadata(entry: ContentEntry): Metadata {
   const path = `/${entry.type}/${entry.slug}`;
+  const ogCardUrl = absoluteUrl(`/api/og/article?type=${entry.type}&slug=${entry.slug}`);
   const hasGeneratedImage = Boolean(entry.generatedImageUrl);
   const hasPreviewImage = Boolean(entry.previewImageUrl);
-  const imageUrl =
-    entry.generatedImageUrl ||
-    entry.previewImageUrl ||
-    entry.imageUrl ||
-    absoluteUrl(siteConfig.defaultOgImage);
+  const imageUrl = ogCardUrl;
   const imageAlt = hasGeneratedImage
     ? entry.generatedImageAlt || entry.imageAlt || entry.title
     : hasPreviewImage
