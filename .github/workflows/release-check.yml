@@ -30,23 +30,23 @@ jobs:
         run: npm run release:check
 
       - name: Telegram success
-        if: success() && github.event_name != 'pull_request' && secrets.TELEGRAM_BOT_TOKEN != '' && secrets.TELEGRAM_CHAT_ID != ''
+        if: success() && github.event_name != 'pull_request' && secrets.CRON_SECRET != ''
         env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          TELEGRAM_MESSAGE_THREAD_ID: ${{ secrets.TELEGRAM_MESSAGE_THREAD_ID }}
-          GITHUB_SERVER_URL: ${{ github.server_url }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          GITHUB_RUN_ID: ${{ github.run_id }}
-        run: node scripts/telegram-notify.mjs --status=success --title="Release check passed" --text="release:check completed successfully on ${GITHUB_REF_NAME}."
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl --fail-with-body --show-error --silent \
+            -X POST "https://www.newukrainedaily.com/api/internal/telegram" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -H "Content-Type: application/json" \
+            --data '{"status":"success","title":"Release check passed","text":"release:check completed successfully on main."}'
 
       - name: Telegram failure
-        if: failure() && github.event_name != 'pull_request' && secrets.TELEGRAM_BOT_TOKEN != '' && secrets.TELEGRAM_CHAT_ID != ''
+        if: failure() && github.event_name != 'pull_request' && secrets.CRON_SECRET != ''
         env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          TELEGRAM_MESSAGE_THREAD_ID: ${{ secrets.TELEGRAM_MESSAGE_THREAD_ID }}
-          GITHUB_SERVER_URL: ${{ github.server_url }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          GITHUB_RUN_ID: ${{ github.run_id }}
-        run: node scripts/telegram-notify.mjs --status=error --title="Release check failed" --text="release:check failed on ${GITHUB_REF_NAME}."
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl --fail-with-body --show-error --silent \
+            -X POST "https://www.newukrainedaily.com/api/internal/telegram" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -H "Content-Type: application/json" \
+            --data '{"status":"error","title":"Release check failed","text":"release:check failed on main."}'
