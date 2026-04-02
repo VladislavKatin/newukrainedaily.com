@@ -1,6 +1,7 @@
 ﻿import { ImageResponse } from "next/og";
 import { getEntry } from "@/lib/content";
 import { absoluteUrl } from "@/lib/site";
+import { getNewsRedirectSlug } from "@/lib/news-redirects";
 
 export const runtime = "nodejs";
 export const revalidate = 300;
@@ -59,7 +60,8 @@ export async function GET(request: Request) {
     return new Response("Missing or invalid type/slug", { status: 400 });
   }
 
-  const entry = await getEntry(type, slug);
+  const resolvedSlug = type === "news" ? getNewsRedirectSlug(slug) || slug : slug;
+  const entry = await getEntry(type, resolvedSlug);
 
   if (!entry) {
     return new Response("Not found", { status: 404 });

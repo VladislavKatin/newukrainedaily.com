@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { ArticleJsonLd } from "@/components/article-json-ld";
 import { ArticleBody } from "@/components/article-body";
 import { ArticleOverview } from "@/components/article-overview";
@@ -16,6 +16,7 @@ import { buildArticleMetadata } from "@/lib/seo";
 import { SUPPORTED_TOPICS, topicSlugFromLabel } from "@/lib/topic-taxonomy";
 import { absoluteUrl } from "@/lib/site";
 import { getStoryFormatConfig } from "@/lib/story-format";
+import { getNewsRedirectSlug } from "@/lib/news-redirects";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -30,7 +31,8 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const entry = await getEntry("news", slug);
+  const redirectSlug = getNewsRedirectSlug(slug);
+  const entry = await getEntry("news", redirectSlug || slug);
 
   if (!entry) {
     return {};
@@ -41,6 +43,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function NewsArticlePage({ params }: Props) {
   const { slug } = await params;
+  const redirectSlug = getNewsRedirectSlug(slug);
+
+  if (redirectSlug) {
+    redirect(`/news/${redirectSlug}`);
+  }
+
   const entry = await getEntry("news", slug);
 
   if (!entry) {
