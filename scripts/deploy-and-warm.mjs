@@ -34,6 +34,7 @@ function runStep(label, command, args) {
   try {
     await runStep("Production Deploy", npxBin, ["vercel", "deploy", "--prod", "--yes"]);
     await runStep("Production Warm-Up", npmBin, ["run", "warm:production"]);
+    await runStep("Production Health Check", npmBin, ["run", "check:production-health"]);
 
     const durationSeconds = Math.round((Date.now() - startedAt) / 1000);
     process.stdout.write(`

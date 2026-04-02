@@ -40,7 +40,8 @@
     "blog:images:generate:replicate": "node scripts/generate-blog-images-replicate.mjs",
     "warm:production": "node scripts/warm-production.mjs",
     "deploy:production": "node scripts/deploy-and-warm.mjs",
-    "release:ship": "npm run release:check && npm run deploy:production"
+    "release:ship": "npm run release:check && npm run deploy:production",
+    "check:production-health": "node scripts/check-production-health.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1009.0",

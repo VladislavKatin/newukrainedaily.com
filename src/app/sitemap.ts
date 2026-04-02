@@ -25,6 +25,10 @@ function buildStaticEntries(): MetadataRoute.Sitemap {
   }));
 }
 
+function hasDynamicSitemapData() {
+  return Boolean(process.env.DATABASE_URL || process.env.SUPABASE_DATABASE_URL);
+}
+
 function safeDate(value: string | null | undefined) {
   if (!value) {
     return new Date();
@@ -36,6 +40,10 @@ function safeDate(value: string | null | undefined) {
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticEntries = buildStaticEntries();
+
+  if (!hasDynamicSitemapData()) {
+    return staticEntries;
+  }
 
   try {
     const [{ listBlog, listIndexableTopics, listNews }, { topicSlugFromLabel }] = await Promise.all([
