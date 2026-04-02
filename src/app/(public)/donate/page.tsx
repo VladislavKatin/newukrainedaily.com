@@ -14,7 +14,9 @@ export const metadata = buildMetadata({
     "humanitarian support Ukraine",
     "Ukraine recovery support",
     "how to help Ukraine"
-  ]
+  ],
+  imagePath: "/donate-support-hero.svg",
+  imageAlt: "Support Ukraine with clear priorities"
 });
 
 const supportPriorities = [

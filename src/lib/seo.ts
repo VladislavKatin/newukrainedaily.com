@@ -7,10 +7,13 @@ type MetadataInput = {
   description: string;
   path: string;
   keywords?: string[];
+  imagePath?: string;
+  imageAlt?: string;
 };
 
-export function buildMetadata({ title, description, path, keywords }: MetadataInput): Metadata {
-  const defaultImage = absoluteUrl(siteConfig.defaultOgImage);
+export function buildMetadata({ title, description, path, keywords, imagePath, imageAlt }: MetadataInput): Metadata {
+  const defaultImage = absoluteUrl(imagePath || siteConfig.defaultOgImage);
+  const defaultImageAlt = imageAlt || title;
 
   return {
     title,
@@ -31,7 +34,7 @@ export function buildMetadata({ title, description, path, keywords }: MetadataIn
           url: defaultImage,
           width: 1200,
           height: 630,
-          alt: title
+          alt: defaultImageAlt
         }
       ]
     },
