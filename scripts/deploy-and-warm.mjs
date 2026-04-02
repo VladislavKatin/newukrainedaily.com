@@ -1,16 +1,12 @@
 import { spawn } from "node:child_process";
 
-const isWindows = process.platform === "win32";
-const npxBin = isWindows ? "npx.cmd" : "npx";
-const npmBin = isWindows ? "npm.cmd" : "npm";
-
-function runStep(label, command, args) {
+function runStep(label, script) {
   return new Promise((resolve, reject) => {
     process.stdout.write(`
 === ${label} ===
 `);
 
-    const child = spawn(command, args, {
+    const child = spawn("cmd.exe", ["/c", "npm.cmd", "run", script], {
       stdio: "inherit",
       shell: false,
       env: process.env
@@ -32,9 +28,9 @@ function runStep(label, command, args) {
   const startedAt = Date.now();
 
   try {
-    await runStep("Production Deploy", npxBin, ["vercel", "deploy", "--prod", "--yes"]);
-    await runStep("Production Warm-Up", npmBin, ["run", "warm:production"]);
-    await runStep("Production Health Check", npmBin, ["run", "check:production-health"]);
+    await runStep("Production Deploy", "_internal:vercel:deploy");
+    await runStep("Production Warm-Up", "warm:production");
+    await runStep("Production Health Check", "check:production-health");
 
     const durationSeconds = Math.round((Date.now() - startedAt) / 1000);
     process.stdout.write(`
