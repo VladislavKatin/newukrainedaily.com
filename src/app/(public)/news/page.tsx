@@ -31,7 +31,8 @@ export default async function NewsPage({ searchParams }: Props) {
   const offset = (currentPage - 1) * PAGE_SIZE;
   const { entries, total } = await getEntriesByTypePage("news", {
     limit: PAGE_SIZE,
-    offset
+    offset,
+    mode: "latest"
   });
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const [leadEntry, ...restEntries] = entries;
@@ -49,11 +50,11 @@ export default async function NewsPage({ searchParams }: Props) {
         {leadEntry ? (
           <section className="mb-8 grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(320px,0.7fr)]">
             <div>
-              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.28em] text-brand">Lead report</p>
+              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.28em] text-brand">Latest report</p>
               <EntryCard entry={leadEntry} />
             </div>
             <div className="panel p-5 sm:p-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">Latest updates</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">Newest first</p>
               <div className="mt-4 space-y-4">
                 {updateRail.map((entry) => (
                   <article key={entry.slug} className="border-b border-line pb-4 last:border-b-0 last:pb-0">
@@ -78,10 +79,10 @@ export default async function NewsPage({ searchParams }: Props) {
           <div className="mb-5 flex items-end justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">Archive</p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ink">Recent reports</h2>
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ink">More recent reports</h2>
             </div>
             <p className="max-w-xl text-sm leading-6 text-slate-600">
-              A structured archive of current Ukraine reporting, with recent developments surfaced before lower-priority angles.
+              A reverse-chronological archive of current Ukraine reporting, with the newest published stories shown first.
             </p>
           </div>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

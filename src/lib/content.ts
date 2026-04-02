@@ -25,9 +25,9 @@ const getEntriesByTypeCached = unstable_cache(
 );
 
 const getEntriesByTypePageCached = unstable_cache(
-  async (type: EntryType, limit: number, offset: number) => {
+  async (type: EntryType, limit: number, offset: number, mode: "curated" | "latest") => {
     const repository = await getContentRepository();
-    return repository.getEntriesByTypePage(type, { limit, offset });
+    return repository.getEntriesByTypePage(type, { limit, offset, mode });
   },
   [CONTENT_CACHE_VERSION, "content-type-page"],
   { revalidate: 300 }
@@ -114,9 +114,9 @@ export async function getEntriesByType(type: EntryType) {
 
 export async function getEntriesByTypePage(
   type: EntryType,
-  options: { limit: number; offset: number }
+  options: { limit: number; offset: number; mode?: "curated" | "latest" }
 ) {
-  return getEntriesByTypePageCached(type, options.limit, options.offset);
+  return getEntriesByTypePageCached(type, options.limit, options.offset, options.mode || "curated");
 }
 
 export async function getEntry(type: EntryType, slug: string) {

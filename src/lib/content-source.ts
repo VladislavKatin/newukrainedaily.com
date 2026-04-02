@@ -17,6 +17,7 @@ import {
   listBlogByTag,
   listBlogSlugs,
   listNews,
+  listNewsPage,
   listNewsByTag,
   listNewsSlugs,
   listIndexableTopics
@@ -31,7 +32,7 @@ export type ContentRepository = {
   getEntriesByType(type: ContentEntry["type"]): Promise<ContentEntry[]>;
   getEntriesByTypePage(
     type: ContentEntry["type"],
-    options: { limit: number; offset: number }
+    options: { limit: number; offset: number; mode?: "curated" | "latest" }
   ): Promise<{ entries: ContentEntry[]; total: number }>;
   getEntrySlugsByType(type: ContentEntry["type"], limit: number): Promise<string[]>;
   getEntry(type: ContentEntry["type"], slug: string): Promise<ContentEntry | undefined>;
@@ -297,6 +298,16 @@ function createDatabaseContentRepository(): ContentRepository {
     async getEntriesByTypePage(type, options) {
       if (type === "news") {
         const total = await countNews();
+
+        if (options.mode === "latest") {
+          const entries = await listNewsPage(options.limit, options.offset);
+
+          return {
+            entries: entries.map(mapNewsItemToContentEntry),
+            total
+          };
+        }
+
         const fetchLimit = Math.min(Math.max(options.offset + options.limit + 48, 120), 180);
         const entries = await listNews(fetchLimit);
         const curated = curateNewsArchivePage(entries.map(mapNewsItemToContentEntry), options);
