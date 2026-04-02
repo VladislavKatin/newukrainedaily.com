@@ -26,7 +26,8 @@ function parseArgs(argv) {
     baseUrl: resolveDefaultBaseUrl(),
     newsLimit: 12,
     blogLimit: 8,
-    concurrency: 1
+    concurrency: 1,
+    strict: false
   };
 
   for (const arg of argv) {
@@ -38,6 +39,8 @@ function parseArgs(argv) {
       options.blogLimit = Math.max(0, Number(arg.slice("--blog=".length)) || options.blogLimit);
     } else if (arg.startsWith("--concurrency=")) {
       options.concurrency = Math.max(1, Number(arg.slice("--concurrency=".length)) || options.concurrency);
+    } else if (arg === "--strict") {
+      options.strict = true;
     }
   }
 
@@ -168,7 +171,7 @@ async function main() {
     console.log(`  - ${result.durationMs}ms ${result.url}`);
   }
 
-  if (failures.length > 0) {
+  if (failures.length > 0 && options.strict) {
     process.exitCode = 1;
   }
 }
