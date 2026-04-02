@@ -13,7 +13,9 @@ export const metadata = buildMetadata({
   title: "Home",
   description:
     "Latest Ukraine news, explainers, analysis, and practical support coverage organized for readers who need fast facts, clear context, and visible trust signals.",
-  path: "/"
+  path: "/",
+  imagePath: "/og-home.svg",
+  imageAlt: "New Ukraine Daily homepage"
 });
 
 const trustHighlights = [
