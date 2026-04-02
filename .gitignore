@@ -24,3 +24,5 @@ scripts/backups/
 .vercel
 test-results/
 playwright-report/
+.env.vtmp
+
