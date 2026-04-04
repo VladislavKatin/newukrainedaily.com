@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { upsertNewsletterSubscriber } from "@/lib/postgres-repository";
+import { isTelegramConfigured, sendTelegramMessage } from "@/lib/telegram";
 
 const payloadSchema = z.object({
   email: z.string().trim().email(),
@@ -29,9 +30,29 @@ export async function POST(request: Request) {
       status: "active"
     });
 
+    if (isTelegramConfigured()) {
+      try {
+        const lines = [
+          `Email: ${subscriber.email}`,
+          parsed.data.name ? `Name: ${parsed.data.name}` : null,
+          subscriber.sourcePage ? `Source page: ${subscriber.sourcePage}` : null,
+          `Saved at: ${subscriber.createdAt}`
+        ].filter(Boolean).join("\n");
+
+        await sendTelegramMessage({
+          status: "info",
+          title: "Новая подписка на рассылку",
+          text: lines
+        });
+      } catch (telegramError) {
+        console.error("[newsletter] telegram notify failed", telegramError);
+      }
+    }
+
     return NextResponse.json({
       ok: true,
       status: "subscribed",
+      message: "Thanks for subscribing.",
       subscriber: {
         id: subscriber.id,
         email: subscriber.email,

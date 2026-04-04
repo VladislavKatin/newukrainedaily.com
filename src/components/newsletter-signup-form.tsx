@@ -26,14 +26,14 @@ export function NewsletterSignupForm({ sourcePage, compact = false }: Newsletter
         body: JSON.stringify({ email, name, sourcePage, website: "" })
       });
 
-      const payload = (await response.json()) as { ok?: boolean; error?: string };
+      const payload = (await response.json()) as { ok?: boolean; error?: string; message?: string };
 
       if (!response.ok || !payload.ok) {
         throw new Error(payload.error || "Failed to subscribe.");
       }
 
       setStatus("success");
-      setMessage("You are on the briefing list. Future daily notes will use this address.");
+      setMessage(payload.message || "Thanks for subscribing.");
       setEmail("");
       setName("");
     } catch (error) {
