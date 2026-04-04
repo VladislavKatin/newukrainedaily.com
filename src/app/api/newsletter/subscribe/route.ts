@@ -41,7 +41,7 @@ export async function POST(request: Request) {
 
         await sendTelegramMessage({
           status: "info",
-          title: "Новая подписка на рассылку",
+          title: "\u041d\u043e\u0432\u0430\u044f \u043f\u043e\u0434\u043f\u0438\u0441\u043a\u0430 \u043d\u0430 \u0440\u0430\u0441\u0441\u044b\u043b\u043a\u0443",
           text: lines
         });
       } catch (telegramError) {

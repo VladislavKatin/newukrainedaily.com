@@ -19,13 +19,13 @@ function escapeHtml(value: string) {
 function buildPrefix(status: TelegramStatus) {
   switch (status) {
     case "success":
-      return "[УСПЕХ]";
+      return "[\u0423\u0421\u041f\u0415\u0425]";
     case "warning":
-      return "[ПРЕДУПРЕЖДЕНИЕ]";
+      return "[\u041f\u0420\u0415\u0414\u0423\u041f\u0420\u0415\u0416\u0414\u0415\u041d\u0418\u0415]";
     case "error":
-      return "[ОШИБКА]";
+      return "[\u041e\u0428\u0418\u0411\u041a\u0410]";
     default:
-      return "[ИНФО]";
+      return "[\u0418\u041d\u0424\u041e]";
   }
 }
 
