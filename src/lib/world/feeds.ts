@@ -39,6 +39,14 @@ const WORLD_FEEDS: WorldFeedSource[] = [
   {
     name: "Reuters World",
     url: "https://feeds.reuters.com/Reuters/worldNews"
+  },
+  {
+    name: "BBC World",
+    url: "https://feeds.bbci.co.uk/news/world/rss.xml"
+  },
+  {
+    name: "The Guardian World",
+    url: "https://www.theguardian.com/world/rss"
   }
 ];
 
@@ -79,7 +87,10 @@ const IMPORTANT_PATTERNS = [
   /\bpalestinian\b/i,
   /\bkorea\b/i,
   /\bhormuz\b/i,
-  /\bshipping\b/i
+  /\bshipping\b/i,
+  /\bmilitary\b/i,
+  /\bsecurity\b/i,
+  /\barmed forces\b/i
 ];
 
 const EXCLUDED_PATTERNS = [
@@ -93,7 +104,9 @@ const EXCLUDED_PATTERNS = [
   /\bhoroscope\b/i,
   /\bweather\b/i,
   /\bmovie\b/i,
-  /\bmovie review\b/i
+  /\bmovie review\b/i,
+  /\bstyle\b/i,
+  /\bfashion\b/i
 ];
 
 function toArray<T>(value: T | T[] | undefined): T[] {
@@ -215,7 +228,7 @@ function computeImportance(text: string, sourceName: string) {
     score += 1;
   }
 
-  if (/reuters/i.test(sourceName)) {
+  if (/reuters|bbc|guardian/i.test(sourceName)) {
     score += 2;
   }
 
@@ -314,7 +327,7 @@ export async function fetchFreshWorldFeedCandidates(options?: { digestDate?: str
     try {
       const xml = await fetchFeed(source);
       const rawItems = extractItems(xml);
-      const normalized = await Promise.all(rawItems.slice(0, 60).map((item) => normalizeFeedItem(source, item as Record<string, unknown>)));
+      const normalized = await Promise.all(rawItems.slice(0, 80).map((item) => normalizeFeedItem(source, item as Record<string, unknown>)));
 
       for (const item of normalized) {
         if (!item) {
