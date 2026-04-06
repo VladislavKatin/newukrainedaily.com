@@ -1,4 +1,4 @@
-import process from "node:process";
+﻿import process from "node:process";
 import { loadLocalEnv } from "./load-local-env.mjs";
 
 loadLocalEnv(process.cwd());
@@ -103,9 +103,10 @@ async function main() {
   const checks = [
     () => checkPage(`${baseUrl}/`, ["Lead Story", "Latest"]),
     () => checkPage(`${baseUrl}/news`, ["Lead report", "Latest updates"]),
+    () => checkPage(`${baseUrl}/world`, ["World News Digest", "Today&apos;s international digest"]),
     () => checkPage(`${baseUrl}/blog`, ["Analysis and explainers"]),
     () => checkPage(`${baseUrl}/contact`, ["Zaporizhzhia", "Google Maps"]),
-    () => checkPage(`${baseUrl}/sitemap.xml`, ["/newsroom", "/corrections"]),
+    () => checkPage(`${baseUrl}/sitemap.xml`, ["/newsroom", "/corrections", "/world"]),
     () => checkPage(`${baseUrl}/feed.xml`, ["<rss", "<item>"]),
     () => checkPage(`${baseUrl}/blog/feed.xml`, ["<rss", "<item>"])
   ];

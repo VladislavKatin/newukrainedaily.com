@@ -160,6 +160,23 @@ create table if not exists newsletter_subscribers (
   updated_at timestamptz not null default timezone('utc', now())
 );
 
+create table if not exists world_digest_items (
+  id uuid primary key default gen_random_uuid(),
+  digest_date date not null,
+  position integer not null,
+  title text not null,
+  summary text not null,
+  image_url text,
+  image_alt text,
+  source_name text not null,
+  source_url text not null,
+  published_at timestamptz,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now()),
+  unique (digest_date, position),
+  unique (digest_date, source_url)
+);
+
 create index if not exists idx_news_raw_canonical_url on news_raw (canonical_url);
 create index if not exists idx_news_raw_fetched_at on news_raw (fetched_at desc);
 create index if not exists idx_news_items_status_published_at on news_items (status, published_at desc);
@@ -177,6 +194,10 @@ create index if not exists idx_jobs_status_run_at on jobs (status, run_at);
 create index if not exists idx_news_images_status_attempts on news_images (status, attempts);
 create index if not exists idx_newsletter_subscribers_status_created_at
 on newsletter_subscribers (status, created_at desc);
+create index if not exists idx_world_digest_items_digest_date
+on world_digest_items (digest_date desc, position asc);
+create index if not exists idx_world_digest_items_published_at
+on world_digest_items (published_at desc nulls last);
 
 create trigger trg_news_items_updated_at
 before update on news_items
@@ -200,6 +221,11 @@ execute function set_updated_at();
 
 create trigger trg_newsletter_subscribers_updated_at
 before update on newsletter_subscribers
+for each row
+execute function set_updated_at();
+
+create trigger trg_world_digest_items_updated_at
+before update on world_digest_items
 for each row
 execute function set_updated_at();
 

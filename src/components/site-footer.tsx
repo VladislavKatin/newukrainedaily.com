@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 
 const trustLinks = [
   { href: "/about", label: "About" },
@@ -44,6 +44,7 @@ export function SiteFooter() {
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">Coverage</p>
           <div className="mt-3 flex flex-col gap-2 text-sm text-slate-600">
             <Link href="/news">Latest News</Link>
+            <Link href="/world">World Digest</Link>
             <Link href="/blog">Analysis and Explainers</Link>
             <Link href="/donate">Support Ukraine</Link>
           </div>

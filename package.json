@@ -45,7 +45,8 @@
     "_internal:vercel:deploy": "npx vercel deploy --prod --yes",
     "check:production-publishing": "node scripts/check-production-publishing.mjs",
     "notify:telegram:test": "node scripts/telegram-notify.mjs --status=info --title=\"Telegram test\" --text=\"Test notification from newukrainedaily.com\"",
-    "check:production-source-health": "node scripts/check-production-source-health.mjs"
+    "check:production-source-health": "node scripts/check-production-source-health.mjs",
+    "world:digest": "node --import tsx scripts/run-world-digest.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1009.0",

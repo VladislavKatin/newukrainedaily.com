@@ -66,6 +66,9 @@ export default async function HomePage() {
               New Ukraine Daily is built as a maintained newsroom product, not just a news feed.
             </p>
             <div className="flex flex-wrap gap-3 text-sm font-semibold">
+              <Link href="/world" className="text-brand transition hover:text-ink">
+                World Digest
+              </Link>
               <Link href="/newsroom" className="text-brand transition hover:text-ink">
                 Newsroom
               </Link>

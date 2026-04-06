@@ -1,0 +1,36 @@
+﻿name: Build World Digest
+
+on:
+  schedule:
+    - cron: "20 3 * * *"
+  workflow_dispatch:
+
+jobs:
+  world-digest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger world digest endpoint
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "Missing CRON_SECRET secret"
+            exit 1
+          fi
+
+          curl --fail-with-body --show-error --silent \
+            -X POST "https://www.newukrainedaily.com/api/cron/world-digest" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -H "Content-Type: application/json" \
+            --data '{}'
+
+      - name: Telegram failure
+        if: failure() && secrets.CRON_SECRET != ''
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl --fail-with-body --show-error --silent \
+            -X POST "https://www.newukrainedaily.com/api/internal/telegram" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -H "Content-Type: application/json" \
+            --data '{"status":"error","title":"Проблема с world digest","text":"Ежедневная world-digest сборка не прошла. Проверьте /api/cron/world-digest, внешние RSS и AI summary path."}'

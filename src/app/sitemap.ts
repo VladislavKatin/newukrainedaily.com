@@ -1,4 +1,4 @@
-import type { MetadataRoute } from "next";
+﻿import type { MetadataRoute } from "next";
 import { absoluteUrl } from "@/lib/site";
 
 type ChangeFrequency = NonNullable<MetadataRoute.Sitemap[number]["changeFrequency"]>;
@@ -7,6 +7,7 @@ export const revalidate = 3600;
 const staticRoutes = [
   "/",
   "/news",
+  "/world",
   "/blog",
   "/donate",
   "/about",
@@ -46,15 +47,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   try {
-    const [{ listBlog, listIndexableTopics, listNews }, { topicSlugFromLabel }] = await Promise.all([
+    const [{ listBlog, listIndexableTopics, listNews }, { topicSlugFromLabel }, { listWorldDigestDatesForSitemap }] = await Promise.all([
       import("@/lib/postgres-repository"),
-      import("@/lib/topic-taxonomy")
+      import("@/lib/topic-taxonomy"),
+      import("@/lib/world-repository")
     ]);
 
-    const [newsEntries, blogEntries, topics] = await Promise.all([
+    const [newsEntries, blogEntries, topics, worldDates] = await Promise.all([
       listNews(10000, "published"),
       listBlog(5000, "published"),
-      listIndexableTopics(5000)
+      listIndexableTopics(5000),
+      listWorldDigestDatesForSitemap(365)
     ]);
 
     const newsSitemapEntries = newsEntries.map((entry) => ({
@@ -78,7 +81,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.75
     }));
 
-    return [...staticEntries, ...newsSitemapEntries, ...blogSitemapEntries, ...topicEntries];
+    const worldEntries = worldDates.map((date) => ({
+      url: absoluteUrl(`/world/${date}`),
+      lastModified: safeDate(`${date}T00:00:00.000Z`),
+      changeFrequency: "daily" as ChangeFrequency,
+      priority: 0.72
+    }));
+
+    return [...staticEntries, ...newsSitemapEntries, ...blogSitemapEntries, ...topicEntries, ...worldEntries];
   } catch (error) {
     console.error("[sitemap] failed to build dynamic sitemap", error);
     return staticEntries;

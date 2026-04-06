@@ -1,8 +1,9 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 
 const primaryNavItems = [
   { href: "/", label: "Home" },
   { href: "/news", label: "News" },
+  { href: "/world", label: "World" },
   { href: "/blog", label: "Analysis" },
   { href: "/newsroom", label: "Newsroom" },
   { href: "/contact", label: "Contact" }

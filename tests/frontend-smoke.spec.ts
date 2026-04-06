@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+﻿import { expect, test } from "@playwright/test";
 
 async function openPage(page: import("@playwright/test").Page, path: string) {
   await page.goto(path, { waitUntil: "domcontentloaded" });
@@ -41,6 +41,13 @@ test("news hub renders curated sections cleanly", async ({ page }) => {
   await expect(page.getByText("Latest updates", { exact: true })).toBeVisible();
   await expect(page.getByText("Recent reports", { exact: true })).toBeVisible();
   await expect(page.locator("article").first()).toBeVisible();
+  await expectStablePageChrome(page);
+});
+
+test("world hub renders daily digest cleanly", async ({ page }) => {
+  await openPage(page, "/world");
+  await expect(page.getByRole("heading", { name: "World News Digest" })).toBeVisible();
+  await expect(page.getByText(/Today\'s international digest|Today’s international digest/i)).toBeVisible();
   await expectStablePageChrome(page);
 });
 
