@@ -31,16 +31,6 @@ const parser = new XMLParser({
 
 const WORLD_FEEDS: WorldFeedSource[] = [
   {
-    name: "Google News World",
-    url: "https://news.google.com/rss/headlines/section/topic/WORLD?hl=en-US&gl=US&ceid=US:en",
-    kind: "google"
-  },
-  {
-    name: "Google News Top Stories",
-    url: "https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en",
-    kind: "google"
-  },
-  {
     name: "Reuters World",
     url: "https://feeds.reuters.com/Reuters/worldNews",
     kind: "direct"
@@ -231,10 +221,6 @@ function computeImportance(text: string, sourceName: string) {
     }
   }
 
-  if (/google news/i.test(sourceName)) {
-    score += 1;
-  }
-
   if (/reuters|bbc|guardian/i.test(sourceName)) {
     score += 2;
   }
@@ -247,10 +233,6 @@ function computeImportance(text: string, sourceName: string) {
 }
 
 function getSourcePriority(source: WorldFeedSource) {
-  if (source.kind === "google") {
-    return -6;
-  }
-
   if (/reuters|bbc|guardian/i.test(source.name)) {
     return 4;
   }
@@ -396,8 +378,5 @@ export async function fetchFreshWorldFeedCandidates(options?: { digestDate?: str
       return true;
     });
 
-  const directCandidates = deduped.filter((item) => item.sourceKind === "direct");
-  const googleFallbackCandidates = deduped.filter((item) => item.sourceKind === "google");
-
-  return [...directCandidates, ...googleFallbackCandidates];
+  return deduped;
 }
