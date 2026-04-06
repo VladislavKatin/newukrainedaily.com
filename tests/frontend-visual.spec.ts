@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+﻿import { expect, test } from "@playwright/test";
 
 async function openPage(page: import("@playwright/test").Page, path: string) {
   await page.goto(path, { waitUntil: "domcontentloaded" });
@@ -16,7 +16,7 @@ test.describe("frontend visual baselines", () => {
 
   test("news hub top visual baseline", async ({ page }) => {
     await openPage(page, "/news");
-    const leadSection = page.getByText("Lead report", { exact: true }).locator("..").locator("..");
+    const leadSection = page.getByText("Latest report", { exact: true }).locator("..").locator("..");
     await expect(leadSection).toHaveScreenshot("news-hub-top.png", {
       animations: "disabled"
     });
@@ -24,8 +24,16 @@ test.describe("frontend visual baselines", () => {
 
   test("news hub cards grid visual baseline", async ({ page }) => {
     await openPage(page, "/news");
-    const recentReportsSection = page.getByText("Recent reports", { exact: true }).locator("..").locator("..");
+    const recentReportsSection = page.getByText("More recent reports", { exact: true }).locator("..").locator("..");
     await expect(recentReportsSection).toHaveScreenshot("news-hub-grid.png", {
+      animations: "disabled"
+    });
+  });
+
+  test("world hub top visual baseline", async ({ page }) => {
+    await openPage(page, "/world");
+    const worldTop = page.getByRole("heading", { name: "World News Digest" }).locator("..").locator("..");
+    await expect(worldTop).toHaveScreenshot("world-hub-top.png", {
       animations: "disabled"
     });
   });
