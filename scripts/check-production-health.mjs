@@ -102,13 +102,14 @@ async function main() {
 
   const checks = [
     () => checkPage(`${baseUrl}/`, ["Lead Story", "Latest"]),
-    () => checkPage(`${baseUrl}/news`, ["Lead report", "Latest updates"]),
-    () => checkPage(`${baseUrl}/world`, ["World News Digest", "Today&apos;s international digest"]),
+    () => checkPage(`${baseUrl}/news`, ["Latest report", "Newest first", "More recent reports"]),
+    () => checkPage(`${baseUrl}/world`, ["World News Digest", "Today&#x27;s international digest"]),
     () => checkPage(`${baseUrl}/blog`, ["Analysis and explainers"]),
     () => checkPage(`${baseUrl}/contact`, ["Zaporizhzhia", "Google Maps"]),
     () => checkPage(`${baseUrl}/sitemap.xml`, ["/newsroom", "/corrections", "/world"]),
     () => checkPage(`${baseUrl}/feed.xml`, ["<rss", "<item>"]),
-    () => checkPage(`${baseUrl}/blog/feed.xml`, ["<rss", "<item>"])
+    () => checkPage(`${baseUrl}/blog/feed.xml`, ["<rss", "<item>"]),
+    () => checkPage(`${baseUrl}/world-sitemap.xml`, ["/world", "/world/"])
   ];
 
   for (const url of newsUrls) {
