@@ -17,19 +17,6 @@ const FALLBACKS: Record<WorldVisualTopic, { imageUrl: string; topicLabel: string
   shipping: { imageUrl: "/world-thumb-shipping.svg", topicLabel: "Shipping" }
 };
 
-function isGenericWorldFeedImage(imageUrl: string | null | undefined) {
-  if (!imageUrl) {
-    return true;
-  }
-
-  try {
-    const hostname = new URL(imageUrl).hostname.toLowerCase();
-    return hostname.includes("googleusercontent.com") || hostname.includes("gstatic.com") || hostname.includes("news.google.com");
-  } catch {
-    return false;
-  }
-}
-
 function classifyWorldTopic(text: string): WorldVisualTopic {
   const value = text.toLowerCase();
 
@@ -60,9 +47,9 @@ export function getWorldDigestVisual(item: Pick<WorldDigestItemRecord, "title" |
   const topic = classifyWorldTopic(`${item.title} ${item.summary}`);
   const fallback = FALLBACKS[topic];
 
-  if (!isGenericWorldFeedImage(item.imageUrl)) {
+  if (item.imageUrl) {
     return {
-      imageUrl: item.imageUrl || fallback.imageUrl,
+      imageUrl: item.imageUrl,
       imageAlt: item.imageAlt || item.title,
       topicLabel: fallback.topicLabel
     };
