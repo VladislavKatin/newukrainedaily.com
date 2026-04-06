@@ -6,6 +6,7 @@ import { worldDigestDateFromDate } from "@/lib/world/date";
 type WorldFeedSource = {
   name: string;
   url: string;
+  kind: "direct" | "google";
 };
 
 export type WorldFeedCandidate = {
@@ -19,6 +20,7 @@ export type WorldFeedCandidate = {
   imageUrl: string | null;
   imageAlt: string | null;
   importanceScore: number;
+  sourceKind: "direct" | "google";
 };
 
 const parser = new XMLParser({
@@ -30,23 +32,28 @@ const parser = new XMLParser({
 const WORLD_FEEDS: WorldFeedSource[] = [
   {
     name: "Google News World",
-    url: "https://news.google.com/rss/headlines/section/topic/WORLD?hl=en-US&gl=US&ceid=US:en"
+    url: "https://news.google.com/rss/headlines/section/topic/WORLD?hl=en-US&gl=US&ceid=US:en",
+    kind: "google"
   },
   {
     name: "Google News Top Stories",
-    url: "https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en"
+    url: "https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en",
+    kind: "google"
   },
   {
     name: "Reuters World",
-    url: "https://feeds.reuters.com/Reuters/worldNews"
+    url: "https://feeds.reuters.com/Reuters/worldNews",
+    kind: "direct"
   },
   {
     name: "BBC World",
-    url: "https://feeds.bbci.co.uk/news/world/rss.xml"
+    url: "https://feeds.bbci.co.uk/news/world/rss.xml",
+    kind: "direct"
   },
   {
     name: "The Guardian World",
-    url: "https://www.theguardian.com/world/rss"
+    url: "https://www.theguardian.com/world/rss",
+    kind: "direct"
   }
 ];
 
@@ -239,6 +246,18 @@ function computeImportance(text: string, sourceName: string) {
   return score;
 }
 
+function getSourcePriority(source: WorldFeedSource) {
+  if (source.kind === "google") {
+    return -6;
+  }
+
+  if (/reuters|bbc|guardian/i.test(source.name)) {
+    return 4;
+  }
+
+  return 2;
+}
+
 function isRelevant(text: string) {
   if (!text) {
     return false;
@@ -313,7 +332,8 @@ async function normalizeFeedItem(source: WorldFeedSource, item: Record<string, u
     contentSnippet,
     imageUrl: image.url,
     imageAlt: title,
-    importanceScore: computeImportance(relevanceText, source.name)
+    importanceScore: computeImportance(relevanceText, source.name) + getSourcePriority(source),
+    sourceKind: source.kind
   };
 }
 
@@ -355,7 +375,7 @@ export async function fetchFreshWorldFeedCandidates(options?: { digestDate?: str
   const seenUrls = new Set<string>();
   const seenTitles = new Set<string>();
 
-  return items
+  const deduped = items
     .sort((left, right) => {
       const scoreDiff = right.importanceScore - left.importanceScore;
       if (scoreDiff !== 0) {
@@ -375,4 +395,9 @@ export async function fetchFreshWorldFeedCandidates(options?: { digestDate?: str
       seenTitles.add(item.normalizedTitle);
       return true;
     });
+
+  const directCandidates = deduped.filter((item) => item.sourceKind === "direct");
+  const googleFallbackCandidates = deduped.filter((item) => item.sourceKind === "google");
+
+  return [...directCandidates, ...googleFallbackCandidates];
 }
