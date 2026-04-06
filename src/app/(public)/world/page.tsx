@@ -4,7 +4,7 @@ import { buildMetadata } from "@/lib/seo";
 import { formatWorldDigestDate, worldDigestDateFromDate } from "@/lib/world/date";
 import { listRecentWorldDigestDates, listWorldDigestItemsByDate } from "@/lib/world-repository";
 
-export const revalidate = 1800;
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata() {
   const digestDate = worldDigestDateFromDate();
