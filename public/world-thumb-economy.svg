@@ -1,0 +1,11 @@
+<svg width="640" height="420" viewBox="0 0 640 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="640" height="420" rx="28" fill="#F8FAFC"/>
+  <rect x="22" y="22" width="596" height="376" rx="24" fill="#FFFFFF"/>
+  <rect x="148" y="126" width="44" height="172" rx="18" fill="#0F766E" fill-opacity="0.22"/><rect x="218" y="168" width="44" height="130" rx="18" fill="#0F766E" fill-opacity="0.3"/><rect x="288" y="100" width="44" height="198" rx="18" fill="#0F766E" fill-opacity="0.18"/><path d="M146 278L214 216L250 240L340 142" stroke="#0F172A" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="402" y="84" width="158" height="30" rx="15" fill="#0F766E" fill-opacity="0.14"/>
+  <text x="428" y="105" fill="#0F766E" font-size="15" font-family="Arial, sans-serif" font-weight="700">ECONOMY</text>
+  <text x="402" y="172" fill="#0F172A" font-size="34" font-family="Georgia, serif" font-weight="700">Markets and trade</text>
+  <rect x="402" y="214" width="168" height="16" rx="8" fill="#CBD5E1"/>
+  <rect x="402" y="244" width="148" height="16" rx="8" fill="#CBD5E1"/>
+  <rect x="402" y="274" width="158" height="16" rx="8" fill="#CBD5E1"/>
+</svg>

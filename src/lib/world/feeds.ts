@@ -1,5 +1,4 @@
-﻿import "server-only";
-import crypto from "node:crypto";
+﻿import crypto from "node:crypto";
 import { XMLParser } from "fast-xml-parser";
 import { extractMainImage } from "@/lib/ingestion/main-image";
 import { worldDigestDateFromDate } from "@/lib/world/date";
@@ -32,6 +31,10 @@ const WORLD_FEEDS: WorldFeedSource[] = [
   {
     name: "Google News World",
     url: "https://news.google.com/rss/headlines/section/topic/WORLD?hl=en-US&gl=US&ceid=US:en"
+  },
+  {
+    name: "Google News Top Stories",
+    url: "https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en"
   },
   {
     name: "Reuters World",
@@ -71,7 +74,12 @@ const IMPORTANT_PATTERNS = [
   /\bgaza\b/i,
   /\bsyria\b/i,
   /\beu\b/i,
-  /\bnato\b/i
+  /\bnato\b/i,
+  /\bjerusalem\b/i,
+  /\bpalestinian\b/i,
+  /\bkorea\b/i,
+  /\bhormuz\b/i,
+  /\bshipping\b/i
 ];
 
 const EXCLUDED_PATTERNS = [
@@ -83,7 +91,9 @@ const EXCLUDED_PATTERNS = [
   /\btravel\b/i,
   /\bcelebrity\b/i,
   /\bhoroscope\b/i,
-  /\bweather\b/i
+  /\bweather\b/i,
+  /\bmovie\b/i,
+  /\bmovie review\b/i
 ];
 
 function toArray<T>(value: T | T[] | undefined): T[] {
@@ -304,7 +314,7 @@ export async function fetchFreshWorldFeedCandidates(options?: { digestDate?: str
     try {
       const xml = await fetchFeed(source);
       const rawItems = extractItems(xml);
-      const normalized = await Promise.all(rawItems.slice(0, 20).map((item) => normalizeFeedItem(source, item as Record<string, unknown>)));
+      const normalized = await Promise.all(rawItems.slice(0, 60).map((item) => normalizeFeedItem(source, item as Record<string, unknown>)));
 
       for (const item of normalized) {
         if (!item) {

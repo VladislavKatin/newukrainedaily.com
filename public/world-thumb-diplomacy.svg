@@ -1,0 +1,11 @@
+<svg width="640" height="420" viewBox="0 0 640 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="640" height="420" rx="28" fill="#F8FAFC"/>
+  <rect x="22" y="22" width="596" height="376" rx="24" fill="#FFFFFF"/>
+  <circle cx="214" cy="190" r="86" fill="#2563EB" fill-opacity="0.16"/><path d="M156 226C178 198 194 184 214 184C234 184 250 198 272 226" stroke="#0F172A" stroke-width="14" stroke-linecap="round"/><path d="M186 190H242" stroke="#0F172A" stroke-width="14" stroke-linecap="round"/><path d="M214 158V222" stroke="#0F172A" stroke-width="14" stroke-linecap="round"/>
+  <rect x="402" y="84" width="158" height="30" rx="15" fill="#2563EB" fill-opacity="0.14"/>
+  <text x="428" y="105" fill="#2563EB" font-size="15" font-family="Arial, sans-serif" font-weight="700">DIPLOMACY</text>
+  <text x="402" y="172" fill="#0F172A" font-size="34" font-family="Georgia, serif" font-weight="700">Talks and alliances</text>
+  <rect x="402" y="214" width="168" height="16" rx="8" fill="#CBD5E1"/>
+  <rect x="402" y="244" width="148" height="16" rx="8" fill="#CBD5E1"/>
+  <rect x="402" y="274" width="158" height="16" rx="8" fill="#CBD5E1"/>
+</svg>

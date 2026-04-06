@@ -1,0 +1,11 @@
+<svg width="640" height="420" viewBox="0 0 640 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="640" height="420" rx="28" fill="#F8FAFC"/>
+  <rect x="22" y="22" width="596" height="376" rx="24" fill="#FFFFFF"/>
+  <rect x="150" y="116" width="176" height="178" rx="28" fill="#7C3AED" fill-opacity="0.16"/><path d="M182 162H294" stroke="#0F172A" stroke-width="16" stroke-linecap="round"/><path d="M202 212H274" stroke="#0F172A" stroke-width="12" stroke-linecap="round"/><path d="M170 286H306" stroke="#0F172A" stroke-width="12" stroke-linecap="round"/>
+  <rect x="402" y="84" width="158" height="30" rx="15" fill="#7C3AED" fill-opacity="0.14"/>
+  <text x="428" y="105" fill="#7C3AED" font-size="15" font-family="Arial, sans-serif" font-weight="700">POLITICS</text>
+  <text x="402" y="172" fill="#0F172A" font-size="34" font-family="Georgia, serif" font-weight="700">Leaders and state power</text>
+  <rect x="402" y="214" width="168" height="16" rx="8" fill="#CBD5E1"/>
+  <rect x="402" y="244" width="148" height="16" rx="8" fill="#CBD5E1"/>
+  <rect x="402" y="274" width="158" height="16" rx="8" fill="#CBD5E1"/>
+</svg>

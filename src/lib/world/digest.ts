@@ -1,13 +1,14 @@
-﻿import "server-only";
-import { worldDigestDateFromDate } from "@/lib/world/date";
+﻿import { worldDigestDateFromDate } from "@/lib/world/date";
 import { fetchFreshWorldFeedCandidates } from "@/lib/world/feeds";
 import { replaceWorldDigestForDate, type CreateWorldDigestItemInput } from "@/lib/world-repository";
 import { getWorldSummaryProvider } from "@/lib/world/summary-provider";
 
+const WORLD_DIGEST_LIMIT = 20;
+
 export async function generateWorldDigestForDate(digestDate = worldDigestDateFromDate()) {
   const summaryProvider = getWorldSummaryProvider();
   const candidates = await fetchFreshWorldFeedCandidates({ digestDate });
-  const selected = candidates.slice(0, 10);
+  const selected = candidates.slice(0, WORLD_DIGEST_LIMIT);
 
   const items: CreateWorldDigestItemInput[] = [];
   for (const [index, candidate] of selected.entries()) {
@@ -34,6 +35,7 @@ export async function generateWorldDigestForDate(digestDate = worldDigestDateFro
   return {
     digestDate,
     candidates: candidates.length,
-    savedItems: saved.length
+    savedItems: saved.length,
+    targetLimit: WORLD_DIGEST_LIMIT
   };
 }

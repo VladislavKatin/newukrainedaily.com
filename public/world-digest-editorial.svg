@@ -1,0 +1,18 @@
+﻿<svg width="1200" height="900" viewBox="0 0 1200 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="900" rx="48" fill="#EEF3F7"/>
+  <rect x="72" y="72" width="1056" height="756" rx="34" fill="#FFFFFF"/>
+  <circle cx="314" cy="430" r="178" fill="#0F766E" fill-opacity="0.14"/>
+  <circle cx="314" cy="430" r="135" fill="#0F766E" fill-opacity="0.22"/>
+  <path d="M200 430H428" stroke="#0F172A" stroke-width="16" stroke-linecap="round"/>
+  <path d="M314 316V544" stroke="#0F172A" stroke-width="16" stroke-linecap="round"/>
+  <path d="M236 352C284 392 344 392 392 352" stroke="#0F172A" stroke-width="12" stroke-linecap="round"/>
+  <path d="M236 508C284 468 344 468 392 508" stroke="#0F172A" stroke-width="12" stroke-linecap="round"/>
+  <rect x="560" y="212" width="454" height="56" rx="18" fill="#E2E8F0"/>
+  <rect x="560" y="300" width="506" height="32" rx="16" fill="#CBD5E1"/>
+  <rect x="560" y="352" width="472" height="32" rx="16" fill="#CBD5E1"/>
+  <rect x="560" y="404" width="438" height="32" rx="16" fill="#CBD5E1"/>
+  <rect x="560" y="490" width="214" height="34" rx="17" fill="#C2410C" fill-opacity="0.14"/>
+  <text x="594" y="514" fill="#C2410C" font-size="26" font-family="Arial, sans-serif" font-weight="700">WORLD DIGEST</text>
+  <text x="560" y="612" fill="#0F172A" font-size="52" font-family="Georgia, serif" font-weight="700">Global conflicts, markets,</text>
+  <text x="560" y="676" fill="#0F172A" font-size="52" font-family="Georgia, serif" font-weight="700">diplomacy, and daily context</text>
+</svg>

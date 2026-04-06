@@ -1,0 +1,11 @@
+<svg width="640" height="420" viewBox="0 0 640 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="640" height="420" rx="28" fill="#F8FAFC"/>
+  <rect x="22" y="22" width="596" height="376" rx="24" fill="#FFFFFF"/>
+  <path d="M232 92C270 156 308 200 308 236C308 286 272 320 224 320C176 320 140 286 140 236C140 202 176 158 232 92Z" fill="#D97706" fill-opacity="0.22"/><path d="M226 150C206 186 194 212 194 236C194 258 208 276 232 288" stroke="#0F172A" stroke-width="14" stroke-linecap="round"/><path d="M266 156L194 262" stroke="#0F172A" stroke-width="14" stroke-linecap="round"/>
+  <rect x="402" y="84" width="158" height="30" rx="15" fill="#D97706" fill-opacity="0.14"/>
+  <text x="428" y="105" fill="#D97706" font-size="15" font-family="Arial, sans-serif" font-weight="700">ENERGY</text>
+  <text x="402" y="172" fill="#0F172A" font-size="34" font-family="Georgia, serif" font-weight="700">Oil, gas, and power</text>
+  <rect x="402" y="214" width="168" height="16" rx="8" fill="#CBD5E1"/>
+  <rect x="402" y="244" width="148" height="16" rx="8" fill="#CBD5E1"/>
+  <rect x="402" y="274" width="158" height="16" rx="8" fill="#CBD5E1"/>
+</svg>

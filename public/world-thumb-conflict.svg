@@ -1,0 +1,11 @@
+<svg width="640" height="420" viewBox="0 0 640 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="640" height="420" rx="28" fill="#F8FAFC"/>
+  <rect x="22" y="22" width="596" height="376" rx="24" fill="#FFFFFF"/>
+  <path d="M182 118L312 118L364 176L364 286L234 286L182 228Z" fill="#B91C1C" fill-opacity="0.16"/><path d="M172 302L374 100" stroke="#0F172A" stroke-width="18" stroke-linecap="round"/><path d="M214 154L320 260" stroke="#0F172A" stroke-width="12" stroke-linecap="round"/>
+  <rect x="402" y="84" width="158" height="30" rx="15" fill="#B91C1C" fill-opacity="0.14"/>
+  <text x="428" y="105" fill="#B91C1C" font-size="15" font-family="Arial, sans-serif" font-weight="700">CONFLICT</text>
+  <text x="402" y="172" fill="#0F172A" font-size="34" font-family="Georgia, serif" font-weight="700">Conflict and security</text>
+  <rect x="402" y="214" width="168" height="16" rx="8" fill="#CBD5E1"/>
+  <rect x="402" y="244" width="148" height="16" rx="8" fill="#CBD5E1"/>
+  <rect x="402" y="274" width="158" height="16" rx="8" fill="#CBD5E1"/>
+</svg>
