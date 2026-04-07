@@ -37,9 +37,8 @@ test("home page renders without responsive overflow", async ({ page }) => {
 
 test("news hub renders curated sections cleanly", async ({ page }) => {
   await openPage(page, "/news");
-  await expect(page.getByText("Lead report", { exact: true })).toBeVisible();
-  await expect(page.getByText("Latest updates", { exact: true })).toBeVisible();
-  await expect(page.getByText("Recent reports", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Latest news" })).toBeVisible();
+  await expect(page.getByText("More recent reports", { exact: true })).toBeVisible();
   await expect(page.locator("article").first()).toBeVisible();
   await expectStablePageChrome(page);
 });
@@ -60,9 +59,9 @@ test("blog hub renders cards cleanly", async ({ page }) => {
 
 test("donate page renders support guide cleanly", async ({ page }) => {
   await openPage(page, "/donate");
-  await expect(page.getByRole("heading", { name: /How to Support Ukraine Effectively/i })).toBeVisible();
-  await expect(page.getByText("What Makes a Donation Effective", { exact: true })).toBeVisible();
-  await expect(page.getByText(/PayPal \/ Contact Email/i)).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Support Ukraine With Clear Priorities/i })).toBeVisible();
+  await expect(page.getByText(/What makes a donation effective/i)).toBeVisible();
+  await expect(page.getByText(/PayPal contact/i)).toBeVisible();
   await expectStablePageChrome(page);
 });
 

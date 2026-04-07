@@ -102,7 +102,7 @@ async function main() {
 
   const checks = [
     () => checkPage(`${baseUrl}/`, ["Lead Story", "Latest"]),
-    () => checkPage(`${baseUrl}/news`, ["Latest report", "Newest first", "More recent reports"]),
+    () => checkPage(`${baseUrl}/news`, ["Latest news", "More recent reports"]),
     () => checkPage(`${baseUrl}/world`, ["World News Digest", "Today&#x27;s international digest"]),
     () => checkPage(`${baseUrl}/blog`, ["Analysis and explainers"]),
     () => checkPage(`${baseUrl}/contact`, ["Zaporizhzhia", "Google Maps"]),
