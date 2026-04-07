@@ -2,7 +2,7 @@ import fs from "node:fs";
 import process from "node:process";
 import { loadLocalEnv } from "./load-local-env.mjs";
 
-loadLocalEnv(process.cwd());
+loadLocalEnv(process.cwd(), [".env.vercel.prod", ".env.local", ".env"]);
 
 function resolveDefaultBaseUrl() {
   const configured = (process.env.PUBLIC_BASE_URL || "").trim();
@@ -56,7 +56,7 @@ function requireEnv(name) {
   if (!value || !value.trim()) {
     throw new Error(`Missing required environment variable: ${name}`);
   }
-  return value.trim();
+  return value.trim().replace(/^"(.*)"$/, "$1");
 }
 
 function writeSummary(lines) {
