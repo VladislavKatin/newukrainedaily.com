@@ -79,13 +79,16 @@ const WEAK_MARKERS = [
   "judicial council",
   "bilingual book",
   "children's book",
-  "festival"
+  "festival",
+  "cultural cooperation"
 ];
 
 const DUPLICATE_STORY_PATTERNS = [
   /\b(\d{2,4})\b[^\n]*\b(clashes|combat|engagements|frontline|front line)\b/i,
   /\b(\d{2,4})\b[^\n]*\b(drones?|missiles?)\b[^\n]*\b(attack|launched|intercepted|neutralized|downed)\b/i,
   /\bpower\b[^\n]*\b(restrictions|outages|schedules)\b/i,
+  /\b(air defense in crimea|crimea air defense|struggling after ukrainian strikes|overwhelm russian air defense in crimea)\b/i,
+  /\b(energy truce|energy strike reciprocity|reciprocity proposal)\b[^\n]*\brussia\b/i,
   /\bredirecting drones toward baltic states\b/i,
   /\bdrone diversions to baltic states\b/i,
   /\bforces strike dnipro and kryvyi rih\b/i,

@@ -132,6 +132,8 @@ const DUPLICATE_STORY_PATTERNS = [
   /\b(\d{2,4})\b[^\n]*\b(clashes|combat|engagements|frontline|front line)\b/i,
   /\b(\d{2,4})\b[^\n]*\b(drones?|missiles?)\b[^\n]*\b(attack|launched|intercepted|neutralized|downed)\b/i,
   /\bpower\b[^\n]*\b(restrictions|outages|schedules)\b/i,
+  /\b(air defense in crimea|crimea air defense|struggling after ukrainian strikes|overwhelm russian air defense in crimea)\b/i,
+  /\b(energy truce|energy strike reciprocity|reciprocity proposal)\b[^\n]*\brussia\b/i,
   /\bredirecting drones toward baltic states\b/i,
   /\bdrone diversions to baltic states\b/i,
   /\bforces strike dnipro and kryvyi rih\b/i,
@@ -228,6 +230,10 @@ function scorePublishCandidate(item: {
 
   if (/\bweather\b|\bartist\b|\bhistorians?\b|\bartifacts?\b|\bceremony\b|\bconcert\b|\bdocumentary\b|\bbook\b|\bfestival\b|\bcommunity in\b/i.test(signalText)) {
     score -= 20;
+  }
+
+  if (/\bcultural cooperation\b/i.test(signalText)) {
+    score -= 12;
   }
 
   const signature = buildPublishAngleSignature(item);
