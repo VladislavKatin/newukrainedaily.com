@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 import "@/app/globals.css";
+import { AnalyticsManager } from "@/components/analytics-manager";
+import { CookieConsentBanner } from "@/components/cookie-consent-banner";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { getEnv, validateEnv } from "@/lib/env";
@@ -63,26 +64,12 @@ export default function RootLayout({
 
   return (
     <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://www.googletagmanager.com" />
-        <link rel="preconnect" href="https://www.google-analytics.com" />
-      </head>
       <body className="flex min-h-screen flex-col">
-        <Script
-          src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
-          strategy="lazyOnload"
-        />
-        <Script id="google-analytics" strategy="lazyOnload">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', '${gaId}');
-          `}
-        </Script>
+        <AnalyticsManager gaId={gaId} />
         <SiteHeader />
         <main className="flex-1">{children}</main>
         <SiteFooter />
+        <CookieConsentBanner />
       </body>
     </html>
   );

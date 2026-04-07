@@ -1,10 +1,14 @@
-﻿import Link from "next/link";
+import Link from "next/link";
+import { CookiePreferencesButton } from "@/components/cookie-preferences-button";
 
 const trustLinks = [
   { href: "/about", label: "About" },
   { href: "/newsroom", label: "Newsroom" },
   { href: "/editorial-policy", label: "Editorial Policy" },
   { href: "/corrections", label: "Corrections" },
+  { href: "/privacy-policy", label: "Privacy Policy" },
+  { href: "/terms", label: "Terms" },
+  { href: "/accessibility", label: "Accessibility" },
   { href: "/contact", label: "Contact" }
 ];
 
@@ -56,6 +60,9 @@ export function SiteFooter() {
             <Link href="/about">About</Link>
             <Link href="/editorial-policy">Editorial Policy</Link>
             <Link href="/corrections">Corrections</Link>
+            <Link href="/privacy-policy">Privacy Policy</Link>
+            <Link href="/terms">Terms of Use</Link>
+            <Link href="/accessibility">Accessibility</Link>
           </div>
         </div>
         <div>
@@ -64,6 +71,7 @@ export function SiteFooter() {
             <Link href="/contact">Contact the newsroom</Link>
             <span>vladkatintam@gmail.com</span>
             <Link href="/feed.xml">News feed</Link>
+            <CookiePreferencesButton />
           </div>
         </div>
       </div>

@@ -85,7 +85,15 @@ export function NewsletterSignupForm({ sourcePage, compact = false }: Newsletter
         </p>
       ) : (
         <p className="text-xs leading-5 text-slate-500">
-          This signup stays inside the site workflow. No third-party form provider is used.
+          By subscribing, you agree to receive newsroom email updates. Your email is stored in our internal subscriber database for future mailings. See our{" "}
+          <Link href="/privacy-policy" className="font-semibold text-ink underline decoration-brand/40 underline-offset-4">
+            Privacy Policy
+          </Link>{" "}
+          and{" "}
+          <Link href="/terms" className="font-semibold text-ink underline decoration-brand/40 underline-offset-4">
+            Terms
+          </Link>
+          .
         </p>
       )}
     </form>
