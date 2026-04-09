@@ -101,6 +101,8 @@ jobs:
   world-digest:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -115,12 +117,26 @@ jobs:
         run: npm ci
 
       - name: Check world digest freshness
+        id: world_digest_check
+        continue-on-error: true
+        run: npm run check:production-world-digest -- --start-hour-kyiv=6 --min-items=1
+
+      - name: Rebuild world digest if empty
+        if: steps.world_digest_check.outcome == 'failure' && env.CRON_SECRET != ''
+        run: |
+          kyiv_date=$(TZ=Europe/Kyiv date +%F)
+          curl --fail-with-body --show-error --silent \
+            -X POST "https://www.newukrainedaily.com/api/cron/world-digest" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -H "Content-Type: application/json" \
+            --data "{\"digestDate\":\"${kyiv_date}\"}"
+
+      - name: Re-check world digest freshness
+        if: steps.world_digest_check.outcome == 'failure'
         run: npm run check:production-world-digest -- --start-hour-kyiv=6 --min-items=1
 
       - name: Telegram failure
-        if: failure() && secrets.CRON_SECRET != ''
-        env:
-          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        if: failure() && env.CRON_SECRET != ''
         run: |
           curl --fail-with-body --show-error --silent \
             -X POST "https://www.newukrainedaily.com/api/internal/telegram" \
