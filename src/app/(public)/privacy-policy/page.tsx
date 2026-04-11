@@ -44,7 +44,7 @@ export default function PrivacyPolicyPage() {
 
           <h2>Cookies and analytics</h2>
           <p>
-            The site uses essential technical cookies needed for basic operation. If you accept analytics cookies through the consent banner, the site may also load Google Analytics. If you reject analytics, Google Analytics stays off.
+            The site uses essential technical cookies needed for basic operation. In the current US-facing setup, analytics may run by default to measure readership and site performance. If you turn analytics off through the site banner or cookie preferences control, Google Analytics is disabled for that browser.
           </p>
           <p>
             You can change your choice later through the <strong>Cookie preferences</strong> control in the site footer.

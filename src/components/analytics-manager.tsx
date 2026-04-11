@@ -14,11 +14,9 @@ export function AnalyticsManager({ gaId }: { gaId: string }) {
   useEffect(() => {
     const sync = () => {
       const nextState = readStoredCookieConsent();
+      const disableKey = `ga-disable-${gaId}`;
 
-      if (nextState !== "accepted") {
-        const disableKey = `ga-disable-${gaId}`;
-        (window as unknown as Record<string, boolean>)[disableKey] = true;
-      }
+      (window as unknown as Record<string, boolean>)[disableKey] = nextState === "rejected";
 
       setConsentState(nextState);
     };
@@ -31,7 +29,7 @@ export function AnalyticsManager({ gaId }: { gaId: string }) {
     };
   }, [gaId]);
 
-  if (!gaId || consentState !== "accepted") {
+  if (!gaId || consentState === "rejected") {
     return null;
   }
 
