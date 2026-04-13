@@ -1,7 +1,8 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { WorldDigestCard } from "@/components/world-digest-card";
 import { WorldDigestSeoBlock } from "@/components/world-digest-seo-block";
 import { buildMetadata } from "@/lib/seo";
+import { generateWorldDigestForDate } from "@/lib/world/digest";
 import { formatWorldDigestDate, worldDigestDateFromDate } from "@/lib/world/date";
 import { listRecentWorldDigestDates, listWorldDigestItemsByDate } from "@/lib/world-repository";
 
@@ -29,10 +30,25 @@ export async function generateMetadata() {
 
 export default async function WorldPage() {
   const digestDate = worldDigestDateFromDate();
-  const [items, recentDates] = await Promise.all([
+  let [items, recentDates] = await Promise.all([
     listWorldDigestItemsByDate(digestDate),
     listRecentWorldDigestDates(8)
   ]);
+
+  if (items.length === 0) {
+    try {
+      const result = await generateWorldDigestForDate(digestDate);
+
+      if (result.savedItems > 0) {
+        [items, recentDates] = await Promise.all([
+          listWorldDigestItemsByDate(digestDate),
+          listRecentWorldDigestDates(8)
+        ]);
+      }
+    } catch (error) {
+      console.error("[world] failed to auto-generate today's digest", error);
+    }
+  }
 
   const archiveDates = recentDates.filter((date) => date !== digestDate).slice(0, 7);
 
@@ -76,7 +92,7 @@ export default async function WorldPage() {
           items.map((item) => <WorldDigestCard key={item.id} item={item} />)
         ) : (
           <div className="panel p-6 text-sm leading-7 text-slate-600 xl:col-span-2">
-            Today&apos;s world digest is not published yet. Once the first scheduled run lands, this page will show a clean daily set of global news summaries here.
+            Today&apos;s world digest is not published yet. The page tried to generate it automatically, but no digest items were available from the current feed set.
           </div>
         )}
       </div>
