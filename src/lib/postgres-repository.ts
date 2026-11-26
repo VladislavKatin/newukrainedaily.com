@@ -1015,6 +1015,25 @@ export async function listNewsItemsNeedingImageGeneration(
   }));
 }
 
+// Recently published articles that went out with the branded placeholder image
+// (e.g. while the image provider was unavailable) and should get a real one.
+export async function listRecentNewsWithFallbackImage(limit = 2) {
+  const result = await query(
+    `
+      select *
+      from news_items
+      where status = 'published'
+        and generated_image_url like '%/generated/fallback-%'
+        and coalesce(published_at, created_at) >= timezone('utc', now()) - interval '3 days'
+      order by published_at desc nulls last
+      limit $1
+    `,
+    [limit]
+  );
+
+  return result.rows.map(mapNewsItem);
+}
+
 export async function countNewsImageRequestsSince(sinceIso: string) {
   const result = await query<{ count: string }>(
     `

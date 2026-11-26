@@ -255,6 +255,12 @@ async function downloadImage(imageUrl: string) {
   return optimizeRasterImage(Buffer.from(await response.arrayBuffer()), contentType);
 }
 
+// Stores an image generated in this process (e.g. by Workers AI), as WebP when possible.
+export async function saveGeneratedImageBuffer(buffer: Buffer, fileStem: string, contentType = "image/jpeg") {
+  const image = await optimizeRasterImage(buffer, contentType);
+  return saveBufferAsset(image.buffer, fileStem, image.contentType, "jpg");
+}
+
 export async function saveRemoteImageToLocalPublic(imageUrl: string, fileStem: string) {
   const image = await downloadImage(imageUrl);
   return saveBufferAsset(image.buffer, fileStem, image.contentType, "jpg");
@@ -295,6 +301,19 @@ export async function saveEditorialIllustration(
   <text x="214" y="820" fill="#475569" font-family="Arial, sans-serif" font-size="24">${tags.join(" • ") || "Ukraine • Editorial Illustration"}</text>
   <text x="1340" y="820" text-anchor="end" fill="#64748b" font-family="Arial, sans-serif" font-size="20">${sourceName}</text>
 </svg>`;
+
+  // Social networks don't show SVG previews, so render it to WebP when sharp is available.
+  try {
+    const moduleName = "sharp";
+    const sharpModule = await import(moduleName);
+    const sharp = (sharpModule.default || sharpModule) as (input: Buffer) => {
+      webp: (options: Record<string, unknown>) => { toBuffer: () => Promise<Buffer> };
+    };
+    const rendered = await sharp(Buffer.from(svg, "utf8")).webp({ quality: 85 }).toBuffer();
+    return saveBufferAsset(rendered, fileStem, "image/webp", "webp");
+  } catch (error) {
+    console.warn(`[storage] fallback illustration kept as SVG: ${error instanceof Error ? error.message : error}`);
+  }
 
   return saveBufferAsset(Buffer.from(svg, "utf8"), fileStem, "image/svg+xml", "svg");
 }

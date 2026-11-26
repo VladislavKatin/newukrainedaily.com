@@ -30,6 +30,7 @@ import {
   listNewsItemsNeedingImageGeneration,
   listPendingJobs,
   listPublishReadyNews,
+  listRecentNewsWithFallbackImage,
   publishNewsItem,
   upsertNewsImageRequest,
   updateJob,
@@ -39,7 +40,8 @@ import {
   type NewsItemRecord
 } from "@/lib/postgres-repository";
 import { slugify } from "@/lib/slug";
-import { saveEditorialIllustration, saveRemoteImage } from "@/lib/storage";
+import { saveEditorialIllustration, saveGeneratedImageBuffer, saveRemoteImage } from "@/lib/storage";
+import { generateWorkersAiImage, isWorkersAiImageConfigured } from "@/lib/workers-ai";
 
 const SOURCE_PRIORITY: Record<string, number> = {
   "ukrinform en": 12,
@@ -408,7 +410,7 @@ function isModerationFailure(errorMessage: string) {
 }
 
 function shouldUseFallbackImage(errorMessage: string) {
-  return isModerationFailure(errorMessage) || /not enough api tokens|quota|credits?/i.test(errorMessage);
+  return isModerationFailure(errorMessage) || /not enough api tokens|quota|credits?|daily free allocation|neurons/i.test(errorMessage);
 }
 
 function getUtcDayStartIso(date = new Date()) {
@@ -681,7 +683,10 @@ export async function runGenerateImagesJob(limitOverride?: number) {
   const newItems = rankPublishCandidates(waiting)
     .filter((item) => !takenSignatures.has(buildPublishAngleSignature(item)))
     .slice(0, newSlots);
-  const draftItems = [...inFlight, ...newItems];
+  const useWorkersAi = isWorkersAiImageConfigured();
+  // Articles that went out with the placeholder while no image provider worked.
+  const placeholderItems = useWorkersAi ? await listRecentNewsWithFallbackImage(2) : [];
+  const draftItems = [...inFlight, ...newItems, ...placeholderItems];
   let requested = 0;
   let completed = 0;
   let skipped = 0;
@@ -691,7 +696,7 @@ export async function runGenerateImagesJob(limitOverride?: number) {
   const errors: Array<{ slug: string; message: string }> = [];
 
   console.log(
-    `[images] publishedToday=${publishedToday} ready=${readyCount} inFlight=${inFlight.length} waiting=${waiting.length} newRequests=${newItems.length}`
+    `[images] provider=${useWorkersAi ? "workers-ai" : "leonardo"} publishedToday=${publishedToday} ready=${readyCount} inFlight=${inFlight.length} waiting=${waiting.length} newRequests=${newItems.length} placeholders=${placeholderItems.length}`
   );
 
   for (const item of draftItems) {
@@ -725,12 +730,13 @@ export async function runGenerateImagesJob(limitOverride?: number) {
         coverImageUrl: fallback.publicUrl,
         ogImageUrl: fallback.publicUrl,
         generatedImageUrl: fallback.publicUrl,
-        generatedImageCaption: imagePackage.caption
+        generatedImageCaption: "Illustration: New Ukraine Daily."
       });
 
       await upsertNewsImageRequest({
         newsItemId: item.id,
         prompt,
+        provider: useWorkersAi ? "workers-ai" : "leonardo",
         status: "failed",
         attempts: Math.max(attempts, limits.imageMaxAttempts),
         lastError: reason + " | fallback illustration generated"
@@ -788,6 +794,28 @@ export async function runGenerateImagesJob(limitOverride?: number) {
         continue;
       }
 
+      if (useWorkersAi) {
+        // Workers AI answers synchronously: the image is ready right away.
+        const buffer = await generateWorkersAiImage(prompt);
+        const stored = await saveGeneratedImageBuffer(buffer, `${item.id}-ai-${Date.now()}`, "image/jpeg");
+        await updateNewsItemAssets(item.id, {
+          coverImageUrl: stored.publicUrl,
+          ogImageUrl: stored.publicUrl,
+          generatedImageUrl: stored.publicUrl,
+          generatedImageCaption: imagePackage.caption
+        });
+        await upsertNewsImageRequest({
+          newsItemId: item.id,
+          prompt,
+          provider: "workers-ai",
+          status: "complete",
+          attempts
+        });
+        completed += 1;
+        await sleep(limits.imageRequestSpacingMs);
+        continue;
+      }
+
       const generation = await createLeonardoGeneration({ prompt });
 
       await upsertNewsImageRequest({
@@ -806,6 +834,12 @@ export async function runGenerateImagesJob(limitOverride?: number) {
         slug: item.slug,
         message
       });
+
+      if (item.status === "published") {
+        // Already live with the placeholder: just try again on a later run.
+        failed += 1;
+        continue;
+      }
 
       if (shouldUseFallbackImage(message) || attempts >= limits.imageMaxAttempts) {
         await applyFallbackIllustration(message);
