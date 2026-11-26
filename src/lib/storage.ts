@@ -1,4 +1,4 @@
-﻿import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { createClient } from "@supabase/supabase-js";
@@ -36,6 +36,46 @@ function getR2StorageConfig() {
     endpoint: env.R2_S3_ENDPOINT || `https://${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
     publicBaseUrl: env.R2_PUBLIC_BASE_URL ? trimTrailingSlash(env.R2_PUBLIC_BASE_URL) : null
   };
+}
+
+// R2 upload through the Cloudflare REST API (the same call `wrangler r2 object put` uses).
+// Needs only CLOUDFLARE_API_TOKEN with "Workers R2 Storage: Edit" - no separate S3 keys.
+function getR2ApiConfig() {
+  const accountId = process.env.R2_ACCOUNT_ID || process.env.CLOUDFLARE_ACCOUNT_ID;
+  const apiToken = process.env.CLOUDFLARE_API_TOKEN;
+  const bucket = process.env.R2_BUCKET;
+  const publicBaseUrl = process.env.R2_PUBLIC_BASE_URL;
+
+  if (!accountId || !apiToken || !bucket || !publicBaseUrl) {
+    return null;
+  }
+
+  return { accountId, apiToken, bucket, publicBaseUrl: trimTrailingSlash(publicBaseUrl) };
+}
+
+async function uploadToR2ViaApi(
+  config: NonNullable<ReturnType<typeof getR2ApiConfig>>,
+  objectPath: string,
+  buffer: Buffer,
+  contentType: string
+) {
+  const url = `https://api.cloudflare.com/client/v4/accounts/${config.accountId}/r2/buckets/${encodeURIComponent(
+    config.bucket
+  )}/objects/${objectPath.split("/").map(encodeURIComponent).join("/")}`;
+
+  const response = await fetch(url, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${config.apiToken}`,
+      "Content-Type": contentType,
+      "Cache-Control": "public, max-age=31536000, immutable"
+    },
+    body: new Uint8Array(buffer)
+  });
+
+  if (!response.ok) {
+    throw new Error(`R2 API upload failed: ${response.status} ${(await response.text()).slice(0, 300)}`);
+  }
 }
 
 function getSupabaseStorageConfig() {
@@ -85,6 +125,17 @@ async function saveBufferAsset(buffer: Buffer, fileStem: string, contentType: st
     return {
       filePath: objectPath,
       publicUrl: `${r2Config.publicBaseUrl}/${objectPath}`
+    };
+  }
+
+  const r2ApiConfig = getR2ApiConfig();
+
+  if (r2ApiConfig) {
+    await uploadToR2ViaApi(r2ApiConfig, objectPath, buffer, contentType);
+
+    return {
+      filePath: objectPath,
+      publicUrl: `${r2ApiConfig.publicBaseUrl}/${objectPath}`
     };
   }
 
