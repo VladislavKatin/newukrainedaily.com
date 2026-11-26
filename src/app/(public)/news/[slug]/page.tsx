@@ -55,7 +55,11 @@ export default async function NewsArticlePage({ params }: Props) {
   }
 
   const related = await getRelatedEntries("news", entry.slug, 3);
-  const unoptimizedPreview = shouldBypassImageOptimization(entry.previewImageUrl);
+  // New articles have no source photo: their AI illustration becomes the main image.
+  const heroImageUrl = entry.previewImageUrl || entry.generatedImageUrl;
+  const heroImageAlt = entry.previewImageUrl ? entry.previewImageAlt : entry.generatedImageAlt;
+  const heroImageCaption = entry.previewImageUrl ? entry.previewImageCaption : entry.generatedImageCaption;
+  const unoptimizedPreview = shouldBypassImageOptimization(heroImageUrl);
   const unoptimizedGenerated = shouldBypassImageOptimization(entry.generatedImageUrl);
   const formatConfig = getStoryFormatConfig(entry);
   const shareUrl = absoluteUrl(`/news/${entry.slug}`);
@@ -97,11 +101,11 @@ export default async function NewsArticlePage({ params }: Props) {
             </div>
           ) : null}
           <ArticleStatusBanner entry={entry} />
-          {entry.previewImageUrl ? (
+          {heroImageUrl ? (
             <div className="mt-6 overflow-hidden rounded-3xl border border-line sm:mt-8">
               <Image
-                src={entry.previewImageUrl}
-                alt={entry.previewImageAlt || entry.title}
+                src={heroImageUrl}
+                alt={heroImageAlt || entry.title}
                 width={1200}
                 height={675}
                 unoptimized={unoptimizedPreview}
@@ -111,8 +115,8 @@ export default async function NewsArticlePage({ params }: Props) {
               />
             </div>
           ) : null}
-          {entry.previewImageCaption ? (
-            <p className="mt-3 text-xs text-slate-500">{entry.previewImageCaption}</p>
+          {heroImageCaption ? (
+            <p className="mt-3 text-xs text-slate-500">{heroImageCaption}</p>
           ) : null}
           <ArticleOverview
             keyPoints={entry.keyPoints}
@@ -124,7 +128,7 @@ export default async function NewsArticlePage({ params }: Props) {
             showGeneratedImageAfterIndex={0}
             generatedImage={
               entry.generatedImageUrl &&
-              entry.generatedImageUrl !== entry.previewImageUrl ? (
+              entry.generatedImageUrl !== heroImageUrl ? (
                 <figure className="overflow-hidden rounded-3xl border border-line">
                   <Image
                     src={entry.generatedImageUrl}
