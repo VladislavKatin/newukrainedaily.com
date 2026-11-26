@@ -714,7 +714,7 @@ export async function runGenerateImagesJob(limitOverride?: number) {
     const attempts = (previousRequest?.attempts ?? 0) + 1;
 
     // Branded illustration instead of an AI image, so the article can still be published.
-    const useFallbackIllustration = async (reason: string) => {
+    const applyFallbackIllustration = async (reason: string) => {
       const fallback = await saveEditorialIllustration("fallback-" + item.id + "-" + Date.now(), {
         title: item.title,
         tags: item.tags,
@@ -750,7 +750,7 @@ export async function runGenerateImagesJob(limitOverride?: number) {
           errors.push({ slug: item.slug, message });
 
           if (previousRequest.attempts >= limits.imageMaxAttempts || shouldUseFallbackImage(message)) {
-            await useFallbackIllustration(message);
+            await applyFallbackIllustration(message);
             continue;
           }
 
@@ -808,7 +808,7 @@ export async function runGenerateImagesJob(limitOverride?: number) {
       });
 
       if (shouldUseFallbackImage(message) || attempts >= limits.imageMaxAttempts) {
-        await useFallbackIllustration(message);
+        await applyFallbackIllustration(message);
         continue;
       }
 
