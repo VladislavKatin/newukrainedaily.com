@@ -20,7 +20,9 @@ function createPool() {
   return new Pool({
     connectionString,
     max: maxConnections,
-    connectionTimeoutMillis: 10000,
+    // During the static build many pages share a small pool; waiting for a free
+    // client counts against this timeout, so it has to be generous.
+    connectionTimeoutMillis: Number(process.env.PG_CONNECTION_TIMEOUT_MS ?? "") || 120000,
     idleTimeoutMillis: 30000,
     allowExitOnIdle: true,
     ssl: { rejectUnauthorized: false }

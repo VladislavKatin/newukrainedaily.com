@@ -8,6 +8,12 @@ const nextConfig: NextConfig = {
   trailingSlash: false,
   images: {
     unoptimized: true
+  },
+  experimental: {
+    // Keep database load low while prerendering (Supabase pooler has few connections).
+    cpus: 2,
+    staticGenerationMaxConcurrency: 4,
+    staticGenerationRetryCount: 3
   }
 };
 
