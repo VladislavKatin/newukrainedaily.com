@@ -976,43 +976,56 @@ export async function listDraftNewsWithoutImages(limit = 20) {
   return result.rows.map(mapNewsItem);
 }
 
+// Drafts from the last few days that still need an AI image. Published articles are
+// never picked up here any more: images are made only for what is about to be published.
+// Rows already sent to Leonardo ("requested") are returned first so they get polled.
 export async function listNewsItemsNeedingImageGeneration(
-  limit = 10,
+  limit = 60,
   maxAttempts = 3
 ) {
   const result = await query(
     `
-      select ni.*
+      select ni.*, img.status::text as image_request_status
       from news_items ni
       left join news_images img on img.news_item_id = ni.id
-      where (
-          (ni.status = 'draft' and (ni.cover_image_url is null or ni.og_image_url is null))
-          or (ni.status = 'published' and ni.generated_image_url is null)
-        )
+      where ni.status = 'draft'
+        and ni.generated_image_url is null
+        and ni.created_at >= timezone('utc', now()) - interval '3 days'
+        and coalesce(nullif(trim(ni.summary), ''), null) is not null
+        and coalesce(nullif(trim(ni.dek), ''), null) is not null
+        and char_length(trim(ni.summary)) >= 140
+        and char_length(trim(coalesce(ni.why_it_matters, ''))) >= 80
+        and array_length(ni.tags, 1) >= 3
+        and jsonb_typeof(ni.key_points) = 'array'
+        and jsonb_array_length(ni.key_points) >= 3
         and (
           img.id is null
-          or (
-            img.status = 'failed'
-            and (
-              img.attempts < $2
-              or ni.status = 'published'
-            )
-          )
-          or (
-            img.status = 'pending'
-            and img.attempts < $2
-          )
-          or (
-            img.status = 'requested'
-          )
+          or img.status = 'requested'
+          or (img.status in ('failed', 'pending') and img.attempts < $2)
         )
-      order by ni.created_at asc
+      order by (img.status = 'requested') desc nulls last, ni.created_at desc
       limit $1
     `,
     [limit, maxAttempts]
   );
 
-  return result.rows.map(mapNewsItem);
+  return result.rows.map((row) => ({
+    item: mapNewsItem(row),
+    imageRequestStatus: row.image_request_status ? String(row.image_request_status) : null
+  }));
+}
+
+export async function countNewsImageRequestsSince(sinceIso: string) {
+  const result = await query<{ count: string }>(
+    `
+      select count(*)::text as count
+      from news_images
+      where created_at >= $1::timestamptz
+    `,
+    [sinceIso]
+  );
+
+  return Number(result.rows[0]?.count ?? "0");
 }
 
 export async function listDraftNewsForPublish(limit = 20) {
@@ -1048,8 +1061,7 @@ export async function listPublishReadyNews(limit = 20) {
         and array_length(tags, 1) >= 3
         and jsonb_typeof(key_points) = 'array'
         and jsonb_array_length(key_points) >= 3
-        and coalesce(cover_image_url, preview_image_url) is not null
-        and coalesce(og_image_url, preview_image_url) is not null
+        and generated_image_url is not null
         and coalesce(published_at, created_at) >= timezone('utc', now()) - interval '7 days'
       order by published_at desc nulls last, created_at desc
       limit $1
