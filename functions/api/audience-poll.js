@@ -1,4 +1,5 @@
 import { cleanString, json, readJson, supabaseInsert } from "../_lib/shared.js";
+import { hasFormsDb, savePollVote } from "../_lib/forms-db.js";
 
 const ALLOWED_ANSWERS = new Set(["singapore", "china"]);
 
@@ -22,12 +23,15 @@ export async function onRequestPost({ request, env }) {
   }
 
   try {
-    const vote = await supabaseInsert(env, "audience_poll_responses", {
-      poll_key: pollKey,
-      answer,
-      source_page: sourcePage ?? null,
-      user_agent: (request.headers.get("user-agent") || "").slice(0, 500) || null
-    });
+    const userAgent = (request.headers.get("user-agent") || "").slice(0, 500) || null;
+    const vote = hasFormsDb(env)
+      ? await savePollVote(env, { pollKey, answer, sourcePage, userAgent })
+      : await supabaseInsert(env, "audience_poll_responses", {
+          poll_key: pollKey,
+          answer,
+          source_page: sourcePage ?? null,
+          user_agent: userAgent
+        });
 
     return json({
       ok: true,
