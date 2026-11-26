@@ -6,103 +6,127 @@ import { buildRelatedEntries } from "@/lib/related-content";
 
 const CONTENT_CACHE_VERSION = "2026-03-08-v3";
 
-const getAllEntriesCached = unstable_cache(
+// During the static build every page asks for the same lists again and again.
+// Keep results in memory for the lifetime of the build worker.
+const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
+
+function memoizeForBuild<Args extends unknown[], Result>(fn: (...args: Args) => Promise<Result>) {
+  if (!isBuildPhase) {
+    return fn;
+  }
+
+  const cache = new Map<string, Promise<Result>>();
+
+  return (...args: Args) => {
+    const key = JSON.stringify(args);
+    let pending = cache.get(key);
+
+    if (!pending) {
+      pending = fn(...args);
+      cache.set(key, pending);
+      pending.catch(() => cache.delete(key));
+    }
+
+    return pending;
+  };
+}
+
+const getAllEntriesCached = memoizeForBuild(unstable_cache(
   async () => {
     const repository = await getContentRepository();
     return repository.getAllEntries();
   },
   [CONTENT_CACHE_VERSION, "content-all-entries"],
   { revalidate: 300 }
-);
+));
 
-const getEntriesByTypeCached = unstable_cache(
+const getEntriesByTypeCached = memoizeForBuild(unstable_cache(
   async (type: EntryType) => {
     const repository = await getContentRepository();
     return repository.getEntriesByType(type);
   },
   [CONTENT_CACHE_VERSION, "content-type"],
   { revalidate: 300 }
-);
+));
 
-const getEntriesByTypePageCached = unstable_cache(
+const getEntriesByTypePageCached = memoizeForBuild(unstable_cache(
   async (type: EntryType, limit: number, offset: number, mode: "curated" | "latest") => {
     const repository = await getContentRepository();
     return repository.getEntriesByTypePage(type, { limit, offset, mode });
   },
   [CONTENT_CACHE_VERSION, "content-type-page"],
   { revalidate: 300 }
-);
+));
 
-const getEntryCached = unstable_cache(
+const getEntryCached = memoizeForBuild(unstable_cache(
   async (type: EntryType, slug: string) => {
     const repository = await getContentRepository();
     return repository.getEntry(type, slug);
   },
   [CONTENT_CACHE_VERSION, "content-entry"],
   { revalidate: 300 }
-);
+));
 
-const getEntrySlugsByTypeCached = unstable_cache(
+const getEntrySlugsByTypeCached = memoizeForBuild(unstable_cache(
   async (type: EntryType, limit: number) => {
     const repository = await getContentRepository();
     return repository.getEntrySlugsByType(type, limit);
   },
   [CONTENT_CACHE_VERSION, "content-entry-slugs-by-type"],
   { revalidate: 300 }
-);
+));
 
-const getRelatedEntriesCached = unstable_cache(
+const getRelatedEntriesCached = memoizeForBuild(unstable_cache(
   async (type: EntryType, slug: string, limit: number) => {
-    const repository = await getContentRepository();
-    const entry = await repository.getEntry(type, slug);
+    const entry = await getEntryCached(type, slug);
 
     if (!entry) {
       return [] satisfies ContentEntry[];
     }
 
     const poolLimit = type === "news" ? 140 : 60;
-    const { entries } = await repository.getEntriesByTypePage(type, { limit: poolLimit, offset: 0 });
+    const { entries } = await getEntriesByTypePageCached(type, poolLimit, 0, "curated");
     return buildRelatedEntries(entry, entries, limit);
   },
   [CONTENT_CACHE_VERSION, "content-related-entries"],
   { revalidate: 300 }
-);
+));
 
-const getAllTagsCached = unstable_cache(
+const getAllTagsCached = memoizeForBuild(unstable_cache(
   async () => {
     const repository = await getContentRepository();
     return repository.getAllTags();
   },
   [CONTENT_CACHE_VERSION, "content-all-tags"],
   { revalidate: 300 }
-);
+));
 
-const getEntriesByTagCached = unstable_cache(
+const getEntriesByTagCached = memoizeForBuild(unstable_cache(
   async (tag: string) => {
     const repository = await getContentRepository();
     return repository.getEntriesByTag(tag);
   },
   [CONTENT_CACHE_VERSION, "content-tag"],
   { revalidate: 300 }
-);
+));
 
-const getEntriesByTagPageCached = unstable_cache(
+const getEntriesByTagPageCached = memoizeForBuild(unstable_cache(
   async (tag: string, limit: number, offset: number) => {
     const repository = await getContentRepository();
     return repository.getEntriesByTagPage(tag, { limit, offset });
   },
   [CONTENT_CACHE_VERSION, "content-tag-page"],
   { revalidate: 300 }
-);
+));
 
-const getTopicCached = unstable_cache(
+const getTopicCached = memoizeForBuild(unstable_cache(
   async (tag: string) => {
     const repository = await getContentRepository();
     return repository.getTopic(tag);
   },
   [CONTENT_CACHE_VERSION, "content-topic"],
   { revalidate: 300 }
-);
+));
 
 export async function getAllEntries() {
   return getAllEntriesCached();

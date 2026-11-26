@@ -406,7 +406,25 @@ function createDatabaseContentRepository(): ContentRepository {
   };
 }
 
+let buildRepositoryPromise: Promise<ContentRepository> | null = null;
+
 export async function getContentRepository(): Promise<ContentRepository> {
+  // During the static build, resolve the repository (and its availability checks) once per worker.
+  if (isBuildPhase()) {
+    if (!buildRepositoryPromise) {
+      buildRepositoryPromise = resolveContentRepository().catch((error) => {
+        buildRepositoryPromise = null;
+        throw error;
+      });
+    }
+
+    return buildRepositoryPromise;
+  }
+
+  return resolveContentRepository();
+}
+
+async function resolveContentRepository(): Promise<ContentRepository> {
   const env = getEnv();
 
   if (!hasConfiguredDatabaseUrl()) {
