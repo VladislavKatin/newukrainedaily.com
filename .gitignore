@@ -26,3 +26,7 @@ test-results/
 playwright-report/
 .env.vtmp
 
+
+# Cloudflare / static export
+out/
+.wrangler/

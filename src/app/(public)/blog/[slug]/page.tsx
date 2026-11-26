@@ -19,10 +19,9 @@ import { getStoryFormatConfig } from "@/lib/story-format";
 type Props = {
   params: Promise<{ slug: string }>;
 };
-export const revalidate = 300;
 
 export async function generateStaticParams() {
-  const slugs = await getEntrySlugsByType("blog", 200);
+  const slugs = await getEntrySlugsByType("blog", 100000);
   return slugs.map((slug) => ({ slug }));
 }
 

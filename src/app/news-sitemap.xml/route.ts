@@ -1,5 +1,7 @@
 import { absoluteUrl, siteConfig } from "@/lib/site";
 
+export const dynamic = "force-static";
+
 const NEWS_WINDOW_MS = 48 * 60 * 60 * 1000;
 
 function escapeXml(value: string) {

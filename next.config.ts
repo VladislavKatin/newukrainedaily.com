@@ -1,24 +1,13 @@
 import type { NextConfig } from "next";
 
+// The production site is a fully static export served by Cloudflare Pages.
+// Content is rebuilt by GitHub Actions after every automation run.
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  output: "export",
+  trailingSlash: false,
   images: {
-    formats: ["image/avif", "image/webp"],
-    minimumCacheTTL: 60 * 60 * 24 * 7,
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "**"
-      },
-      {
-        protocol: "https",
-        hostname: "images.unsplash.com"
-      },
-      {
-        protocol: "https",
-        hostname: "**.supabase.co"
-      }
-    ]
+    unoptimized: true
   }
 };
 

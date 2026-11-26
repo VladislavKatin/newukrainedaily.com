@@ -149,6 +149,15 @@ export type NewsletterSubscriberRecord = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type AudiencePollResponseRecord = {
+  id: string;
+  pollKey: string;
+  answer: string;
+  sourcePage: string | null;
+  userAgent: string | null;
+  createdAt: string;
+};
 export type SourceStatusCounts = {
   total: number;
   active: number;
@@ -261,6 +270,13 @@ type SubscribeNewsletterInput = {
   name?: string | null;
   sourcePage?: string | null;
   status?: string;
+};
+
+type CreateAudiencePollResponseInput = {
+  pollKey: string;
+  answer: string;
+  sourcePage?: string | null;
+  userAgent?: string | null;
 };
 
 function normalizeTimestampInput(value: string | Date | null | undefined) {
@@ -403,6 +419,17 @@ function mapNewsletterSubscriber(row: Record<string, unknown>): NewsletterSubscr
     status: String(row.status),
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at)
+  };
+}
+
+function mapAudiencePollResponse(row: Record<string, unknown>): AudiencePollResponseRecord {
+  return {
+    id: String(row.id),
+    pollKey: String(row.poll_key),
+    answer: String(row.answer),
+    sourcePage: row.source_page ? String(row.source_page) : null,
+    userAgent: row.user_agent ? String(row.user_agent) : null,
+    createdAt: String(row.created_at)
   };
 }
 
@@ -1473,6 +1500,24 @@ export async function upsertNewsletterSubscriber(input: SubscribeNewsletterInput
   );
 
   return mapNewsletterSubscriber(result.rows[0]);
+}
+
+export async function createAudiencePollResponse(input: CreateAudiencePollResponseInput) {
+  const result = await query(
+    `
+      insert into audience_poll_responses (poll_key, answer, source_page, user_agent)
+      values ($1, $2, $3, $4)
+      returning *
+    `,
+    [
+      input.pollKey,
+      input.answer,
+      input.sourcePage ?? null,
+      input.userAgent ? input.userAgent.slice(0, 500) : null
+    ]
+  );
+
+  return mapAudiencePollResponse(result.rows[0]);
 }
 
 export async function enqueueJob(input: EnqueueJobInput, client: PoolClient | null = null) {

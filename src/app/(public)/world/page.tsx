@@ -2,11 +2,10 @@ import Link from "next/link";
 import { WorldDigestCard } from "@/components/world-digest-card";
 import { WorldDigestSeoBlock } from "@/components/world-digest-seo-block";
 import { buildMetadata } from "@/lib/seo";
-import { generateWorldDigestForDate } from "@/lib/world/digest";
 import { formatWorldDigestDate, worldDigestDateFromDate } from "@/lib/world/date";
 import { listRecentWorldDigestDates, listWorldDigestItemsByDate } from "@/lib/world-repository";
 
-export const dynamic = "force-dynamic";
+export const dynamic = "force-static";
 
 export async function generateMetadata() {
   const digestDate = worldDigestDateFromDate();
@@ -30,25 +29,11 @@ export async function generateMetadata() {
 
 export default async function WorldPage() {
   const digestDate = worldDigestDateFromDate();
-  let [items, recentDates] = await Promise.all([
+  const [items, recentDates] = await Promise.all([
     listWorldDigestItemsByDate(digestDate),
     listRecentWorldDigestDates(8)
   ]);
 
-  if (items.length === 0) {
-    try {
-      const result = await generateWorldDigestForDate(digestDate);
-
-      if (result.savedItems > 0) {
-        [items, recentDates] = await Promise.all([
-          listWorldDigestItemsByDate(digestDate),
-          listRecentWorldDigestDates(8)
-        ]);
-      }
-    } catch (error) {
-      console.error("[world] failed to auto-generate today's digest", error);
-    }
-  }
 
   const archiveDates = recentDates.filter((date) => date !== digestDate).slice(0, 7);
 

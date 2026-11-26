@@ -1,5 +1,7 @@
-﻿import { absoluteUrl } from "@/lib/site";
+import { absoluteUrl } from "@/lib/site";
 import { listWorldDigestDatesForSitemap } from "@/lib/world-repository";
+
+export const dynamic = "force-static";
 
 function escapeXml(value: string) {
   return value

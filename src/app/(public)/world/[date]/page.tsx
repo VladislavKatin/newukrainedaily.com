@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { WorldDigestCard } from "@/components/world-digest-card";
 import { buildMetadata } from "@/lib/seo";
@@ -9,11 +9,11 @@ type Props = {
   params: Promise<{ date: string }>;
 };
 
-export const revalidate = 3600;
 
 export async function generateStaticParams() {
   const dates = await listWorldDigestDatesForSitemap(365);
-  return dates.map((date) => ({ date }));
+  // Static export needs at least one param; an unknown date renders the 404 page.
+  return dates.length > 0 ? dates.map((date) => ({ date })) : [{ date: "2026-01-01" }];
 }
 
 export async function generateMetadata({ params }: Props) {

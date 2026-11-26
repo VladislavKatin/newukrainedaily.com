@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 function buildHref(basePath: string, page: number) {
-  return page <= 1 ? basePath : `${basePath}?page=${page}`;
+  return page <= 1 ? basePath : `${basePath}/page/${page}`;
 }
 
 export function PaginationNav({

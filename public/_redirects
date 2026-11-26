@@ -1,0 +1,3 @@
+# Cloudflare Pages redirects (static site)
+/favicon.ico /icon.svg 301
+/news/ukraine-accuses-russia-of-redirecting-drones-toward-baltic-states /news/ukraine-warns-of-russian-drone-diversions-to-baltic-states 301

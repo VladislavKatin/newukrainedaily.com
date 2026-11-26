@@ -9,6 +9,9 @@ import { absoluteUrl, getBaseUrl, siteConfig } from "@/lib/site";
 
 validateEnv();
 
+// Old listing URLs used "?page=N"; the static site uses "/page/N".
+const legacyPaginationRedirect = `(function(){try{var p=new URLSearchParams(location.search).get("page");var n=parseInt(p||"",10);if(n>1&&/^\\/(news|blog|topic\\/[^/]+)\\/?$/.test(location.pathname)){location.replace(location.pathname.replace(/\\/$/,"")+"/page/"+n);}}catch(e){}})();`;
+
 export const metadata: Metadata = {
   metadataBase: new URL(getBaseUrl()),
   title: {
@@ -65,6 +68,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="flex min-h-screen flex-col">
+        <script
+          dangerouslySetInnerHTML={{
+            __html: legacyPaginationRedirect
+          }}
+        />
         <AnalyticsManager gaId={gaId} />
         <SiteHeader />
         <main className="flex-1">{children}</main>

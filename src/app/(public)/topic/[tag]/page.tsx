@@ -1,4 +1,4 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { EntryCard } from "@/components/entry-card";
 import { PaginationNav } from "@/components/pagination-nav";
@@ -6,18 +6,23 @@ import { PageShell } from "@/components/page-shell";
 import { getEntriesByTagPage, getTopic } from "@/lib/content";
 import { buildMetadata } from "@/lib/seo";
 import { absoluteUrl, siteConfig } from "@/lib/site";
+import { topicParams } from "@/lib/static-params";
 
 const PAGE_SIZE = 12;
-export const revalidate = 300;
+
+export const dynamicParams = false;
+
+export async function generateStaticParams() {
+  return topicParams();
+}
 
 type Props = {
-  params: Promise<{ tag: string }>;
-  searchParams?: Promise<{ page?: string }>;
+  params: Promise<{ tag: string; page?: string }>;
 };
 
-export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
-  const { tag } = await params;
-  const resolved = searchParams ? await searchParams : undefined;
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const resolved = await params;
+  const { tag } = resolved;
   const currentPage = Math.max(1, Number(resolved?.page || "1") || 1);
   const topic = await getTopic(tag);
 
@@ -25,14 +30,14 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
     title: topic ? `Topic: ${topic.title}` : `Topic: ${tag}`,
     description:
       topic?.description || `Published coverage and analysis grouped under the ${tag} topic.`,
-    path: currentPage > 1 ? `/topic/${tag}?page=${currentPage}` : `/topic/${tag}`,
+    path: currentPage > 1 ? `/topic/${tag}/page/${currentPage}` : `/topic/${tag}`,
     keywords: ["topic archive", tag]
   });
 }
 
-export default async function TopicPage({ params, searchParams }: Props) {
-  const { tag } = await params;
-  const resolved = searchParams ? await searchParams : undefined;
+export default async function TopicPage({ params }: Props) {
+  const resolved = await params;
+  const { tag } = resolved;
   const currentPage = Math.max(1, Number(resolved?.page || "1") || 1);
   const offset = (currentPage - 1) * PAGE_SIZE;
   const [topic, pageResult] = await Promise.all([
@@ -45,7 +50,7 @@ export default async function TopicPage({ params, searchParams }: Props) {
     notFound();
   }
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const pagePath = currentPage > 1 ? `/topic/${tag}?page=${currentPage}` : `/topic/${tag}`;
+  const pagePath = currentPage > 1 ? `/topic/${tag}/page/${currentPage}` : `/topic/${tag}`;
   const topicTitle = topic ? topic.title : `#${tag}`;
   const topicDescription =
     topic?.description ||

@@ -5,28 +5,27 @@ import { getEntriesByTypePage } from "@/lib/content";
 import { buildMetadata } from "@/lib/seo";
 
 const PAGE_SIZE = 12;
-export const revalidate = 300;
 
 type Props = {
-  searchParams?: Promise<{ page?: string }>;
+  params?: Promise<{ page?: string }>;
 };
 
-export async function generateMetadata({ searchParams }: Props) {
-  const resolved = searchParams ? await searchParams : undefined;
+export async function generateMetadata({ params }: Props) {
+  const resolved = params ? await params : undefined;
   const currentPage = Math.max(1, Number(resolved?.page || "1") || 1);
 
   return buildMetadata({
     title: currentPage > 1 ? `Blog - Page ${currentPage}` : "Blog",
     description: "Published blog archive with explainers, editorial analysis, and practical support coverage related to Ukraine.",
-    path: currentPage > 1 ? `/blog?page=${currentPage}` : "/blog",
+    path: currentPage > 1 ? `/blog/page/${currentPage}` : "/blog",
     keywords: ["Ukraine blog", "reports", "editorial analysis"],
     imagePath: "/og-blog-hub.svg",
     imageAlt: "Ukraine analysis and explainers"
   });
 }
 
-export default async function BlogPage({ searchParams }: Props) {
-  const resolved = searchParams ? await searchParams : undefined;
+export default async function BlogPage({ params }: Props) {
+  const resolved = params ? await params : undefined;
   const currentPage = Math.max(1, Number(resolved?.page || "1") || 1);
   const offset = (currentPage - 1) * PAGE_SIZE;
   const { entries, total } = await getEntriesByTypePage("blog", {

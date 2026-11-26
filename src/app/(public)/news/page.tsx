@@ -7,28 +7,27 @@ import { buildMetadata } from "@/lib/seo";
 
 const PAGE_SIZE = 12;
 
-export const revalidate = 300;
 
 type Props = {
-  searchParams?: Promise<{ page?: string }>;
+  params?: Promise<{ page?: string }>;
 };
 
-export async function generateMetadata({ searchParams }: Props) {
-  const resolved = searchParams ? await searchParams : undefined;
+export async function generateMetadata({ params }: Props) {
+  const resolved = params ? await params : undefined;
   const currentPage = Math.max(1, Number(resolved?.page || "1") || 1);
 
   return buildMetadata({
     title: currentPage > 1 ?             `News - Page ${currentPage}` : "News",
     description: "Published Ukraine news archive with stronger editorial curation, fast updates, and structured story discovery.",
-    path: currentPage > 1 ? `/news?page=${currentPage}` : "/news",
+    path: currentPage > 1 ? `/news/page/${currentPage}` : "/news",
     keywords: ["Ukraine news", "latest Ukraine updates", "Ukraine war news"],
     imagePath: "/og-news-hub.svg",
     imageAlt: "Latest Ukraine news"
   });
 }
 
-export default async function NewsPage({ searchParams }: Props) {
-  const resolved = searchParams ? await searchParams : undefined;
+export default async function NewsPage({ params }: Props) {
+  const resolved = params ? await params : undefined;
   const currentPage = Math.max(1, Number(resolved?.page || "1") || 1);
   const offset = (currentPage - 1) * PAGE_SIZE;
   const { entries, total } = await getEntriesByTypePage("news", {

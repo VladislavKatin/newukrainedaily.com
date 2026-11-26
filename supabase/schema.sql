@@ -160,6 +160,15 @@ create table if not exists newsletter_subscribers (
   updated_at timestamptz not null default timezone('utc', now())
 );
 
+create table if not exists audience_poll_responses (
+  id uuid primary key default gen_random_uuid(),
+  poll_key text not null,
+  answer text not null,
+  source_page text,
+  user_agent text,
+  created_at timestamptz not null default timezone('utc', now())
+);
+
 create table if not exists world_digest_items (
   id uuid primary key default gen_random_uuid(),
   digest_date date not null,
@@ -194,6 +203,8 @@ create index if not exists idx_jobs_status_run_at on jobs (status, run_at);
 create index if not exists idx_news_images_status_attempts on news_images (status, attempts);
 create index if not exists idx_newsletter_subscribers_status_created_at
 on newsletter_subscribers (status, created_at desc);
+create index if not exists idx_audience_poll_responses_poll_key_created_at
+on audience_poll_responses (poll_key, created_at desc);
 create index if not exists idx_world_digest_items_digest_date
 on world_digest_items (digest_date desc, position asc);
 create index if not exists idx_world_digest_items_published_at
@@ -237,3 +248,4 @@ alter table topics enable row level security;
 alter table jobs enable row level security;
 alter table news_images enable row level security;
 alter table newsletter_subscribers enable row level security;
+alter table audience_poll_responses enable row level security;

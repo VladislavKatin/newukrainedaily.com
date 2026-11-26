@@ -22,10 +22,9 @@ type Props = {
   params: Promise<{ slug: string }>;
 };
 
-export const revalidate = 300;
 
 export async function generateStaticParams() {
-  const slugs = await getEntrySlugsByType("news", 1000);
+  const slugs = await getEntrySlugsByType("news", 100000);
   return slugs.map((slug) => ({ slug }));
 }
 

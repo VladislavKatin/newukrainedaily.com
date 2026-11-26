@@ -5,7 +5,6 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
     "lint": "eslint .",
     "test:content": "node scripts/run-content-tests.mjs",
     "format": "prettier --write .",
@@ -39,15 +38,15 @@
     "blog:images:import": "node scripts/import-blog-images.mjs",
     "blog:images:generate:replicate": "node scripts/generate-blog-images-replicate.mjs",
     "warm:production": "node scripts/warm-production.mjs",
-    "deploy:production": "node scripts/deploy-and-warm.mjs",
-    "release:ship": "npm run release:check && npm run deploy:production",
     "check:production-health": "node scripts/check-production-health.mjs",
-    "_internal:vercel:deploy": "npx vercel deploy --prod --yes",
     "check:production-publishing": "node scripts/check-production-publishing.mjs",
     "notify:telegram:test": "node scripts/telegram-notify.mjs --status=info --title=\"Telegram test\" --text=\"Test notification from newukrainedaily.com\"",
     "check:production-source-health": "node scripts/check-production-source-health.mjs",
     "check:production-world-digest": "node scripts/check-production-world-digest.mjs",
-    "world:digest": "node --import tsx scripts/run-world-digest.mjs"
+    "world:digest": "node --import tsx scripts/run-world-digest.mjs",
+    "auto": "node --conditions=react-server --import tsx scripts/automation.mjs",
+    "deploy:cloudflare": "npx --yes wrangler@4 pages deploy out --project-name=newukrainedaily --branch=main --commit-dirty=true",
+    "preview": "npx --yes serve out"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1009.0",

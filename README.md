@@ -1,6 +1,6 @@
 # New Ukraine Daily
 
-SEO-focused Next.js publishing stack for `www.newukrainedaily.com` with separate `/news` and `/blog` sections, protected automation endpoints, Leonardo webhook handling, and Vercel deployment scaffolding.
+SEO-focused Next.js publishing stack for `www.newukrainedaily.com` with separate `/news` and `/blog` sections. Hosted for free as a static site on Cloudflare Pages; content automation runs in GitHub Actions.
 
 ## Stack
 
@@ -42,100 +42,32 @@ This checks:
 - Postgres connectivity
 - Supabase Storage reachability when configured
 
-## Smoke test
+## Hosting: Cloudflare Pages (free)
 
-With the app running locally and `CRON_SECRET` configured:
+The site is a **static export** (`output: "export"`). There is no Node server in production.
 
-```bash
-npm run smoke:cron
-```
+- `npm run build` reads published content from Postgres (Supabase) and writes the whole site to `out/`.
+  The build fails on purpose if the database is unreachable, so an empty site is never published.
+- `out/` is uploaded to the Cloudflare Pages project `newukrainedaily` (`npm run deploy:cloudflare`).
+- `functions/` holds the only server code: Pages Functions for `POST /api/newsletter/subscribe`
+  and `POST /api/audience-poll`. They write to Supabase over its REST API.
+  Their secrets are set once with `node scripts/setup-secrets.mjs --pages`.
+- Images are stored in R2 when `R2_*` variables are set, otherwise in Supabase Storage.
 
-## SEO refresh for existing content
+## Automation: GitHub Actions
 
-To re-apply SEO fields for all already published news/blog entries (canonical, meta, OG, stats, related links):
+`.github/workflows/site.yml` runs every hour (and on every push to `main`):
 
-```bash
-npm run seo:refresh
-```
+1. `npm run auto -- generate --count=1` on even UTC hours 00–18 (10 articles/day)
+2. `npm run auto -- images` and `npm run auto -- publish` (finalize Leonardo images, publish drafts)
+3. `npm run auto -- world-digest` (once per Kyiv day) and `npm run auto -- seo-refresh` (daily)
+4. `npm run build` → `wrangler pages deploy out` → `npm run check:production-health`
+5. Telegram message on failure
 
-## Vercel deployment
+GitHub secrets are set once with `node scripts/setup-secrets.mjs --github`
+(reads `.env.vercel.prod`, needs `gh auth login`).
 
-1. Import `https://github.com/VladislavKatin/newukrainedaily.com` into Vercel.
-2. Add environment variables from `.env.example`.
-3. Set `PUBLIC_BASE_URL=https://www.newukrainedaily.com`.
-4. Deploy the project.
-5. Vercel Cron is intentionally disabled on Hobby. Use GitHub Actions to call `POST /api/cron/generate`.
-
-## Production environment
-
-Set these variables in Vercel and in your local `.env.local` when testing production integrations:
-
-```bash
-PUBLIC_BASE_URL=https://www.newukrainedaily.com
-GOOGLE_SITE_VERIFICATION=
-CRON_SECRET=
-DATABASE_URL=
-DIRECT_URL=
-SUPABASE_DATABASE_URL=
-SUPABASE_URL=
-SUPABASE_SERVICE_ROLE_KEY=
-SUPABASE_STORAGE_BUCKET=
-AI_PROVIDER=
-AI_API_KEY=
-OPENAI_API_KEY=
-LEONARDO_API_KEY=
-LEONARDO_WEBHOOK_SECRET=
-DAILY_PUBLISH_LIMIT=
-AUTOPOST_DRY_RUN=
-FETCH_SOURCES_LIMIT=
-FETCH_ITEMS_PER_SOURCE_LIMIT=
-REWRITE_BATCH_LIMIT=
-REWRITE_REQUEST_SPACING_MS=
-IMAGE_BATCH_LIMIT=
-IMAGE_MAX_ATTEMPTS=
-IMAGE_STALE_MINUTES=
-IMAGE_REQUEST_SPACING_MS=
-PUBLISH_BATCH_LIMIT=
-```
-
-Recommended automation defaults:
-
-```bash
-FETCH_SOURCES_LIMIT=20
-FETCH_ITEMS_PER_SOURCE_LIMIT=15
-REWRITE_BATCH_LIMIT=8
-REWRITE_REQUEST_SPACING_MS=1500
-IMAGE_BATCH_LIMIT=4
-IMAGE_MAX_ATTEMPTS=3
-IMAGE_STALE_MINUTES=60
-IMAGE_REQUEST_SPACING_MS=2500
-PUBLISH_BATCH_LIMIT=5
-DAILY_PUBLISH_LIMIT=10
-AUTOPOST_DRY_RUN=true
-```
-
-## GitHub Actions scheduler
-
-This project does not use Vercel Cron in production on Hobby plans.
-
-- `POST /api/cron/generate` runs one article-generation pipeline per call by default.
-- `.github/workflows/generate.yml` calls that endpoint 10 times per day.
-- `POST /api/cron/seo-refresh` refreshes SEO fields for already published news/blog.
-- `.github/workflows/seo-refresh.yml` calls that endpoint once per day.
-- GitHub Actions provides the external scheduler for free.
-
-Add these GitHub repository secrets:
-
-- `CRON_URL`
-  - Example: `https://www.newukrainedaily.com/api/cron/generate`
-- `CRON_SECRET`
-  - Must match the same `CRON_SECRET` configured in Vercel.
-- `SEO_REFRESH_URL`
-  - Example: `https://www.newukrainedaily.com/api/cron/seo-refresh`
-
-Required Vercel env for this protected endpoint:
-
-- `CRON_SECRET`
+Local run of any automation task: `npm run auto -- <task>`.
 
 ## Supabase schema
 
@@ -152,76 +84,8 @@ Required Vercel env for this protected endpoint:
 
 ## Domain and DNS
 
-Target production domain:
-
-- `https://www.newukrainedaily.com`
-
-Recommended deployment flow:
-
-1. Add `newukrainedaily.com` and `www.newukrainedaily.com` to the Vercel project domains.
-2. In Cloudflare DNS for `newukrainedaily.com`, create the exact DNS records Vercel shows for the project.
-3. Keep `PUBLIC_BASE_URL=https://www.newukrainedaily.com`.
-4. After DNS propagation, confirm:
-   - `https://www.newukrainedaily.com/robots.txt`
-   - `https://www.newukrainedaily.com/sitemap.xml`
-   - `https://www.newukrainedaily.com/news-sitemap.xml`
-   - `https://www.newukrainedaily.com/rss.xml`
-   - `https://www.newukrainedaily.com/feed.xml`
-   - `https://www.newukrainedaily.com/blog/feed.xml`
-   - favicon and app icons are visible in browser tabs and social previews
-
-## Automation endpoints
-
-Protected endpoints:
-
-- `POST /api/cron/generate`
-- `POST /api/cron/fetch-news`
-- `POST /api/cron/rewrite-news`
-- `POST /api/cron/generate-images`
-- `POST /api/cron/publish`
-- `POST /api/cron/autopost`
-- `POST /api/cron/seo-refresh`
-- `GET /api/internal/status`
-- `POST /api/internal/run-pipeline`
-- `POST /api/webhooks/leonardo`
-
-Each route expects:
-
-```http
-Authorization: Bearer <CRON_SECRET>
-```
-
-Generate one article pipeline run:
-
-```bash
-curl -X POST http://localhost:3000/api/cron/generate \
-  -H "Authorization: Bearer local-cron-secret" \
-  -H "Content-Type: application/json" \
-  --data "{\"count\":1}"
-```
-
-## Leonardo images
-
-- `POST /api/cron/generate-images` creates Leonardo generation requests for draft news items without a cover image.
-- `POST /api/webhooks/leonardo` finalizes image storage and updates `news_items`.
-- Configure the callback secret so Leonardo sends:
-
-```http
-Authorization: Bearer <LEONARDO_WEBHOOK_SECRET>
-```
-
-- For production durability, use Supabase Storage instead of relying on local filesystem writes.
-- The app now derives the public asset URL directly from Supabase Storage, so a separate `SUPABASE_STORAGE_PUBLIC_URL` variable is no longer required.
-
-## First production checklist
-
-1. Apply `supabase/schema.sql`.
-2. Apply `supabase/seed.sql`.
-3. Fill production env vars in Vercel.
-4. Connect the GitHub repository to Vercel.
-5. Add the custom domain in Vercel.
-6. Create the DNS records requested by Vercel in Cloudflare.
-7. Run `npm run verify:stack`.
+`newukrainedaily.com` DNS is on Cloudflare. Both `www.newukrainedaily.com` (canonical) and the apex
+domain are attached as custom domains of the Pages project `newukrainedaily`.
 
 ## Project structure
 

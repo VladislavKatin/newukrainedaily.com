@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AudiencePoll } from "@/components/audience-poll";
 import { EntryCard } from "@/components/entry-card";
 import { NewsletterCta } from "@/components/newsletter-cta";
 import { TrustBar } from "@/components/trust-bar";
@@ -7,7 +8,6 @@ import { curateHomepageNews } from "@/lib/homepage-curation";
 import { buildMetadata } from "@/lib/seo";
 import { SUPPORTED_TOPICS, topicSlugFromLabel } from "@/lib/topic-taxonomy";
 
-export const revalidate = 300;
 
 export const metadata = buildMetadata({
   title: "Home",
@@ -48,7 +48,29 @@ export default async function HomePage() {
     .slice(0, 8);
 
   return (
-    <div className="container-shell py-8 sm:py-16">
+    <>
+      <div className="border-b border-line/60 bg-[#f8fbff]">
+        <div className="container-shell flex justify-center py-3">
+          <a
+            href="https://www.anrdoezrs.net/click-101771731-17234736"
+            target="_top"
+            aria-label="Advertisement"
+            className="relative flex aspect-[728/90] w-full max-w-[728px] items-center justify-center overflow-hidden rounded-xl border border-line bg-white text-xs font-semibold uppercase tracking-[0.2em] text-slate-400 shadow-sm"
+          >
+            <span className="absolute inset-0 flex items-center justify-center">Advertisement</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/affiliate-banner-728x90.png"
+              width="728"
+              height="90"
+              alt=""
+              style={{ border: 0 }}
+              className="relative z-10 h-full w-full object-contain"
+            />
+          </a>
+        </div>
+      </div>
+      <div className="container-shell py-8 sm:py-16">
       <section className="grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
         <div className="rounded-[28px] border border-line bg-[#f8fbff] px-5 py-4 sm:px-6">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600 sm:text-xs">
@@ -120,6 +142,7 @@ export default async function HomePage() {
           )}
         </div>
         <div className="grid gap-4">
+          <AudiencePoll pollKey="homepage-origin-2026-06" sourcePage="/" />
           <div className="panel p-5 sm:p-6">
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand">Why readers return</p>
             <ul className="mt-4 space-y-3 text-sm leading-7 text-slate-700">
@@ -277,6 +300,7 @@ export default async function HomePage() {
         </div>
         <TrustBar />
       </section>
-    </div>
+      </div>
+    </>
   );
 }

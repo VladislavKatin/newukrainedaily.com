@@ -414,6 +414,10 @@ export async function getContentRepository(): Promise<ContentRepository> {
       return createPreviewContentRepository();
     }
 
+    if (isBuildPhase()) {
+      throw new Error("[content] DATABASE_URL is not set. Refusing to build an empty static site.");
+    }
+
     return createEmptyContentRepository();
   }
 
@@ -421,6 +425,10 @@ export async function getContentRepository(): Promise<ContentRepository> {
 
   if (databaseAvailability.ok) {
     if (!(await hasPublishedContent())) {
+      if (isBuildPhase()) {
+        throw new Error("[content] Database has no published entries. Refusing to publish an empty site.");
+      }
+
       console.warn("[content] Database is available but has no published entries.");
       return createEmptyContentRepository();
     }
@@ -430,8 +438,8 @@ export async function getContentRepository(): Promise<ContentRepository> {
 
   if (env.NODE_ENV === "production") {
     if (isBuildPhase()) {
-      console.warn("[content] Database is unreachable during build. Returning empty content repository for prerender.");
-      return createEmptyContentRepository();
+      // The site is a static export: building without data would publish an empty site.
+      throw new Error("[content] Database is unreachable during build. Refusing to publish an empty site.");
     }
 
     console.error("[content] Database is unreachable during runtime. Returning empty content repository.");
