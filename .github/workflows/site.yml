@@ -6,7 +6,7 @@ name: Update and deploy site
 
 on:
   schedule:
-    - cron: "17 * * * *"
+    - cron: "23 * * * *"
   push:
     branches: [main]
   workflow_dispatch:
