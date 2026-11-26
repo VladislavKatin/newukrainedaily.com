@@ -1,4 +1,5 @@
 import { cleanString, json, notifyTelegram, readJson, supabaseInsert } from "../../_lib/shared.js";
+import { hasFormsDb, saveSubscriber } from "../../_lib/forms-db.js";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -23,11 +24,15 @@ export async function onRequestPost({ request, env, waitUntil }) {
   }
 
   try {
-    const row = { email, status: "active" };
-    if (name) row.name = name;
-    if (sourcePage) row.source_page = sourcePage;
-
-    const subscriber = await supabaseInsert(env, "newsletter_subscribers", row, { onConflict: "email" });
+    let subscriber;
+    if (hasFormsDb(env)) {
+      subscriber = await saveSubscriber(env, { email, name, sourcePage });
+    } else {
+      const row = { email, status: "active" };
+      if (name) row.name = name;
+      if (sourcePage) row.source_page = sourcePage;
+      subscriber = await supabaseInsert(env, "newsletter_subscribers", row, { onConflict: "email" });
+    }
 
     const lines = [
       `Email: ${email}`,
