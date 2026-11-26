@@ -1,4 +1,4 @@
-﻿import process from "node:process";
+import process from "node:process";
 import { loadLocalEnv } from "./load-local-env.mjs";
 
 loadLocalEnv(process.cwd());
@@ -113,7 +113,8 @@ async function main() {
   ];
 
   for (const url of newsUrls) {
-    checks.push(() => checkPage(url, ["Related News", "Photo:"]));
+    // New articles carry an AI/branded illustration, not a "Photo: <agency>" credit.
+    checks.push(() => checkPage(url, ["Related News"]));
   }
 
   for (const url of blogUrls) {

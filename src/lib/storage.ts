@@ -201,32 +201,68 @@ function clampText(value: string, max: number) {
   return `${normalized.slice(0, Math.max(1, max - 1)).trim()}…`;
 }
 
-export async function saveRemoteImageToLocalPublic(imageUrl: string, fileStem: string) {
+// Re-encodes a downloaded raster image as WebP, max 1200px wide (Leonardo returns
+// ~1-1.5 MB JPEGs; this is roughly 10x smaller). sharp is installed with Next.js.
+// If it is missing or fails, the original image is stored unchanged.
+async function optimizeRasterImage(buffer: Buffer, contentType: string) {
+  if (!/^image\/(jpe?g|png|webp)/i.test(contentType)) {
+    return { buffer, contentType };
+  }
+
+  try {
+    const moduleName = "sharp";
+    const sharpModule = await import(moduleName);
+    const sharp = (sharpModule.default || sharpModule) as (input: Buffer) => {
+      rotate: () => {
+        resize: (options: Record<string, unknown>) => {
+          webp: (options: Record<string, unknown>) => { toBuffer: () => Promise<Buffer> };
+        };
+      };
+    };
+    const optimized = await sharp(buffer)
+      .rotate()
+      .resize({ width: 1200, withoutEnlargement: true })
+      .webp({ quality: 78 })
+      .toBuffer();
+
+    if (optimized.length > 0 && optimized.length < buffer.length) {
+      return { buffer: optimized, contentType: "image/webp" };
+    }
+  } catch (error) {
+    console.warn(`[storage] image optimization skipped: ${error instanceof Error ? error.message : error}`);
+  }
+
+  return { buffer, contentType };
+}
+
+async function downloadImage(imageUrl: string) {
   const response = await fetch(imageUrl, {
     method: "GET",
     cache: "no-store"
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to download generated image: ${response.status}`);
+    throw new Error(`Failed to download image: ${response.status}`);
   }
 
-  const buffer = Buffer.from(await response.arrayBuffer());
-  return saveBufferAsset(buffer, fileStem, response.headers.get("content-type") || "image/jpeg", "jpg");
+  const contentType = response.headers.get("content-type") || "image/jpeg";
+
+  // Error pages (quota exceeded, access denied) come back as JSON/HTML, not images.
+  if (/json|html|text\//i.test(contentType)) {
+    throw new Error(`Failed to download image: unexpected content type ${contentType}`);
+  }
+
+  return optimizeRasterImage(Buffer.from(await response.arrayBuffer()), contentType);
+}
+
+export async function saveRemoteImageToLocalPublic(imageUrl: string, fileStem: string) {
+  const image = await downloadImage(imageUrl);
+  return saveBufferAsset(image.buffer, fileStem, image.contentType, "jpg");
 }
 
 export async function saveRemoteImage(imageUrl: string, fileStem: string) {
-  const response = await fetch(imageUrl, {
-    method: "GET",
-    cache: "no-store"
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to download generated image: ${response.status}`);
-  }
-
-  const buffer = Buffer.from(await response.arrayBuffer());
-  return saveBufferAsset(buffer, fileStem, response.headers.get("content-type") || "image/jpeg", "jpg");
+  const image = await downloadImage(imageUrl);
+  return saveBufferAsset(image.buffer, fileStem, image.contentType, "jpg");
 }
 
 export async function saveEditorialIllustration(

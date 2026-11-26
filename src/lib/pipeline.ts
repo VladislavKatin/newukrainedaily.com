@@ -15,6 +15,7 @@ import { ingestRssSources } from "@/lib/ingestion/rss";
 import { createLeonardoGeneration, getLeonardoGeneration } from "@/lib/leonardo/client";
 import { extractLeonardoWebhookData } from "@/lib/leonardo/webhook";
 import {
+  countNewsImageRequestsSince,
   countPublishedNewsSince,
   completeNewsImage,
   enqueueJob,
@@ -34,7 +35,8 @@ import {
   updateJob,
   updateNewsItemAssets,
   upsertNewsItem,
-  upsertTopic
+  upsertTopic,
+  type NewsItemRecord
 } from "@/lib/postgres-repository";
 import { slugify } from "@/lib/slug";
 import { saveEditorialIllustration, saveRemoteImage } from "@/lib/storage";
@@ -221,7 +223,6 @@ function scorePublishCandidate(item: {
   score += [...normalizedTags, ...normalizedTopics].reduce((total, token) => total + (PREFERRED_TOPICS.has(token) ? 3 : 0), 0);
   score += Number(item.charCount || 0) >= 1800 ? 6 : Number(item.charCount || 0) >= 1500 ? 3 : 0;
   score += Number(item.qualityScore || 0) * 10;
-  score += item.previewImageUrl ? 3 : 0;
   score += item.generatedImageUrl ? 2 : 0;
 
   if (/\bdrone\b|\bmissile\b|\bstrike\b|\battack\b|\bfront(line)?\b|\bcombat\b|\bair alert\b|\bpower outage\b|\benergy\b|\bdefense\b|\bdefence\b|\bsanctions\b|\bceasefire\b|\btalks\b|\bambassador\b|\bminister\b|\bnato\b|\beu\b/i.test(signalText)) {
@@ -347,9 +348,12 @@ function getPipelineLimits() {
   return {
     fetchSourcesLimit: env.FETCH_SOURCES_LIMIT ?? 20,
     fetchItemsPerSourceLimit: env.FETCH_ITEMS_PER_SOURCE_LIMIT ?? 15,
-    rewriteBatchLimit: env.REWRITE_BATCH_LIMIT ?? 8,
+    // Drafts written per generate run. Each one costs an OpenAI call and a source fetch,
+    // and only ~1 article per run gets published, so keep this small.
+    rewriteBatchLimit: env.REWRITE_BATCH_LIMIT ?? 2,
     rewriteRequestSpacingMs: env.REWRITE_REQUEST_SPACING_MS ?? 1500,
-    imageBatchLimit: env.IMAGE_BATCH_LIMIT ?? 4,
+    // New Leonardo requests per call (polling of already requested images is not limited).
+    imageBatchLimit: env.IMAGE_BATCH_LIMIT ?? 1,
     imageMaxAttempts: env.IMAGE_MAX_ATTEMPTS ?? 3,
     imageStaleMinutes: env.IMAGE_STALE_MINUTES ?? 60,
     imageRequestSpacingMs: env.IMAGE_REQUEST_SPACING_MS ?? 2500,
@@ -457,8 +461,11 @@ export async function runRewriteNewsJob(limitOverride?: number) {
   let skipped = 0;
   let scanned = 0;
 
+  // Every scanned candidate is an OpenAI call, even when the rewrite is rejected.
+  const maxRewriteCalls = rewriteLimit * 3;
+
   for (const raw of pendingRaws) {
-    if (createdDrafts >= rewriteLimit) {
+    if (createdDrafts >= rewriteLimit || scanned >= maxRewriteCalls) {
       break;
     }
 
@@ -489,8 +496,10 @@ export async function runRewriteNewsJob(limitOverride?: number) {
       whyItMatters: rewritten.why_it_matters,
       sourceName: raw.sourceName || "Unknown Source",
       sourceUrl: sourceUrl || null,
-      previewImageUrl: raw.previewImageUrl ?? null,
-      previewImageCaption: raw.previewImageCaption ?? null,
+      // Agency photos are copyrighted: they are not shown on the site. Every article
+      // gets its own AI illustration (or the branded fallback) before publishing.
+      previewImageUrl: null,
+      previewImageCaption: null,
       previewImageAlt: rewritten.image_alt,
       generatedImageCaption: null,
       generatedImageAlt: rewritten.image_alt
@@ -567,11 +576,11 @@ export async function runRewriteNewsJob(limitOverride?: number) {
       tags,
       topics,
       entities,
-      coverImageUrl: sanitized.previewImageUrl ?? null,
-      ogImageUrl: sanitized.previewImageUrl ?? null,
-      previewImageUrl: sanitized.previewImageUrl ?? null,
-      previewImageSource: raw.previewImageSource ?? null,
-      previewImageCaption: sanitized.previewImageCaption ?? null,
+      coverImageUrl: null,
+      ogImageUrl: null,
+      previewImageUrl: null,
+      previewImageSource: null,
+      previewImageCaption: null,
       generatedImagePrompt: rewritten.image_prompt,
       generatedImageAlt: sanitized.generatedImageAlt || rewritten.image_alt,
       generatedImageCaption: sanitized.generatedImageCaption ?? null,
@@ -624,18 +633,66 @@ export async function runRewriteNewsJob(limitOverride?: number) {
   };
 }
 
+// Same ranking the publish job uses: eligible items, best score first, one per story angle.
+function rankPublishCandidates(items: NewsItemRecord[]): NewsItemRecord[] {
+  const seenSignatures = new Set<string>();
+
+  return items
+    .filter(isPublishEligible)
+    .map((item) => ({ item, score: scorePublishCandidate(item), signature: buildPublishAngleSignature(item) }))
+    .sort((left, right) => right.score - left.score)
+    .filter(({ signature }) => {
+      if (seenSignatures.has(signature)) {
+        return false;
+      }
+      seenSignatures.add(signature);
+      return true;
+    })
+    .map(({ item }) => item);
+}
+
+// Leonardo is only asked for the drafts that will actually be published next:
+// never more than the free publish slots of the day, never for old articles.
 export async function runGenerateImagesJob(limitOverride?: number) {
   const limits = getPipelineLimits();
-  const draftItems = await listNewsItemsNeedingImageGeneration(
-    limitOverride ?? limits.imageBatchLimit,
-    limits.imageMaxAttempts
+  const dailyLimit = getEnv().DAILY_PUBLISH_LIMIT ?? 10;
+  const dayStart = getUtcDayStartIso();
+  const pool = await listNewsItemsNeedingImageGeneration(60, limits.imageMaxAttempts);
+  const inFlight = pool.filter((entry) => entry.imageRequestStatus === "requested").map((entry) => entry.item);
+  const waiting = pool.filter((entry) => entry.imageRequestStatus !== "requested").map((entry) => entry.item);
+  const [publishedToday, requestsToday, readyToPublish] = await Promise.all([
+    countPublishedNewsSince(dayStart),
+    countNewsImageRequestsSince(dayStart),
+    listPublishReadyNews(50)
+  ]);
+  const readyRanked = rankPublishCandidates(readyToPublish);
+  const readyCount = readyRanked.length;
+  const newSlots = Math.max(
+    0,
+    Math.min(
+      limitOverride ?? limits.imageBatchLimit,
+      dailyLimit - publishedToday - readyCount - inFlight.length,
+      dailyLimit + 4 - requestsToday
+    )
   );
+  const takenSignatures = new Set(
+    [...readyRanked, ...inFlight].map((item) => buildPublishAngleSignature(item))
+  );
+  const newItems = rankPublishCandidates(waiting)
+    .filter((item) => !takenSignatures.has(buildPublishAngleSignature(item)))
+    .slice(0, newSlots);
+  const draftItems = [...inFlight, ...newItems];
   let requested = 0;
   let completed = 0;
   let skipped = 0;
   let failed = 0;
   let retried = 0;
+  let fallbacks = 0;
   const errors: Array<{ slug: string; message: string }> = [];
+
+  console.log(
+    `[images] publishedToday=${publishedToday} ready=${readyCount} inFlight=${inFlight.length} waiting=${waiting.length} newRequests=${newItems.length}`
+  );
 
   for (const item of draftItems) {
     if (!item.summary || !item.dek || !item.whyItMatters || item.tags.length === 0) {
@@ -656,6 +713,33 @@ export async function runGenerateImagesJob(limitOverride?: number) {
     const prompt = imagePackage.prompt;
     const attempts = (previousRequest?.attempts ?? 0) + 1;
 
+    // Branded illustration instead of an AI image, so the article can still be published.
+    const applyFallbackIllustration = async (reason: string) => {
+      const fallback = await saveEditorialIllustration("fallback-" + item.id + "-" + Date.now(), {
+        title: item.title,
+        tags: item.tags,
+        sourceName: item.sourceName
+      });
+
+      await updateNewsItemAssets(item.id, {
+        coverImageUrl: fallback.publicUrl,
+        ogImageUrl: fallback.publicUrl,
+        generatedImageUrl: fallback.publicUrl,
+        generatedImageCaption: imagePackage.caption
+      });
+
+      await upsertNewsImageRequest({
+        newsItemId: item.id,
+        prompt,
+        status: "failed",
+        attempts: Math.max(attempts, limits.imageMaxAttempts),
+        lastError: reason + " | fallback illustration generated"
+      });
+
+      fallbacks += 1;
+      completed += 1;
+    };
+
     try {
       if (previousRequest?.status === "requested" && previousRequest.generationId) {
         retried += 1;
@@ -663,8 +747,14 @@ export async function runGenerateImagesJob(limitOverride?: number) {
 
         if (generation.status && ["failed", "error"].includes(generation.status.toLowerCase())) {
           const message = generation.errorMessage || "Leonardo generation failed";
-          failed += 1;
           errors.push({ slug: item.slug, message });
+
+          if (previousRequest.attempts >= limits.imageMaxAttempts || shouldUseFallbackImage(message)) {
+            await applyFallbackIllustration(message);
+            continue;
+          }
+
+          failed += 1;
           await failNewsImage({
             generationId: previousRequest.generationId,
             error: message,
@@ -712,34 +802,13 @@ export async function runGenerateImagesJob(limitOverride?: number) {
       await sleep(limits.imageRequestSpacingMs);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown Leonardo error";
-      const shouldFallback = shouldUseFallbackImage(message);
       errors.push({
         slug: item.slug,
         message
       });
-      if (shouldFallback) {
-        const fallback = await saveEditorialIllustration("fallback-" + item.id + "-" + Date.now(), {
-          title: item.title,
-          tags: item.tags,
-          sourceName: item.sourceName
-        });
 
-        await updateNewsItemAssets(item.id, {
-          coverImageUrl: fallback.publicUrl,
-          ogImageUrl: fallback.publicUrl,
-          generatedImageUrl: fallback.publicUrl,
-          generatedImageCaption: imagePackage.caption
-        });
-
-        await upsertNewsImageRequest({
-          newsItemId: item.id,
-          prompt,
-          status: "failed",
-          attempts: limits.imageMaxAttempts,
-          lastError: message + " | fallback illustration generated"
-        });
-
-        completed += 1;
+      if (shouldUseFallbackImage(message) || attempts >= limits.imageMaxAttempts) {
+        await applyFallbackIllustration(message);
         continue;
       }
 
@@ -762,6 +831,7 @@ export async function runGenerateImagesJob(limitOverride?: number) {
     retried,
     skipped,
     failed,
+    fallbacks,
     errors
   };
 }
@@ -785,22 +855,9 @@ export async function runPublishJob(limit?: number) {
     };
   }
 
-  const rankedReadyItems = (await listPublishReadyNews(Math.max(availableSlots * 4, availableSlots)))
-    .filter(isPublishEligible)
-    .map((item) => ({ item, score: scorePublishCandidate(item), signature: buildPublishAngleSignature(item) }))
-    .sort((left, right) => right.score - left.score);
-
-  const seenSignatures = new Set<string>();
-  const readyItems = rankedReadyItems
-    .filter(({ signature }) => {
-      if (seenSignatures.has(signature)) {
-        return false;
-      }
-      seenSignatures.add(signature);
-      return true;
-    })
-    .map(({ item }) => item)
-    .slice(0, availableSlots);
+  const readyItems = rankPublishCandidates(
+    await listPublishReadyNews(Math.max(availableSlots * 4, 20))
+  ).slice(0, availableSlots);
   let published = 0;
   let skipped = 0;
 
@@ -849,10 +906,7 @@ export async function runGeneratePipeline(count = 1, options?: { sourceFilter?: 
     limits.fetchItemsPerSourceLimit,
     normalizedCount * candidateMultiplier
   );
-  const rewriteBatchSize = Math.max(
-    limits.rewriteBatchLimit,
-    normalizedCount * candidateMultiplier
-  );
+  const rewriteBatchSize = normalizedCount * limits.rewriteBatchLimit;
 
   console.log(`[generate] starting pipeline count=${normalizedCount}`);
 
