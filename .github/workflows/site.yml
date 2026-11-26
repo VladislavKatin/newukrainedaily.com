@@ -1,7 +1,8 @@
 name: Update and deploy site
 
-# Every hour: run the content automation against the database, rebuild the
-# static site and upload it to Cloudflare Pages. Also runs on every push to main.
+# Every hour: run the content automation against the database, then rebuild the
+# static site and upload it to Cloudflare Pages - but only if the content changed
+# (Cloudflare Pages free plan: 500 deploys a month). Also runs on every push to main.
 
 on:
   schedule:
@@ -31,9 +32,9 @@ env:
   AUTOPOST_DRY_RUN: "false"
   FETCH_SOURCES_LIMIT: "20"
   FETCH_ITEMS_PER_SOURCE_LIMIT: "15"
-  REWRITE_BATCH_LIMIT: "8"
+  REWRITE_BATCH_LIMIT: "2"
   REWRITE_REQUEST_SPACING_MS: "1500"
-  IMAGE_BATCH_LIMIT: "4"
+  IMAGE_BATCH_LIMIT: "1"
   IMAGE_MAX_ATTEMPTS: "3"
   IMAGE_STALE_MINUTES: "60"
   IMAGE_REQUEST_SPACING_MS: "2500"
@@ -117,16 +118,57 @@ jobs:
         continue-on-error: true
         run: npm run auto -- seo-refresh
 
+      - name: Move old Supabase images to R2 (daily)
+        if: steps.plan.outputs.automation == 'true' && steps.plan.outputs.hour == 2
+        continue-on-error: true
+        run: npm run auto -- repair-images --limit=300
+
+      - name: Content fingerprint
+        id: fingerprint
+        if: github.event_name == 'schedule'
+        continue-on-error: true
+        run: npm run auto -- fingerprint
+
+      - name: Was this content already deployed?
+        id: deployed
+        if: github.event_name == 'schedule' && steps.fingerprint.outputs.fingerprint != ''
+        uses: actions/cache/restore@v4
+        with:
+          path: .deploy-marker
+          key: deployed-${{ github.sha }}-${{ steps.fingerprint.outputs.fingerprint }}
+          lookup-only: true
+
       - name: Build static site
+        id: build
+        if: steps.deployed.outputs.cache-hit != 'true'
         run: npm run build
 
       - name: Deploy to Cloudflare Pages
+        if: steps.build.outcome == 'success'
         run: npx --yes wrangler@4 pages deploy out --project-name="$PAGES_PROJECT" --branch=main --commit-dirty=true
 
       - name: Health check
+        if: steps.build.outcome == 'success'
         run: |
           sleep 20
           npm run check:production-health
+
+      - name: Remember deployed content
+        if: steps.build.outcome == 'success' && steps.fingerprint.outputs.fingerprint != ''
+        continue-on-error: true
+        run: mkdir -p .deploy-marker && echo "${{ steps.fingerprint.outputs.fingerprint }}" > .deploy-marker/fingerprint
+
+      - name: Save deploy marker
+        if: steps.build.outcome == 'success' && steps.fingerprint.outputs.fingerprint != ''
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: .deploy-marker
+          key: deployed-${{ github.sha }}-${{ steps.fingerprint.outputs.fingerprint }}
+
+      - name: Nothing changed
+        if: steps.deployed.outputs.cache-hit == 'true'
+        run: echo "Content unchanged since the last deploy - build and deploy skipped."
 
       - name: Keep scheduled runs enabled
         if: github.event_name == 'schedule' && steps.plan.outputs.hour == 4
