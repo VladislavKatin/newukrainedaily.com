@@ -20,12 +20,17 @@ const staticRoutes = [
   "/corrections"
 ];
 
-function buildStaticEntries(): MetadataRoute.Sitemap {
+// Only the pages that change with every new article get a lastmod (the newest
+// article's date). A build-time "now" on every page tells Google that all pages
+// changed every hour, so it stops trusting lastmod.
+function buildStaticEntries(latestContentDate?: Date): MetadataRoute.Sitemap {
   return staticRoutes.map((route) => ({
     url: absoluteUrl(route),
-    lastModified: new Date(),
-    changeFrequency: (route === "/" ? "daily" : "weekly") as ChangeFrequency,
-    priority: route === "/" ? 1 : 0.7
+    ...(latestContentDate && ["/", "/news", "/world", "/blog"].includes(route)
+      ? { lastModified: latestContentDate }
+      : {}),
+    changeFrequency: (route === "/" || route === "/news" ? "hourly" : route === "/world" || route === "/blog" ? "daily" : "monthly") as ChangeFrequency,
+    priority: route === "/" ? 1 : route === "/news" ? 0.9 : 0.6
   }));
 }
 
@@ -43,10 +48,8 @@ function safeDate(value: string | null | undefined) {
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const staticEntries = buildStaticEntries();
-
   if (!hasDynamicSitemapData()) {
-    return staticEntries;
+    return buildStaticEntries();
   }
 
   try {
@@ -63,11 +66,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       listWorldDigestDatesForSitemap(365)
     ]);
 
+    let latestContentDate: Date | undefined;
+
+    for (const entry of newsEntries) {
+      const date = safeDate(entry.publishedAt || entry.createdAt);
+
+      if (!latestContentDate || date > latestContentDate) {
+        latestContentDate = date;
+      }
+    }
+    const staticEntries = buildStaticEntries(latestContentDate);
+
     const newsSitemapEntries = newsEntries.map((entry) => ({
       url: absoluteUrl(`/news/${entry.slug}`),
       lastModified: safeDate(entry.updatedAt || entry.publishedAt || entry.createdAt),
-      changeFrequency: "hourly" as ChangeFrequency,
-      priority: 0.9
+      changeFrequency: "weekly" as ChangeFrequency,
+      priority: 0.8
     }));
 
     const blogSitemapEntries = blogEntries.map((entry) => ({
@@ -94,6 +108,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     return [...staticEntries, ...newsSitemapEntries, ...blogSitemapEntries, ...topicEntries, ...worldEntries];
   } catch (error) {
     console.error("[sitemap] failed to build dynamic sitemap", error);
-    return staticEntries;
+    // Never publish a sitemap without the 2,500+ articles: fail the build instead.
+    throw error;
   }
 }

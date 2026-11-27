@@ -1,6 +1,13 @@
-﻿import "server-only";
+import "server-only";
 import type { PoolClient } from "pg";
 import { query, withTransaction } from "@/lib/db";
+
+// Timestamps come from pg as Date objects; String(date) gives "Thu Nov 26 2026 ..."
+// which is not a valid date for Google, sitemaps or <time datetime>. Use ISO 8601.
+function toIsoTimestamp(value: unknown) {
+  const date = value instanceof Date ? value : new Date(String(value));
+  return Number.isNaN(date.getTime()) ? String(value) : date.toISOString();
+}
 
 export type WorldDigestItemRecord = {
   id: string;
@@ -43,9 +50,9 @@ function mapWorldDigestItem(row: Record<string, unknown>): WorldDigestItemRecord
     imageAlt: row.image_alt ? String(row.image_alt) : null,
     sourceName: String(row.source_name),
     sourceUrl: String(row.source_url),
-    publishedAt: row.published_at ? String(row.published_at) : null,
-    createdAt: String(row.created_at),
-    updatedAt: String(row.updated_at)
+    publishedAt: row.published_at ? toIsoTimestamp(row.published_at) : null,
+    createdAt: toIsoTimestamp(row.created_at),
+    updatedAt: toIsoTimestamp(row.updated_at)
   };
 }
 

@@ -7,3 +7,11 @@
 /*
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
+
+# The *.pages.dev addresses are copies of www.newukrainedaily.com: keep them out
+# of search results so Google indexes only the real domain.
+https://newukrainedaily.pages.dev/*
+  X-Robots-Tag: noindex
+
+https://:version.newukrainedaily.pages.dev/*
+  X-Robots-Tag: noindex

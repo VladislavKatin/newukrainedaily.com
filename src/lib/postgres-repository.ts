@@ -3,6 +3,13 @@ import type { PoolClient } from "pg";
 import { SUPPORTED_TOPICS } from "@/lib/topic-taxonomy";
 import { query, withTransaction } from "@/lib/db";
 
+// Timestamps come from pg as Date objects; String(date) gives "Thu Nov 26 2026 ..."
+// which is not a valid date for Google, sitemaps or <time datetime>. Use ISO 8601.
+function toIsoTimestamp(value: unknown) {
+  const date = value instanceof Date ? value : new Date(String(value));
+  return Number.isNaN(date.getTime()) ? String(value) : date.toISOString();
+}
+
 export type SourceRecord = {
   id: string;
   name: string;
@@ -318,8 +325,8 @@ function mapNewsRaw(row: Record<string, unknown>): NewsRawRecord {
         : Number(row.preview_image_confidence),
     previewImageSource: row.preview_image_source ? String(row.preview_image_source) : null,
     previewImageCaption: row.preview_image_caption ? String(row.preview_image_caption) : null,
-    publishedAt: row.published_at ? String(row.published_at) : null,
-    fetchedAt: String(row.fetched_at),
+    publishedAt: row.published_at ? toIsoTimestamp(row.published_at) : null,
+    fetchedAt: toIsoTimestamp(row.fetched_at),
     hash: String(row.hash)
   };
 }
@@ -364,13 +371,13 @@ function mapNewsItem(row: Record<string, unknown>): NewsItemRecord {
     qualityScore: row.quality_score === null || row.quality_score === undefined ? null : Number(row.quality_score),
     primaryTopic: row.primary_topic ? String(row.primary_topic) : null,
     location: row.location ? String(row.location) : null,
-    scheduledAt: row.scheduled_at ? String(row.scheduled_at) : null,
+    scheduledAt: row.scheduled_at ? toIsoTimestamp(row.scheduled_at) : null,
     indexable: row.indexable === undefined ? true : Boolean(row.indexable),
     status: row.status as NewsItemRecord["status"],
     language: String(row.language),
-    publishedAt: row.published_at ? String(row.published_at) : null,
-    createdAt: String(row.created_at),
-    updatedAt: String(row.updated_at)
+    publishedAt: row.published_at ? toIsoTimestamp(row.published_at) : null,
+    createdAt: toIsoTimestamp(row.created_at),
+    updatedAt: toIsoTimestamp(row.updated_at)
   };
 }
 
@@ -395,9 +402,9 @@ function mapBlogPost(row: Record<string, unknown>): BlogPostRecord {
     primaryTopic: row.primary_topic ? String(row.primary_topic) : null,
     indexable: row.indexable === undefined ? true : Boolean(row.indexable),
     status: row.status as BlogPostRecord["status"],
-    publishedAt: row.published_at ? String(row.published_at) : null,
-    createdAt: String(row.created_at),
-    updatedAt: String(row.updated_at)
+    publishedAt: row.published_at ? toIsoTimestamp(row.published_at) : null,
+    createdAt: toIsoTimestamp(row.created_at),
+    updatedAt: toIsoTimestamp(row.updated_at)
   };
 }
 
@@ -407,7 +414,7 @@ function mapTopic(row: Record<string, unknown>): TopicRecord {
     tag: String(row.tag),
     title: String(row.title),
     description: row.description ? String(row.description) : null,
-    updatedAt: String(row.updated_at)
+    updatedAt: toIsoTimestamp(row.updated_at)
   };
 }
 function mapNewsletterSubscriber(row: Record<string, unknown>): NewsletterSubscriberRecord {
@@ -417,8 +424,8 @@ function mapNewsletterSubscriber(row: Record<string, unknown>): NewsletterSubscr
     name: row.name ? String(row.name) : null,
     sourcePage: row.source_page ? String(row.source_page) : null,
     status: String(row.status),
-    createdAt: String(row.created_at),
-    updatedAt: String(row.updated_at)
+    createdAt: toIsoTimestamp(row.created_at),
+    updatedAt: toIsoTimestamp(row.updated_at)
   };
 }
 
@@ -429,7 +436,7 @@ function mapAudiencePollResponse(row: Record<string, unknown>): AudiencePollResp
     answer: String(row.answer),
     sourcePage: row.source_page ? String(row.source_page) : null,
     userAgent: row.user_agent ? String(row.user_agent) : null,
-    createdAt: String(row.created_at)
+    createdAt: toIsoTimestamp(row.created_at)
   };
 }
 
@@ -441,7 +448,7 @@ function mapSource(row: Record<string, unknown>): SourceRecord {
     type: row.type as SourceRecord["type"],
     url: String(row.url).replace(/\s+/g, "").trim(),
     isActive: Boolean(row.is_active),
-    createdAt: String(row.created_at)
+    createdAt: toIsoTimestamp(row.created_at)
   };
 }
 
@@ -454,9 +461,9 @@ function mapJob(row: Record<string, unknown>): JobRecord {
     status: row.status as JobRecord["status"],
     attempts: Number(row.attempts),
     lastError: row.last_error ? String(row.last_error) : null,
-    runAt: String(row.run_at),
-    createdAt: String(row.created_at),
-    updatedAt: String(row.updated_at)
+    runAt: toIsoTimestamp(row.run_at),
+    createdAt: toIsoTimestamp(row.created_at),
+    updatedAt: toIsoTimestamp(row.updated_at)
   };
 }
 
@@ -474,8 +481,8 @@ function mapNewsImage(row: Record<string, unknown>): NewsImageRecord {
     localPath: row.local_path ? String(row.local_path) : null,
     localImageUrl: row.local_image_url ? String(row.local_image_url) : null,
     webhookPayload: row.webhook_payload ?? null,
-    createdAt: String(row.created_at),
-    updatedAt: String(row.updated_at)
+    createdAt: toIsoTimestamp(row.created_at),
+    updatedAt: toIsoTimestamp(row.updated_at)
   };
 }
 
