@@ -10,10 +10,11 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: "*",
-        allow: "/"
+        allow: "/",
+        // Form endpoints, not pages.
+        disallow: ["/api/"]
       }
     ],
-    sitemap: [`${baseUrl}/sitemap.xml`, `${baseUrl}/news-sitemap.xml`, `${baseUrl}/world-sitemap.xml`],
-    host: baseUrl
+    sitemap: [`${baseUrl}/sitemap.xml`, `${baseUrl}/news-sitemap.xml`, `${baseUrl}/world-sitemap.xml`]
   };
 }
