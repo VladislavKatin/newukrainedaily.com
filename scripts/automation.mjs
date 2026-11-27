@@ -4,7 +4,7 @@
 //   node --conditions=react-server --import tsx scripts/automation.mjs <task> [--count=1] [--date=YYYY-MM-DD]
 //
 // Tasks: generate, images, publish, world-digest, seo-refresh, ensure-schema,
-//        fingerprint, repair-images [--limit=300]
+//        fingerprint, repair-images [--limit=300], fix-years --slug=<slug> --year=<YYYY> [--to=<YYYY>]
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
@@ -162,6 +162,50 @@ async function repairImages() {
   return { totalWithSupabaseImages: total, processed: rows.length, migratedImages: migrated, unavailableImages: dropped };
 }
 
+// Correction for an article where the AI added a wrong year after a month
+// ("December 2023" or "December 17-18, 2023" in a 2026 story). With --to=<YYYY>
+// the year is replaced, otherwise it is removed ("December 2023" -> "December").
+// Applies to all text fields; the slug (URL) is kept so links don't break.
+async function fixYears() {
+  const { query } = await import("../src/lib/db");
+  const slug = readFlag("slug", "");
+  const year = readFlag("year", "");
+  const to = readFlag("to", "");
+
+  if (!slug || !/^(19|20)\d{2}$/.test(year) || (to && !/^(19|20)\d{2}$/.test(to))) {
+    throw new Error("Usage: fix-years --slug=<slug> --year=<YYYY> [--to=<YYYY>]");
+  }
+
+  const months = "January|February|March|April|May|June|July|August|September|October|November|December";
+  const pattern = new RegExp(`\\b(${months})(\\s+\\d{1,2}(?:\\s*[-–]\\s*\\d{1,2})?)?,?\\s+${year}\\b`, "g");
+  const replace = (_match, month, day = "") => (to ? `${month}${day}${day ? "," : ""} ${to}` : `${month}${day}`);
+  const fix = (value) => {
+    if (typeof value === "string") return value.replace(pattern, replace);
+    if (Array.isArray(value)) return value.map(fix);
+    if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, fix(item)]));
+    return value;
+  };
+  const { rows } = await query(
+    `select id, title, dek, summary, content, why_it_matters, meta_title, meta_description, key_points from news_items where slug = $1`,
+    [slug]
+  );
+  const row = rows[0];
+
+  if (!row) {
+    throw new Error(`No article with slug ${slug}`);
+  }
+
+  const replacements = (JSON.stringify(row).match(pattern) || []).length;
+  const fixed = fix(row);
+
+  await query(
+    `update news_items set title = $2, dek = $3, summary = $4, content = $5, why_it_matters = $6, meta_title = $7, meta_description = $8, key_points = $9::jsonb where id = $1`,
+    [row.id, fixed.title, fixed.dek, fixed.summary, fixed.content, fixed.why_it_matters, fixed.meta_title, fixed.meta_description, JSON.stringify(fixed.key_points ?? [])]
+  );
+
+  return { slug, replacements, title: fixed.title };
+}
+
 const tasks = {
   async generate() {
     const { runGeneratePipeline } = await import("../src/lib/pipeline");
@@ -182,7 +226,8 @@ const tasks = {
   },
   "ensure-schema": ensureSchema,
   fingerprint,
-  "repair-images": repairImages
+  "repair-images": repairImages,
+  "fix-years": fixYears
 };
 
 async function main() {
