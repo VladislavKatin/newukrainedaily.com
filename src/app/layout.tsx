@@ -19,15 +19,11 @@ export const metadata: Metadata = {
     template: `%s | ${siteConfig.name}`
   },
   description: siteConfig.description,
-  alternates: {
-    canonical: "/",
-    languages: {
-      en: "/"
-    }
-  },
+  // No site-wide canonical here: it was inherited by pages without their own
+  // (e.g. the 404 page) and pointed them at the home page.
   icons: {
     icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
-    apple: [{ url: "/apple-icon.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
     shortcut: ["/icon.svg"]
   },
   manifest: "/manifest.webmanifest",
