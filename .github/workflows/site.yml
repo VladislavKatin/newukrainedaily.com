@@ -8,8 +8,7 @@ name: Update and deploy site
 # scheduled=true); see cron-worker/worker.js.
 
 on:
-  schedule:
-    - cron: "23 * * * *"
+  # No GitHub `schedule:` trigger: the Cloudflare Worker starts the hourly run.
   push:
     branches: [main]
   workflow_dispatch:
