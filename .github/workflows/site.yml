@@ -22,6 +22,10 @@ on:
         description: "Hourly run started by the Cloudflare cron worker"
         type: boolean
         default: false
+      task:
+        description: "Optional maintenance task, e.g. fix-years --slug=<slug> --year=2023"
+        type: string
+        default: ""
 
 concurrency:
   group: site-deploy
@@ -101,6 +105,13 @@ jobs:
       - name: Ensure database tables
         if: steps.plan.outputs.automation == 'true'
         run: npm run auto -- ensure-schema
+
+      - name: Maintenance task (manual)
+        if: github.event_name == 'workflow_dispatch' && inputs.task != ''
+        env:
+          MAINTENANCE_TASK: ${{ inputs.task }}
+        # Unquoted on purpose: split into the task name and its --flags (no shell evaluation).
+        run: npm run auto -- $MAINTENANCE_TASK
 
       - name: Generate article (fetch, rewrite, image, publish)
         id: generate
