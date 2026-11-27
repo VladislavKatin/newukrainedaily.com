@@ -179,7 +179,15 @@ function getOpenAiModel(provider: string) {
   return configuredModel || DEFAULT_OPENAI_MODEL;
 }
 
+function isoDate(value: string | null | undefined) {
+  const date = value ? new Date(value) : null;
+  return date && !Number.isNaN(date.getTime()) ? date.toISOString().slice(0, 10) : null;
+}
+
 function buildOpenAiPrompt(input: RewriteInput) {
+  const today = isoDate(new Date().toISOString());
+  const published = isoDate(input.raw.publishedAt) ?? "unknown";
+
   return [
     "You are a senior editor writing for New Ukraine Daily, an English-language newsroom focused on Ukraine.",
     "Write in clear, factual, human editorial English.",
@@ -191,6 +199,12 @@ function buildOpenAiPrompt(input: RewriteInput) {
     "Do not repeat the same point in different wording.",
     "The article must read like a real edited news brief.",
     "Return strict JSON only. No markdown fences.",
+    "",
+    "Dates:",
+    `- Today's date is ${today}. The source was published on ${published}.`,
+    "- Use only dates and years that appear in the source text. Never add a year from your own memory or training data.",
+    "- A month or weekday mentioned without a year (for example 'in December') means the nearest such date around the publication date: keep it without a year, or use the publication year.",
+    "- Never place upcoming or recent events in a past year.",
     "",
     "Required JSON schema keys:",
     "title, meta_title, meta_description, lede, body, why_it_matters, key_points, tags, topics, entities, primary_topic, image_prompt, image_alt, slug, location",
