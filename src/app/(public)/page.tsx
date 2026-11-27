@@ -4,12 +4,12 @@ import { NewsletterCta } from "@/components/newsletter-cta";
 import { TrustBar } from "@/components/trust-bar";
 import { getAllTags, getEntriesByTypePage } from "@/lib/content";
 import { curateHomepageNews } from "@/lib/homepage-curation";
-import { buildMetadata } from "@/lib/seo";
+import { buildMetadata, buildSiteJsonLd } from "@/lib/seo";
 import { SUPPORTED_TOPICS, topicSlugFromLabel } from "@/lib/topic-taxonomy";
 
 
 export const metadata = buildMetadata({
-  title: "Home",
+  title: "Ukraine News, Analysis and Explainers",
   description:
     "Latest Ukraine news, explainers, analysis, and practical support coverage organized for readers who need fast facts, clear context, and visible trust signals.",
   path: "/",
@@ -48,6 +48,10 @@ export default async function HomePage() {
 
   return (
     <div className="container-shell py-8 sm:py-16">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(buildSiteJsonLd()) }}
+      />
       <section className="grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
         <div className="rounded-[28px] border border-line bg-[#f8fbff] px-5 py-4 sm:px-6">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600 sm:text-xs">
