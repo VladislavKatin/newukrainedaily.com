@@ -1,11 +1,13 @@
-﻿const fallbackBaseUrl = "http://localhost:3000";
+const fallbackBaseUrl = "http://localhost:3000";
 
 export const siteConfig = {
   name: "New Ukraine Daily",
   description:
     "English-language newsroom for Ukraine news, explainers, analysis, recovery coverage, and practical support reporting.",
   locale: "en_US",
-  defaultOgImage: "/icon.svg",
+  // PNG: social networks and Google do not accept SVG share images.
+  // Built by scripts/build-og-images.mjs before `next build`.
+  defaultOgImage: "/og-default.png",
   publisherName: "New Ukraine Daily Editorial Team"
 };
 
@@ -18,6 +20,6 @@ export function absoluteUrl(path = "/") {
 }
 
 export function getPublisherLogoUrl() {
-  return absoluteUrl("/icon.svg");
+  return absoluteUrl("/icon-512.png");
 }
 
