@@ -121,6 +121,45 @@ export function buildRewritePrompt(raw: NewsRawRecord, siteContext: string) {
   };
 }
 
+// Years everyone writes about without the source naming them.
+const ANCHOR_YEARS = [1991, 2014, 2022];
+
+// The model sometimes adds a year from its own memory, e.g. "postponed to December
+// 2023" in a 2026 story. Any year in the rewrite that is not in the source, not an
+// anchor year and not the current or publication year is treated as invented.
+function findInventedYears(rewritten: RewriteOutput, sourceText: string, raw: NewsRawRecord) {
+  const now = new Date().getUTCFullYear();
+  const publishedTime = raw.publishedAt ? new Date(raw.publishedAt).getTime() : Number.NaN;
+  const published = Number.isNaN(publishedTime) ? now : new Date(publishedTime).getUTCFullYear();
+  const allowed = new Set<number>([...ANCHOR_YEARS, now, now + 1, published, published + 1]);
+
+  for (const match of sourceText.matchAll(/\b(?:19|20)\d{2}\b/g)) {
+    allowed.add(Number(match[0]));
+  }
+
+  const text = [
+    rewritten.title,
+    rewritten.meta_title,
+    rewritten.meta_description,
+    rewritten.lede,
+    rewritten.body,
+    rewritten.why_it_matters,
+    ...rewritten.key_points,
+    rewritten.slug
+  ].join(" ");
+  const invented = new Set<number>();
+
+  for (const match of text.matchAll(/\b(?:19|20)\d{2}\b/g)) {
+    const year = Number(match[0]);
+
+    if (!allowed.has(year)) {
+      invented.add(year);
+    }
+  }
+
+  return [...invented];
+}
+
 async function attemptRewrite(input: RewriteInput) {
   const provider = getRewriteProvider();
   return provider.rewriteNews(input);
@@ -158,6 +197,15 @@ export async function rewriteRawNews(raw: NewsRawRecord): Promise<RewriteOutput 
           `[rewrite] rejected short body raw=${raw.id} attempt=${attempt + 1} length=${normalized.body.length}`
         );
           continue;
+      }
+
+      const inventedYears = findInventedYears(normalized, sourceText, raw);
+
+      if (inventedYears.length > 0) {
+        console.warn(
+          `[rewrite] rejected invented years raw=${raw.id} attempt=${attempt + 1} years=${inventedYears.join(",")}`
+        );
+        continue;
       }
 
       return normalized;
