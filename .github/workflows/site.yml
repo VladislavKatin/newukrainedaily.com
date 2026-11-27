@@ -3,6 +3,9 @@ name: Update and deploy site
 # Every hour: run the content automation against the database, then rebuild the
 # static site and upload it to Cloudflare Pages - but only if the content changed
 # (Cloudflare Pages free plan: 500 deploys a month). Also runs on every push to main.
+# GitHub's own schedule is unreliable (it skipped most hours), so the hourly run is
+# started by the Cloudflare Worker "newukrainedaily-cron" (workflow_dispatch with
+# scheduled=true); see cron-worker/worker.js.
 
 on:
   schedule:
@@ -13,6 +16,10 @@ on:
     inputs:
       generate:
         description: "Generate a new article in this run"
+        type: boolean
+        default: false
+      scheduled:
+        description: "Hourly run started by the Cloudflare cron worker"
         type: boolean
         default: false
 
@@ -79,13 +86,16 @@ jobs:
           hour=$((10#$(date -u +%H)))
           generate=false
           # 10 articles a day: every even UTC hour from 00 to 18 (same schedule as on Vercel).
-          if [ "${{ github.event_name }}" = "schedule" ] && [ $((hour % 2)) -eq 0 ] && [ "$hour" -le 18 ]; then generate=true; fi
+          hourly=false
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.scheduled }}" = "true" ]; then hourly=true; fi
+          if [ "$hourly" = "true" ] && [ $((hour % 2)) -eq 0 ] && [ "$hour" -le 18 ]; then generate=true; fi
           if [ "${{ inputs.generate }}" = "true" ]; then generate=true; fi
           automation=true
           if [ "${{ github.event_name }}" = "push" ]; then automation=false; fi
           echo "generate=$generate" >> "$GITHUB_OUTPUT"
           echo "automation=$automation" >> "$GITHUB_OUTPUT"
           echo "hour=$hour" >> "$GITHUB_OUTPUT"
+          echo "hourly=$hourly" >> "$GITHUB_OUTPUT"
           echo "generate=$generate automation=$automation hour=$hour"
 
       - name: Ensure database tables
@@ -125,13 +135,13 @@ jobs:
 
       - name: Content fingerprint
         id: fingerprint
-        if: github.event_name == 'schedule'
+        if: steps.plan.outputs.hourly == 'true'
         continue-on-error: true
         run: npm run auto -- fingerprint
 
       - name: Was this content already deployed?
         id: deployed
-        if: github.event_name == 'schedule' && steps.fingerprint.outputs.fingerprint != ''
+        if: steps.plan.outputs.hourly == 'true' && steps.fingerprint.outputs.fingerprint != ''
         uses: actions/cache/restore@v4
         with:
           path: .deploy-marker
@@ -171,7 +181,7 @@ jobs:
         run: echo "Content unchanged since the last deploy - build and deploy skipped."
 
       - name: Keep scheduled runs enabled
-        if: github.event_name == 'schedule' && steps.plan.outputs.hour == 4
+        if: steps.plan.outputs.hourly == 'true' && steps.plan.outputs.hour == 4
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
